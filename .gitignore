@@ -1,0 +1,14 @@
+/.env
+/.env.*
+!/.env.example
+/.DS_Store
+/config/master.key
+/log/*
+!/log/.keep
+/tmp/*
+!/tmp/.keep
+!/tmp/pids/
+!/tmp/pids/.keep
+/frontend/node_modules/
+/public/assets/
+/public/index.html

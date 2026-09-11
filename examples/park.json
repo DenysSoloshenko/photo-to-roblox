@@ -1,0 +1,34 @@
+{
+  "schema_version": "1.0",
+  "name": "Riverside Park",
+  "seed": 10421,
+  "units": "studs",
+  "axes": { "up": "Y", "forward": "-Z" },
+  "bounds": { "width": 110, "depth": 90, "max_height": 30 },
+  "source": {
+    "summary": "A compact green park with a curved promenade, pond, mature trees and benches.",
+    "scale_confidence": 0.82,
+    "assumptions": ["The unseen north edge continues as lawn", "The pond is decorative and shallow"]
+  },
+  "surfaces": [
+    { "id": "main_lawn", "kind": "ground", "center": [0, 0, 0], "size": [110, 90], "elevation": 0, "thickness": 2, "rotation_y": 0, "material": "grass" },
+    { "id": "pond", "kind": "water", "center": [24, 0.18, -12], "size": [25, 18], "elevation": 0.18, "thickness": 0.3, "rotation_y": -8, "material": "water" },
+    { "id": "overlook", "kind": "platform", "center": [12, 0.28, 12], "size": [18, 11], "elevation": 0.28, "thickness": 0.35, "rotation_y": 6, "material": "concrete" }
+  ],
+  "paths": [
+    { "id": "main_walk", "points": [[-48, 0.14, 24], [-26, 0.14, 12], [-5, 0.14, 9], [14, 0.42, 12], [38, 0.14, 26]], "width": 6, "material": "path", "surface_id": "main_lawn" },
+    { "id": "pond_walk", "points": [[-5, 0.14, 9], [4, 0.14, -2], [8, 0.14, -18], [14, 0.14, -28]], "width": 4, "material": "stone", "surface_id": "main_lawn" }
+  ],
+  "objects": [
+    { "id": "oak_west", "type": "tree", "position": [-30, 0, -8], "rotation_y": 8, "scale": [1.25, 1.25, 1.25], "surface_id": "main_lawn", "params": { "width": null, "depth": null, "height": null, "roof_height": null, "wall_thickness": null, "door_width": null, "door_height": null, "trunk_height": 7.5, "trunk_diameter": 1.4, "canopy_radius": 4.5, "radius": null, "length": null, "post_spacing": null, "material": null, "roof_material": null, "roof_style": null } },
+    { "id": "oak_center", "type": "tree", "position": [0, 0, -20], "rotation_y": 27, "scale": [1.1, 1.1, 1.1], "surface_id": "main_lawn", "params": { "width": null, "depth": null, "height": null, "roof_height": null, "wall_thickness": null, "door_width": null, "door_height": null, "trunk_height": 7, "trunk_diameter": 1.3, "canopy_radius": 4.2, "radius": null, "length": null, "post_spacing": null, "material": null, "roof_material": null, "roof_style": null } },
+    { "id": "bench_overlook", "type": "bench", "position": [9, 0.28, 14], "rotation_y": -20, "scale": [1, 1, 1], "surface_id": "overlook", "params": { "width": 6, "depth": 2, "height": 3, "roof_height": null, "wall_thickness": null, "door_width": null, "door_height": null, "trunk_height": null, "trunk_diameter": null, "canopy_radius": null, "radius": null, "length": null, "post_spacing": null, "material": "wood", "roof_material": null, "roof_style": null } },
+    { "id": "bench_west", "type": "bench", "position": [-16, 0, 15], "rotation_y": 12, "scale": [1, 1, 1], "surface_id": "main_lawn", "params": { "width": 5.5, "depth": 2, "height": 3, "roof_height": null, "wall_thickness": null, "door_width": null, "door_height": null, "trunk_height": null, "trunk_diameter": null, "canopy_radius": null, "radius": null, "length": null, "post_spacing": null, "material": "dark_wood", "roof_material": null, "roof_style": null } }
+  ],
+  "groups": [
+    { "id": "north_trees", "object_type": "tree", "distribution": "grid", "count": 6, "area_center": [0, 0, -35], "area_size": [82, 12], "scale_range": [0.75, 1.1], "surface_id": "main_lawn", "path_id": null, "params": { "width": null, "depth": null, "height": null, "roof_height": null, "wall_thickness": null, "door_width": null, "door_height": null, "trunk_height": 6.2, "trunk_diameter": 1.1, "canopy_radius": 3.4, "radius": null, "length": null, "post_spacing": null, "material": null, "roof_material": null, "roof_style": null } },
+    { "id": "pond_bushes", "object_type": "bush", "distribution": "scatter", "count": 10, "area_center": [24, 0, -12], "area_size": [37, 28], "scale_range": [0.65, 1.15], "surface_id": "main_lawn", "path_id": null, "params": { "width": null, "depth": null, "height": null, "roof_height": null, "wall_thickness": null, "door_width": null, "door_height": null, "trunk_height": null, "trunk_diameter": null, "canopy_radius": 1.4, "radius": null, "length": null, "post_spacing": null, "material": null, "roof_material": null, "roof_style": null } }
+  ],
+  "spawn": { "position": [-43, 0.2, 24], "rotation_y": 62 },
+  "camera": { "position": [48, 34, 52], "target": [0, 3, 0], "fov": 48 }
+}

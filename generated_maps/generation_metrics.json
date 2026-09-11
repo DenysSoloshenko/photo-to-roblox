@@ -1,0 +1,26 @@
+{
+  "coast": {
+    "part_count": 70,
+    "triangle_estimate": 5460,
+    "compile_ms": 3.3,
+    "total_generate_ms": 106.97,
+    "spec_digest": "639f754b86125b5293ecbf69c111f4d1212d6e88728c5445ed105152b254446a",
+    "rbxlx_bytes": 102554
+  },
+  "courtyard": {
+    "part_count": 110,
+    "triangle_estimate": 5772,
+    "compile_ms": 2.38,
+    "total_generate_ms": 112.42,
+    "spec_digest": "b0f7fba683b8ec1b4670d3aca1769d2055bd3b837399f99d2606aab115d37d81",
+    "rbxlx_bytes": 151620
+  },
+  "park": {
+    "part_count": 105,
+    "triangle_estimate": 7980,
+    "compile_ms": 3.31,
+    "total_generate_ms": 132.88,
+    "spec_digest": "a296f877d4b7971fe640aa7766dec653f28c82ff82a0e3136f87dccff9a226ac",
+    "rbxlx_bytes": 146246
+  }
+}

@@ -1,0 +1,2814 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<roblox xmlns:xmime='http://www.w3.org/2005/05/xmlmime' version='4'>
+  <External>null</External>
+  <External>nil</External>
+  <Item class='Workspace' referent='RBX00000001'>
+    <Properties>
+      <string name='Name'>Workspace</string>
+      <float name='Gravity'>196.2</float>
+      <float name='FallenPartsDestroyHeight'>-100</float>
+      <Ref name='CurrentCamera'>RBX00000107</Ref>
+    </Properties>
+    <Item class='Model' referent='RBX00000002'>
+      <Properties>
+        <string name='Name'>Rocky Coast</string>
+      </Properties>
+      <Item class='Model' referent='RBX00000003'>
+        <Properties>
+          <string name='Name'>sand_beach</string>
+        </Properties>
+        <Item class='Part' referent='RBX00000004'>
+          <Properties>
+            <string name='Name'>Ground</string>
+            <CoordinateFrame name='CFrame'>
+              <X>0</X>
+              <Y>-1</Y>
+              <Z>18</Z>
+              <R00>1</R00>
+              <R01>0</R01>
+              <R02>0</R02>
+              <R10>0</R10>
+              <R11>1</R11>
+              <R12>0</R12>
+              <R20>0</R20>
+              <R21>0</R21>
+              <R22>1</R22>
+            </CoordinateFrame>
+            <Vector3 name='size'>
+              <X>130</X>
+              <Y>2</Y>
+              <Z>64</Z>
+            </Vector3>
+            <Color3uint8 name='Color3uint8'>4292461711</Color3uint8>
+            <token name='Material'>800</token>
+            <token name='shape'>1</token>
+            <bool name='Anchored'>true</bool>
+            <bool name='CanCollide'>true</bool>
+            <bool name='CanTouch'>false</bool>
+            <bool name='CanQuery'>true</bool>
+            <bool name='CastShadow'>true</bool>
+            <float name='Transparency'>0.0</float>
+            <float name='Reflectance'>0</float>
+            <token name='TopSurface'>0</token>
+            <token name='BottomSurface'>0</token>
+          </Properties>
+        </Item>
+      </Item>
+      <Item class='Model' referent='RBX00000005'>
+        <Properties>
+          <string name='Name'>sea</string>
+        </Properties>
+        <Item class='Part' referent='RBX00000006'>
+          <Properties>
+            <string name='Name'>Water</string>
+            <CoordinateFrame name='CFrame'>
+              <X>0</X>
+              <Y>-0.375</Y>
+              <Z>-34</Z>
+              <R00>1</R00>
+              <R01>0</R01>
+              <R02>0</R02>
+              <R10>0</R10>
+              <R11>1</R11>
+              <R12>0</R12>
+              <R20>0</R20>
+              <R21>0</R21>
+              <R22>1</R22>
+            </CoordinateFrame>
+            <Vector3 name='size'>
+              <X>130</X>
+              <Y>0.45</Y>
+              <Z>44</Z>
+            </Vector3>
+            <Color3uint8 name='Color3uint8'>4284131785</Color3uint8>
+            <token name='Material'>272</token>
+            <token name='shape'>1</token>
+            <bool name='Anchored'>true</bool>
+            <bool name='CanCollide'>false</bool>
+            <bool name='CanTouch'>false</bool>
+            <bool name='CanQuery'>true</bool>
+            <bool name='CastShadow'>false</bool>
+            <float name='Transparency'>0.28</float>
+            <float name='Reflectance'>0</float>
+            <token name='TopSurface'>0</token>
+            <token name='BottomSurface'>0</token>
+          </Properties>
+        </Item>
+      </Item>
+      <Item class='Model' referent='RBX00000007'>
+        <Properties>
+          <string name='Name'>rock_shelf</string>
+        </Properties>
+        <Item class='Part' referent='RBX00000008'>
+          <Properties>
+            <string name='Name'>Platform</string>
+            <CoordinateFrame name='CFrame'>
+              <X>-38</X>
+              <Y>-0.1</Y>
+              <Z>-5</Z>
+              <R00>0.9781476</R00>
+              <R01>0</R01>
+              <R02>0.20791169</R02>
+              <R10>0</R10>
+              <R11>1</R11>
+              <R12>0</R12>
+              <R20>-0.20791169</R20>
+              <R21>0</R21>
+              <R22>0.9781476</R22>
+            </CoordinateFrame>
+            <Vector3 name='size'>
+              <X>28</X>
+              <Y>3.8</Y>
+              <Z>30</Z>
+            </Vector3>
+            <Color3uint8 name='Color3uint8'>4287797402</Color3uint8>
+            <token name='Material'>896</token>
+            <token name='shape'>1</token>
+            <bool name='Anchored'>true</bool>
+            <bool name='CanCollide'>true</bool>
+            <bool name='CanTouch'>false</bool>
+            <bool name='CanQuery'>true</bool>
+            <bool name='CastShadow'>true</bool>
+            <float name='Transparency'>0.0</float>
+            <float name='Reflectance'>0</float>
+            <token name='TopSurface'>0</token>
+            <token name='BottomSurface'>0</token>
+          </Properties>
+        </Item>
+      </Item>
+      <Item class='Model' referent='RBX00000009'>
+        <Properties>
+          <string name='Name'>shore_path</string>
+        </Properties>
+        <Item class='Part' referent='RBX00000010'>
+          <Properties>
+            <string name='Name'>Path segment 1</string>
+            <CoordinateFrame name='CFrame'>
+              <X>-40</X>
+              <Y>0.12</Y>
+              <Z>27.5</Z>
+              <R00>-0.41665463</R00>
+              <R01>0</R01>
+              <R02>0.90906486</R02>
+              <R10>0</R10>
+              <R11>1</R11>
+              <R12>0</R12>
+              <R20>-0.90906486</R20>
+              <R21>0</R21>
+              <R22>-0.41665463</R22>
+            </CoordinateFrame>
+            <Vector3 name='size'>
+              <X>5</X>
+              <Y>0.25</Y>
+              <Z>26.48076</Z>
+            </Vector3>
+            <Color3uint8 name='Color3uint8'>4291279260</Color3uint8>
+            <token name='Material'>880</token>
+            <token name='shape'>1</token>
+            <bool name='Anchored'>true</bool>
+            <bool name='CanCollide'>true</bool>
+            <bool name='CanTouch'>false</bool>
+            <bool name='CanQuery'>true</bool>
+            <bool name='CastShadow'>true</bool>
+            <float name='Transparency'>0.0</float>
+            <float name='Reflectance'>0</float>
+            <token name='TopSurface'>0</token>
+            <token name='BottomSurface'>0</token>
+          </Properties>
+        </Item>
+        <Item class='Part' referent='RBX00000011'>
+          <Properties>
+            <string name='Name'>Path segment 2</string>
+            <CoordinateFrame name='CFrame'>
+              <X>-16</X>
+              <Y>0.12</Y>
+              <Z>20</Z>
+              <R00>-0.16439895</R00>
+              <R01>0</R01>
+              <R02>0.98639393</R02>
+              <R10>0</R10>
+              <R11>1</R11>
+              <R12>0</R12>
+              <R20>-0.98639393</R20>
+              <R21>0</R21>
+              <R22>-0.16439895</R22>
+            </CoordinateFrame>
+            <Vector3 name='size'>
+              <X>5</X>
+              <Y>0.25</Y>
+              <Z>24.41105</Z>
+            </Vector3>
+            <Color3uint8 name='Color3uint8'>4291279260</Color3uint8>
+            <token name='Material'>880</token>
+            <token name='shape'>1</token>
+            <bool name='Anchored'>true</bool>
+            <bool name='CanCollide'>true</bool>
+            <bool name='CanTouch'>false</bool>
+            <bool name='CanQuery'>true</bool>
+            <bool name='CastShadow'>true</bool>
+            <float name='Transparency'>0.0</float>
+            <float name='Reflectance'>0</float>
+            <token name='TopSurface'>0</token>
+            <token name='BottomSurface'>0</token>
+          </Properties>
+        </Item>
+        <Item class='Part' referent='RBX00000012'>
+          <Properties>
+            <string name='Name'>Path segment 3</string>
+            <CoordinateFrame name='CFrame'>
+              <X>9</X>
+              <Y>0.12</Y>
+              <Z>20</Z>
+              <R00>0.15205715</R00>
+              <R01>0</R01>
+              <R02>0.9883717</R02>
+              <R10>0</R10>
+              <R11>1</R11>
+              <R12>0</R12>
+              <R20>-0.9883717</R20>
+              <R21>0</R21>
+              <R22>0.15205715</R22>
+            </CoordinateFrame>
+            <Vector3 name='size'>
+              <X>5</X>
+              <Y>0.25</Y>
+              <Z>26.38589</Z>
+            </Vector3>
+            <Color3uint8 name='Color3uint8'>4291279260</Color3uint8>
+            <token name='Material'>880</token>
+            <token name='shape'>1</token>
+            <bool name='Anchored'>true</bool>
+            <bool name='CanCollide'>true</bool>
+            <bool name='CanTouch'>false</bool>
+            <bool name='CanQuery'>true</bool>
+            <bool name='CastShadow'>true</bool>
+            <float name='Transparency'>0.0</float>
+            <float name='Reflectance'>0</float>
+            <token name='TopSurface'>0</token>
+            <token name='BottomSurface'>0</token>
+          </Properties>
+        </Item>
+        <Item class='Part' referent='RBX00000013'>
+          <Properties>
+            <string name='Name'>Path segment 4</string>
+            <CoordinateFrame name='CFrame'>
+              <X>35</X>
+              <Y>0.12</Y>
+              <Z>28</Z>
+              <R00>0.41905817</R00>
+              <R01>0</R01>
+              <R02>0.90795939</R02>
+              <R10>0</R10>
+              <R11>1</R11>
+              <R12>0</R12>
+              <R20>-0.90795939</R20>
+              <R21>0</R21>
+              <R22>0.41905817</R22>
+            </CoordinateFrame>
+            <Vector3 name='size'>
+              <X>5</X>
+              <Y>0.25</Y>
+              <Z>28.71564</Z>
+            </Vector3>
+            <Color3uint8 name='Color3uint8'>4291279260</Color3uint8>
+            <token name='Material'>880</token>
+            <token name='shape'>1</token>
+            <bool name='Anchored'>true</bool>
+            <bool name='CanCollide'>true</bool>
+            <bool name='CanTouch'>false</bool>
+            <bool name='CanQuery'>true</bool>
+            <bool name='CastShadow'>true</bool>
+            <float name='Transparency'>0.0</float>
+            <float name='Reflectance'>0</float>
+            <token name='TopSurface'>0</token>
+            <token name='BottomSurface'>0</token>
+          </Properties>
+        </Item>
+      </Item>
+      <Item class='Model' referent='RBX00000014'>
+        <Properties>
+          <string name='Name'>shelf_rock</string>
+        </Properties>
+        <Item class='Part' referent='RBX00000015'>
+          <Properties>
+            <string name='Name'>Rock</string>
+            <CoordinateFrame name='CFrame'>
+              <X>-38</X>
+              <Y>4.716</Y>
+              <Z>-4</Z>
+              <R00>0.961282</R00>
+              <R01>0.011414342</R01>
+              <R02>0.27533003</R02>
+              <R10>0.0016607461</R10>
+              <R11>0.99888365</R11>
+              <R12>-0.047208962</R12>
+              <R20>-0.27556153</R20>
+              <R21>0.045838379</R21>
+              <R22>0.96018992</R22>
+            </CoordinateFrame>
+            <Vector3 name='size'>
+              <X>18.72</X>
+              <Y>7.452</Y>
+              <Z>13.068</Z>
+            </Vector3>
+            <Color3uint8 name='Color3uint8'>4287797402</Color3uint8>
+            <token name='Material'>896</token>
+            <token name='shape'>0</token>
+            <bool name='Anchored'>true</bool>
+            <bool name='CanCollide'>true</bool>
+            <bool name='CanTouch'>false</bool>
+            <bool name='CanQuery'>true</bool>
+            <bool name='CastShadow'>true</bool>
+            <float name='Transparency'>0.0</float>
+            <float name='Reflectance'>0</float>
+            <token name='TopSurface'>0</token>
+            <token name='BottomSurface'>0</token>
+          </Properties>
+        </Item>
+      </Item>
+      <Item class='Model' referent='RBX00000016'>
+        <Properties>
+          <string name='Name'>lookout_bench</string>
+        </Properties>
+        <Item class='Part' referent='RBX00000017'>
+          <Properties>
+            <string name='Name'>Seat</string>
+            <CoordinateFrame name='CFrame'>
+              <X>28</X>
+              <Y>1.41</Y>
+              <Z>31</Z>
+              <R00>-1</R00>
+              <R01>0</R01>
+              <R02>1.2246468e-16</R02>
+              <R10>0</R10>
+              <R11>1</R11>
+              <R12>0</R12>
+              <R20>-1.2246468e-16</R20>
+              <R21>0</R21>
+              <R22>-1</R22>
+            </CoordinateFrame>
+            <Vector3 name='size'>
+              <X>6</X>
+              <Y>0.35</Y>
+              <Z>2</Z>
+            </Vector3>
+            <Color3uint8 name='Color3uint8'>4284170801</Color3uint8>
+            <token name='Material'>528</token>
+            <token name='shape'>1</token>
+            <bool name='Anchored'>true</bool>
+            <bool name='CanCollide'>true</bool>
+            <bool name='CanTouch'>false</bool>
+            <bool name='CanQuery'>true</bool>
+            <bool name='CastShadow'>true</bool>
+            <float name='Transparency'>0.0</float>
+            <float name='Reflectance'>0</float>
+            <token name='TopSurface'>0</token>
+            <token name='BottomSurface'>0</token>
+          </Properties>
+        </Item>
+        <Item class='Part' referent='RBX00000018'>
+          <Properties>
+            <string name='Name'>Back</string>
+            <CoordinateFrame name='CFrame'>
+              <X>28</X>
+              <Y>2.25</Y>
+              <Z>31.86</Z>
+              <R00>-1</R00>
+              <R01>-1.7043789e-17</R01>
+              <R02>1.2127286e-16</R02>
+              <R10>0</R10>
+              <R11>0.99026807</R11>
+              <R12>0.1391731</R12>
+              <R20>-1.2246468e-16</R20>
+              <R21>0.1391731</R21>
+              <R22>-0.99026807</R22>
+            </CoordinateFrame>
+            <Vector3 name='size'>
+              <X>6</X>
+              <Y>1.74</Y>
+              <Z>0.3</Z>
+            </Vector3>
+            <Color3uint8 name='Color3uint8'>4284170801</Color3uint8>
+            <token name='Material'>528</token>
+            <token name='shape'>1</token>
+            <bool name='Anchored'>true</bool>
+            <bool name='CanCollide'>true</bool>
+            <bool name='CanTouch'>false</bool>
+            <bool name='CanQuery'>true</bool>
+            <bool name='CastShadow'>true</bool>
+            <float name='Transparency'>0.0</float>
+            <float name='Reflectance'>0</float>
+            <token name='TopSurface'>0</token>
+            <token name='BottomSurface'>0</token>
+          </Properties>
+        </Item>
+        <Item class='Part' referent='RBX00000019'>
+          <Properties>
+            <string name='Name'>Leg</string>
+            <CoordinateFrame name='CFrame'>
+              <X>30.16</X>
+              <Y>0.69</Y>
+              <Z>31.56</Z>
+              <R00>-1</R00>
+              <R01>0</R01>
+              <R02>1.2246468e-16</R02>
+              <R10>0</R10>
+              <R11>1</R11>
+              <R12>0</R12>
+              <R20>-1.2246468e-16</R20>
+              <R21>0</R21>
+              <R22>-1</R22>
+            </CoordinateFrame>
+            <Vector3 name='size'>
+              <X>0.34</X>
+              <Y>1.38</Y>
+              <Z>0.34</Z>
+            </Vector3>
+            <Color3uint8 name='Color3uint8'>4284047977</Color3uint8>
+            <token name='Material'>1088</token>
+            <token name='shape'>1</token>
+            <bool name='Anchored'>true</bool>
+            <bool name='CanCollide'>true</bool>
+            <bool name='CanTouch'>false</bool>
+            <bool name='CanQuery'>true</bool>
+            <bool name='CastShadow'>true</bool>
+            <float name='Transparency'>0.0</float>
+            <float name='Reflectance'>0</float>
+            <token name='TopSurface'>0</token>
+            <token name='BottomSurface'>0</token>
+          </Properties>
+        </Item>
+        <Item class='Part' referent='RBX00000020'>
+          <Properties>
+            <string name='Name'>Leg</string>
+            <CoordinateFrame name='CFrame'>
+              <X>30.16</X>
+              <Y>0.69</Y>
+              <Z>30.44</Z>
+              <R00>-1</R00>
+              <R01>0</R01>
+              <R02>1.2246468e-16</R02>
+              <R10>0</R10>
+              <R11>1</R11>
+              <R12>0</R12>
+              <R20>-1.2246468e-16</R20>
+              <R21>0</R21>
+              <R22>-1</R22>
+            </CoordinateFrame>
+            <Vector3 name='size'>
+              <X>0.34</X>
+              <Y>1.38</Y>
+              <Z>0.34</Z>
+            </Vector3>
+            <Color3uint8 name='Color3uint8'>4284047977</Color3uint8>
+            <token name='Material'>1088</token>
+            <token name='shape'>1</token>
+            <bool name='Anchored'>true</bool>
+            <bool name='CanCollide'>true</bool>
+            <bool name='CanTouch'>false</bool>
+            <bool name='CanQuery'>true</bool>
+            <bool name='CastShadow'>true</bool>
+            <float name='Transparency'>0.0</float>
+            <float name='Reflectance'>0</float>
+            <token name='TopSurface'>0</token>
+            <token name='BottomSurface'>0</token>
+          </Properties>
+        </Item>
+        <Item class='Part' referent='RBX00000021'>
+          <Properties>
+            <string name='Name'>Leg</string>
+            <CoordinateFrame name='CFrame'>
+              <X>25.84</X>
+              <Y>0.69</Y>
+              <Z>31.56</Z>
+              <R00>-1</R00>
+              <R01>0</R01>
+              <R02>1.2246468e-16</R02>
+              <R10>0</R10>
+              <R11>1</R11>
+              <R12>0</R12>
+              <R20>-1.2246468e-16</R20>
+              <R21>0</R21>
+              <R22>-1</R22>
+            </CoordinateFrame>
+            <Vector3 name='size'>
+              <X>0.34</X>
+              <Y>1.38</Y>
+              <Z>0.34</Z>
+            </Vector3>
+            <Color3uint8 name='Color3uint8'>4284047977</Color3uint8>
+            <token name='Material'>1088</token>
+            <token name='shape'>1</token>
+            <bool name='Anchored'>true</bool>
+            <bool name='CanCollide'>true</bool>
+            <bool name='CanTouch'>false</bool>
+            <bool name='CanQuery'>true</bool>
+            <bool name='CastShadow'>true</bool>
+            <float name='Transparency'>0.0</float>
+            <float name='Reflectance'>0</float>
+            <token name='TopSurface'>0</token>
+            <token name='BottomSurface'>0</token>
+          </Properties>
+        </Item>
+        <Item class='Part' referent='RBX00000022'>
+          <Properties>
+            <string name='Name'>Leg</string>
+            <CoordinateFrame name='CFrame'>
+              <X>25.84</X>
+              <Y>0.69</Y>
+              <Z>30.44</Z>
+              <R00>-1</R00>
+              <R01>0</R01>
+              <R02>1.2246468e-16</R02>
+              <R10>0</R10>
+              <R11>1</R11>
+              <R12>0</R12>
+              <R20>-1.2246468e-16</R20>
+              <R21>0</R21>
+              <R22>-1</R22>
+            </CoordinateFrame>
+            <Vector3 name='size'>
+              <X>0.34</X>
+              <Y>1.38</Y>
+              <Z>0.34</Z>
+            </Vector3>
+            <Color3uint8 name='Color3uint8'>4284047977</Color3uint8>
+            <token name='Material'>1088</token>
+            <token name='shape'>1</token>
+            <bool name='Anchored'>true</bool>
+            <bool name='CanCollide'>true</bool>
+            <bool name='CanTouch'>false</bool>
+            <bool name='CanQuery'>true</bool>
+            <bool name='CastShadow'>true</bool>
+            <float name='Transparency'>0.0</float>
+            <float name='Reflectance'>0</float>
+            <token name='TopSurface'>0</token>
+            <token name='BottomSurface'>0</token>
+          </Properties>
+        </Item>
+        <Item class='Part' referent='RBX00000023'>
+          <Properties>
+            <string name='Name'>Support</string>
+            <CoordinateFrame name='CFrame'>
+              <X>28</X>
+              <Y>0.78</Y>
+              <Z>31</Z>
+              <R00>-1</R00>
+              <R01>0</R01>
+              <R02>1.2246468e-16</R02>
+              <R10>0</R10>
+              <R11>1</R11>
+              <R12>0</R12>
+              <R20>-1.2246468e-16</R20>
+              <R21>0</R21>
+              <R22>-1</R22>
+            </CoordinateFrame>
+            <Vector3 name='size'>
+              <X>4.92</X>
+              <Y>0.28</Y>
+              <Z>0.28</Z>
+            </Vector3>
+            <Color3uint8 name='Color3uint8'>4284047977</Color3uint8>
+            <token name='Material'>1088</token>
+            <token name='shape'>1</token>
+            <bool name='Anchored'>true</bool>
+            <bool name='CanCollide'>true</bool>
+            <bool name='CanTouch'>false</bool>
+            <bool name='CanQuery'>true</bool>
+            <bool name='CastShadow'>true</bool>
+            <float name='Transparency'>0.0</float>
+            <float name='Reflectance'>0</float>
+            <token name='TopSurface'>0</token>
+            <token name='BottomSurface'>0</token>
+          </Properties>
+        </Item>
+      </Item>
+      <Item class='Model' referent='RBX00000024'>
+        <Properties>
+          <string name='Name'>waterline_rocks-1</string>
+        </Properties>
+        <Item class='Part' referent='RBX00000025'>
+          <Properties>
+            <string name='Name'>Rock</string>
+            <CoordinateFrame name='CFrame'>
+              <X>36.69832</X>
+              <Y>0.90107</Y>
+              <Z>-15.87753</Z>
+              <R00>-0.99636606</R00>
+              <R01>0.083307396</R01>
+              <R02>-0.01773555</R02>
+              <R10>0.085131152</R10>
+              <R11>0.96740015</R11>
+              <R12>-0.23851549</R12>
+              <R20>-0.0027127307</R20>
+              <R21>-0.23915859</R21>
+              <R22>-0.97097673</R22>
+            </CoordinateFrame>
+            <Vector3 name='size'>
+              <X>4.00476</X>
+              <Y>2.30274</Y>
+              <Z>3.30393</Z>
+            </Vector3>
+            <Color3uint8 name='Color3uint8'>4287797402</Color3uint8>
+            <token name='Material'>896</token>
+            <token name='shape'>0</token>
+            <bool name='Anchored'>true</bool>
+            <bool name='CanCollide'>true</bool>
+            <bool name='CanTouch'>false</bool>
+            <bool name='CanQuery'>true</bool>
+            <bool name='CastShadow'>true</bool>
+            <float name='Transparency'>0.0</float>
+            <float name='Reflectance'>0</float>
+            <token name='TopSurface'>0</token>
+            <token name='BottomSurface'>0</token>
+          </Properties>
+        </Item>
+      </Item>
+      <Item class='Model' referent='RBX00000026'>
+        <Properties>
+          <string name='Name'>waterline_rocks-2</string>
+        </Properties>
+        <Item class='Part' referent='RBX00000027'>
+          <Properties>
+            <string name='Name'>Rock</string>
+            <CoordinateFrame name='CFrame'>
+              <X>-34.42933</X>
+              <Y>0.43791</Y>
+              <Z>-12.94199</Z>
+              <R00>-0.23261687</R00>
+              <R01>0.090568001</R01>
+              <R02>0.96834231</R02>
+              <R10>0.05008953</R10>
+              <R11>0.99544894</R11>
+              <R12>-0.081070661</R12>
+              <R20>-0.97127773</R20>
+              <R21>0.029645407</R21>
+              <R22>-0.23609473</R22>
+            </CoordinateFrame>
+            <Vector3 name='size'>
+              <X>1.94627</X>
+              <Y>1.11911</Y>
+              <Z>1.60568</Z>
+            </Vector3>
+            <Color3uint8 name='Color3uint8'>4287797402</Color3uint8>
+            <token name='Material'>896</token>
+            <token name='shape'>0</token>
+            <bool name='Anchored'>true</bool>
+            <bool name='CanCollide'>true</bool>
+            <bool name='CanTouch'>false</bool>
+            <bool name='CanQuery'>true</bool>
+            <bool name='CastShadow'>true</bool>
+            <float name='Transparency'>0.0</float>
+            <float name='Reflectance'>0</float>
+            <token name='TopSurface'>0</token>
+            <token name='BottomSurface'>0</token>
+          </Properties>
+        </Item>
+      </Item>
+      <Item class='Model' referent='RBX00000028'>
+        <Properties>
+          <string name='Name'>waterline_rocks-3</string>
+        </Properties>
+        <Item class='Part' referent='RBX00000029'>
+          <Properties>
+            <string name='Name'>Rock</string>
+            <CoordinateFrame name='CFrame'>
+              <X>-8.56038</X>
+              <Y>0.60633</Y>
+              <Z>-3.28746</Z>
+              <R00>-0.66484591</R00>
+              <R01>-0.03114335</R01>
+              <R02>-0.74633103</R02>
+              <R10>0.10967718</R10>
+              <R11>0.98423215</R11>
+              <R12>-0.13877315</R12>
+              <R20>0.73888485</R20>
+              <R21>-0.17411824</R21>
+              <R22>-0.65094701</R22>
+            </CoordinateFrame>
+            <Vector3 name='size'>
+              <X>2.69479</X>
+              <Y>1.54951</Y>
+              <Z>2.22321</Z>
+            </Vector3>
+            <Color3uint8 name='Color3uint8'>4287797402</Color3uint8>
+            <token name='Material'>896</token>
+            <token name='shape'>0</token>
+            <bool name='Anchored'>true</bool>
+            <bool name='CanCollide'>true</bool>
+            <bool name='CanTouch'>false</bool>
+            <bool name='CanQuery'>true</bool>
+            <bool name='CastShadow'>true</bool>
+            <float name='Transparency'>0.0</float>
+            <float name='Reflectance'>0</float>
+            <token name='TopSurface'>0</token>
+            <token name='BottomSurface'>0</token>
+          </Properties>
+        </Item>
+      </Item>
+      <Item class='Model' referent='RBX00000030'>
+        <Properties>
+          <string name='Name'>waterline_rocks-4</string>
+        </Properties>
+        <Item class='Part' referent='RBX00000031'>
+          <Properties>
+            <string name='Name'>Rock</string>
+            <CoordinateFrame name='CFrame'>
+              <X>52.45147</X>
+              <Y>0.73858</Y>
+              <Z>-16.21732</Z>
+              <R00>0.99979239</R00>
+              <R01>0.0031935064</R01>
+              <R02>0.020124027</R02>
+              <R10>0.00055911603</R10>
+              <R11>0.98296978</R11>
+              <R12>-0.18376641</R12>
+              <R20>-0.02036817</R20>
+              <R21>0.18373951</R21>
+              <R22>0.98276392</R22>
+            </CoordinateFrame>
+            <Vector3 name='size'>
+              <X>3.28257</X>
+              <Y>1.88748</Y>
+              <Z>2.70812</Z>
+            </Vector3>
+            <Color3uint8 name='Color3uint8'>4287797402</Color3uint8>
+            <token name='Material'>896</token>
+            <token name='shape'>0</token>
+            <bool name='Anchored'>true</bool>
+            <bool name='CanCollide'>true</bool>
+            <bool name='CanTouch'>false</bool>
+            <bool name='CanQuery'>true</bool>
+            <bool name='CastShadow'>true</bool>
+            <float name='Transparency'>0.0</float>
+            <float name='Reflectance'>0</float>
+            <token name='TopSurface'>0</token>
+            <token name='BottomSurface'>0</token>
+          </Properties>
+        </Item>
+      </Item>
+      <Item class='Model' referent='RBX00000032'>
+        <Properties>
+          <string name='Name'>waterline_rocks-5</string>
+        </Properties>
+        <Item class='Part' referent='RBX00000033'>
+          <Properties>
+            <string name='Name'>Rock</string>
+            <CoordinateFrame name='CFrame'>
+              <X>-11.05085</X>
+              <Y>0.74479</Y>
+              <Z>-6.92896</Z>
+              <R00>-0.97363281</R00>
+              <R01>0.049090909</R01>
+              <R02>-0.22277619</R02>
+              <R10>0.09185391</R10>
+              <R11>0.97827124</R11>
+              <R12>-0.18587155</R12>
+              <R20>0.20881093</R20>
+              <R21>-0.20143351</R21>
+              <R22>-0.95698617</R22>
+            </CoordinateFrame>
+            <Vector3 name='size'>
+              <X>3.31019</X>
+              <Y>1.90336</Y>
+              <Z>2.73091</Z>
+            </Vector3>
+            <Color3uint8 name='Color3uint8'>4287797402</Color3uint8>
+            <token name='Material'>896</token>
+            <token name='shape'>0</token>
+            <bool name='Anchored'>true</bool>
+            <bool name='CanCollide'>true</bool>
+            <bool name='CanTouch'>false</bool>
+            <bool name='CanQuery'>true</bool>
+            <bool name='CastShadow'>true</bool>
+            <float name='Transparency'>0.0</float>
+            <float name='Reflectance'>0</float>
+            <token name='TopSurface'>0</token>
+            <token name='BottomSurface'>0</token>
+          </Properties>
+        </Item>
+      </Item>
+      <Item class='Model' referent='RBX00000034'>
+        <Properties>
+          <string name='Name'>waterline_rocks-6</string>
+        </Properties>
+        <Item class='Part' referent='RBX00000035'>
+          <Properties>
+            <string name='Name'>Rock</string>
+            <CoordinateFrame name='CFrame'>
+              <X>31.44404</X>
+              <Y>0.72402</Y>
+              <Z>-12.7731</Z>
+              <R00>-0.29311038</R00>
+              <R01>0.18599335</R01>
+              <R02>0.93781276</R02>
+              <R10>0.051302984</R10>
+              <R11>0.98254157</R11>
+              <R12>-0.17882969</R12>
+              <R20>-0.95470116</R20>
+              <R21>-0.0043042458</R21>
+              <R22>-0.29753515</R22>
+            </CoordinateFrame>
+            <Vector3 name='size'>
+              <X>3.21786</X>
+              <Y>1.85027</Y>
+              <Z>2.65473</Z>
+            </Vector3>
+            <Color3uint8 name='Color3uint8'>4287797402</Color3uint8>
+            <token name='Material'>896</token>
+            <token name='shape'>0</token>
+            <bool name='Anchored'>true</bool>
+            <bool name='CanCollide'>true</bool>
+            <bool name='CanTouch'>false</bool>
+            <bool name='CanQuery'>true</bool>
+            <bool name='CastShadow'>true</bool>
+            <float name='Transparency'>0.0</float>
+            <float name='Reflectance'>0</float>
+            <token name='TopSurface'>0</token>
+            <token name='BottomSurface'>0</token>
+          </Properties>
+        </Item>
+      </Item>
+      <Item class='Model' referent='RBX00000036'>
+        <Properties>
+          <string name='Name'>waterline_rocks-7</string>
+        </Properties>
+        <Item class='Part' referent='RBX00000037'>
+          <Properties>
+            <string name='Name'>Rock</string>
+            <CoordinateFrame name='CFrame'>
+              <X>-40.83194</X>
+              <Y>0.76784</Y>
+              <Z>-16.30241</Z>
+              <R00>-0.99482784</R00>
+              <R01>0.093695314</R01>
+              <R02>0.039227029</R02>
+              <R10>0.084419776</R10>
+              <R11>0.97742729</R11>
+              <R12>-0.19367293</R12>
+              <R20>-0.056487814</R20>
+              <R21>-0.18935968</R21>
+              <R22>-0.98028161</R22>
+            </CoordinateFrame>
+            <Vector3 name='size'>
+              <X>3.41262</X>
+              <Y>1.96226</Y>
+              <Z>2.81541</Z>
+            </Vector3>
+            <Color3uint8 name='Color3uint8'>4287797402</Color3uint8>
+            <token name='Material'>896</token>
+            <token name='shape'>0</token>
+            <bool name='Anchored'>true</bool>
+            <bool name='CanCollide'>true</bool>
+            <bool name='CanTouch'>false</bool>
+            <bool name='CanQuery'>true</bool>
+            <bool name='CastShadow'>true</bool>
+            <float name='Transparency'>0.0</float>
+            <float name='Reflectance'>0</float>
+            <token name='TopSurface'>0</token>
+            <token name='BottomSurface'>0</token>
+          </Properties>
+        </Item>
+      </Item>
+      <Item class='Model' referent='RBX00000038'>
+        <Properties>
+          <string name='Name'>waterline_rocks-8</string>
+        </Properties>
+        <Item class='Part' referent='RBX00000039'>
+          <Properties>
+            <string name='Name'>Rock</string>
+            <CoordinateFrame name='CFrame'>
+              <X>19.00065</X>
+              <Y>0.54694</Y>
+              <Z>-14.56497</Z>
+              <R00>0.99938935</R00>
+              <R01>0.0031784793</R01>
+              <R02>0.03479696</R02>
+              <R10>0.00096686185</R10>
+              <R11>0.99295727</R11>
+              <R12>-0.11846913</R12>
+              <R20>-0.034928446</R20>
+              <R21>0.11843043</R21>
+              <R22>0.99234784</R22>
+            </CoordinateFrame>
+            <Vector3 name='size'>
+              <X>2.43085</X>
+              <Y>1.39774</Y>
+              <Z>2.00545</Z>
+            </Vector3>
+            <Color3uint8 name='Color3uint8'>4287797402</Color3uint8>
+            <token name='Material'>896</token>
+            <token name='shape'>0</token>
+            <bool name='Anchored'>true</bool>
+            <bool name='CanCollide'>true</bool>
+            <bool name='CanTouch'>false</bool>
+            <bool name='CanQuery'>true</bool>
+            <bool name='CastShadow'>true</bool>
+            <float name='Transparency'>0.0</float>
+            <float name='Reflectance'>0</float>
+            <token name='TopSurface'>0</token>
+            <token name='BottomSurface'>0</token>
+          </Properties>
+        </Item>
+      </Item>
+      <Item class='Model' referent='RBX00000040'>
+        <Properties>
+          <string name='Name'>waterline_rocks-9</string>
+        </Properties>
+        <Item class='Part' referent='RBX00000041'>
+          <Properties>
+            <string name='Name'>Rock</string>
+            <CoordinateFrame name='CFrame'>
+              <X>20.14432</X>
+              <Y>0.68525</Y>
+              <Z>-3.73211</Z>
+              <R00>-0.66957401</R00>
+              <R01>0.16505614</R01>
+              <R02>0.72417341</R02>
+              <R10>0.063426077</R10>
+              <R11>0.98414041</R11>
+              <R12>-0.16566469</R12>
+              <R20>-0.74003229</R20>
+              <R21>-0.064993294</R21>
+              <R22>-0.6694237</R22>
+            </CoordinateFrame>
+            <Vector3 name='size'>
+              <X>3.04557</X>
+              <Y>1.7512</Y>
+              <Z>2.51259</Z>
+            </Vector3>
+            <Color3uint8 name='Color3uint8'>4287797402</Color3uint8>
+            <token name='Material'>896</token>
+            <token name='shape'>0</token>
+            <bool name='Anchored'>true</bool>
+            <bool name='CanCollide'>true</bool>
+            <bool name='CanTouch'>false</bool>
+            <bool name='CanQuery'>true</bool>
+            <bool name='CastShadow'>true</bool>
+            <float name='Transparency'>0.0</float>
+            <float name='Reflectance'>0</float>
+            <token name='TopSurface'>0</token>
+            <token name='BottomSurface'>0</token>
+          </Properties>
+        </Item>
+      </Item>
+      <Item class='Model' referent='RBX00000042'>
+        <Properties>
+          <string name='Name'>waterline_rocks-10</string>
+        </Properties>
+        <Item class='Part' referent='RBX00000043'>
+          <Properties>
+            <string name='Name'>Rock</string>
+            <CoordinateFrame name='CFrame'>
+              <X>-8.78029</X>
+              <Y>0.8629</Y>
+              <Z>-5.14969</Z>
+              <R00>-0.59967572</R00>
+              <R01>0.21605153</R01>
+              <R02>0.77052629</R02>
+              <R10>0.060287161</R10>
+              <R11>0.97232605</R11>
+              <R12>-0.22571557</R12>
+              <R20>-0.79796898</R20>
+              <R21>-0.088903306</R21>
+              <R22>-0.59610545</R22>
+            </CoordinateFrame>
+            <Vector3 name='size'>
+              <X>3.83512</X>
+              <Y>2.20519</Y>
+              <Z>3.16397</Z>
+            </Vector3>
+            <Color3uint8 name='Color3uint8'>4287797402</Color3uint8>
+            <token name='Material'>896</token>
+            <token name='shape'>0</token>
+            <bool name='Anchored'>true</bool>
+            <bool name='CanCollide'>true</bool>
+            <bool name='CanTouch'>false</bool>
+            <bool name='CanQuery'>true</bool>
+            <bool name='CastShadow'>true</bool>
+            <float name='Transparency'>0.0</float>
+            <float name='Reflectance'>0</float>
+            <token name='TopSurface'>0</token>
+            <token name='BottomSurface'>0</token>
+          </Properties>
+        </Item>
+      </Item>
+      <Item class='Model' referent='RBX00000044'>
+        <Properties>
+          <string name='Name'>waterline_rocks-11</string>
+        </Properties>
+        <Item class='Part' referent='RBX00000045'>
+          <Properties>
+            <string name='Name'>Rock</string>
+            <CoordinateFrame name='CFrame'>
+              <X>-17.67764</X>
+              <Y>0.70029</Y>
+              <Z>-3.64706</Z>
+              <R00>0.71814739</R00>
+              <R01>-0.22702715</R01>
+              <R02>-0.65781684</R02>
+              <R10>0.15135978</R10>
+              <R11>0.97361504</R11>
+              <R12>-0.17077462</R12>
+              <R20>0.67923084</R20>
+              <R21>0.023074335</R21>
+              <R22>0.73356188</R22>
+            </CoordinateFrame>
+            <Vector3 name='size'>
+              <X>3.11239</X>
+              <Y>1.78963</Y>
+              <Z>2.56772</Z>
+            </Vector3>
+            <Color3uint8 name='Color3uint8'>4287797402</Color3uint8>
+            <token name='Material'>896</token>
+            <token name='shape'>0</token>
+            <bool name='Anchored'>true</bool>
+            <bool name='CanCollide'>true</bool>
+            <bool name='CanTouch'>false</bool>
+            <bool name='CanQuery'>true</bool>
+            <bool name='CastShadow'>true</bool>
+            <float name='Transparency'>0.0</float>
+            <float name='Reflectance'>0</float>
+            <token name='TopSurface'>0</token>
+            <token name='BottomSurface'>0</token>
+          </Properties>
+        </Item>
+      </Item>
+      <Item class='Model' referent='RBX00000046'>
+        <Properties>
+          <string name='Name'>waterline_rocks-12</string>
+        </Properties>
+        <Item class='Part' referent='RBX00000047'>
+          <Properties>
+            <string name='Name'>Rock</string>
+            <CoordinateFrame name='CFrame'>
+              <X>-45.44056</X>
+              <Y>0.86506</Y>
+              <Z>-15.77365</Z>
+              <R00>0.049762258</R00>
+              <R01>-0.23438648</R01>
+              <R02>-0.97086904</R02>
+              <R10>0.12929553</R10>
+              <R11>0.96540532</R11>
+              <R12>-0.22644034</R12>
+              <R20>0.99035669</R20>
+              <R21>-0.11426085</R21>
+              <R22>0.078345874</R22>
+            </CoordinateFrame>
+            <Vector3 name='size'>
+              <X>3.84471</X>
+              <Y>2.21071</Y>
+              <Z>3.17188</Z>
+            </Vector3>
+            <Color3uint8 name='Color3uint8'>4287797402</Color3uint8>
+            <token name='Material'>896</token>
+            <token name='shape'>0</token>
+            <bool name='Anchored'>true</bool>
+            <bool name='CanCollide'>true</bool>
+            <bool name='CanTouch'>false</bool>
+            <bool name='CanQuery'>true</bool>
+            <bool name='CastShadow'>true</bool>
+            <float name='Transparency'>0.0</float>
+            <float name='Reflectance'>0</float>
+            <token name='TopSurface'>0</token>
+            <token name='BottomSurface'>0</token>
+          </Properties>
+        </Item>
+      </Item>
+      <Item class='Model' referent='RBX00000048'>
+        <Properties>
+          <string name='Name'>waterline_rocks-13</string>
+        </Properties>
+        <Item class='Part' referent='RBX00000049'>
+          <Properties>
+            <string name='Name'>Rock</string>
+            <CoordinateFrame name='CFrame'>
+              <X>38.13148</X>
+              <Y>0.46424</Y>
+              <Z>-9.32648</Z>
+              <R00>0.49567605</R00>
+              <R01>-0.1510239</R01>
+              <R02>-0.855276</R02>
+              <R10>0.14473462</R10>
+              <R11>0.98535861</R11>
+              <R12>-0.090112688</R12>
+              <R20>0.85636274</R20>
+              <R21>-0.079121347</R21>
+              <R22>0.51027705</R22>
+            </CoordinateFrame>
+            <Vector3 name='size'>
+              <X>2.06327</X>
+              <Y>1.18638</Y>
+              <Z>1.7022</Z>
+            </Vector3>
+            <Color3uint8 name='Color3uint8'>4287797402</Color3uint8>
+            <token name='Material'>896</token>
+            <token name='shape'>0</token>
+            <bool name='Anchored'>true</bool>
+            <bool name='CanCollide'>true</bool>
+            <bool name='CanTouch'>false</bool>
+            <bool name='CanQuery'>true</bool>
+            <bool name='CastShadow'>true</bool>
+            <float name='Transparency'>0.0</float>
+            <float name='Reflectance'>0</float>
+            <token name='TopSurface'>0</token>
+            <token name='BottomSurface'>0</token>
+          </Properties>
+        </Item>
+      </Item>
+      <Item class='Model' referent='RBX00000050'>
+        <Properties>
+          <string name='Name'>waterline_rocks-14</string>
+        </Properties>
+        <Item class='Part' referent='RBX00000051'>
+          <Properties>
+            <string name='Name'>Rock</string>
+            <CoordinateFrame name='CFrame'>
+              <X>-21.73507</X>
+              <Y>0.66198</Y>
+              <Z>-15.55032</Z>
+              <R00>0.92797254</R00>
+              <R01>-0.20547846</R01>
+              <R02>-0.3108787</R02>
+              <R10>0.16281592</R10>
+              <R11>0.97396458</R11>
+              <R12>-0.15774651</R12>
+              <R20>0.33519836</R20>
+              <R21>0.095768431</R21>
+              <R22>0.93726755</R22>
+            </CoordinateFrame>
+            <Vector3 name='size'>
+              <X>2.94213</X>
+              <Y>1.69172</Y>
+              <Z>2.42725</Z>
+            </Vector3>
+            <Color3uint8 name='Color3uint8'>4287797402</Color3uint8>
+            <token name='Material'>896</token>
+            <token name='shape'>0</token>
+            <bool name='Anchored'>true</bool>
+            <bool name='CanCollide'>true</bool>
+            <bool name='CanTouch'>false</bool>
+            <bool name='CanQuery'>true</bool>
+            <bool name='CastShadow'>true</bool>
+            <float name='Transparency'>0.0</float>
+            <float name='Reflectance'>0</float>
+            <token name='TopSurface'>0</token>
+            <token name='BottomSurface'>0</token>
+          </Properties>
+        </Item>
+      </Item>
+      <Item class='Model' referent='RBX00000052'>
+        <Properties>
+          <string name='Name'>waterline_rocks-15</string>
+        </Properties>
+        <Item class='Part' referent='RBX00000053'>
+          <Properties>
+            <string name='Name'>Rock</string>
+            <CoordinateFrame name='CFrame'>
+              <X>12.76659</X>
+              <Y>0.56593</Y>
+              <Z>-9.92063</Z>
+              <R00>0.97713613</R00>
+              <R01>-0.18306342</R01>
+              <R02>-0.1081331</R02>
+              <R10>0.16932228</R10>
+              <R11>0.97760597</R11>
+              <R12>-0.12496613</R12>
+              <R20>0.12858829</R20>
+              <R21>0.10379958</R21>
+              <R22>0.98625083</R22>
+            </CoordinateFrame>
+            <Vector3 name='size'>
+              <X>2.51523</X>
+              <Y>1.44626</Y>
+              <Z>2.07506</Z>
+            </Vector3>
+            <Color3uint8 name='Color3uint8'>4287797402</Color3uint8>
+            <token name='Material'>896</token>
+            <token name='shape'>0</token>
+            <bool name='Anchored'>true</bool>
+            <bool name='CanCollide'>true</bool>
+            <bool name='CanTouch'>false</bool>
+            <bool name='CanQuery'>true</bool>
+            <bool name='CastShadow'>true</bool>
+            <float name='Transparency'>0.0</float>
+            <float name='Reflectance'>0</float>
+            <token name='TopSurface'>0</token>
+            <token name='BottomSurface'>0</token>
+          </Properties>
+        </Item>
+      </Item>
+      <Item class='Model' referent='RBX00000054'>
+        <Properties>
+          <string name='Name'>waterline_rocks-16</string>
+        </Properties>
+        <Item class='Part' referent='RBX00000055'>
+          <Properties>
+            <string name='Name'>Rock</string>
+            <CoordinateFrame name='CFrame'>
+              <X>-46.12485</X>
+              <Y>0.83311</Y>
+              <Z>-9.17232</Z>
+              <R00>0.5659209</R00>
+              <R01>0.16325254</R01>
+              <R02>0.80813498</R02>
+              <R10>0.026438461</R10>
+              <R11>0.9761021</R11>
+              <R12>-0.21569816</R12>
+              <R20>-0.82403553</R20>
+              <R21>0.14343394</R21>
+              <R22>0.54808043</R22>
+            </CoordinateFrame>
+            <Vector3 name='size'>
+              <X>3.70271</X>
+              <Y>2.12906</Y>
+              <Z>3.05474</Z>
+            </Vector3>
+            <Color3uint8 name='Color3uint8'>4287797402</Color3uint8>
+            <token name='Material'>896</token>
+            <token name='shape'>0</token>
+            <bool name='Anchored'>true</bool>
+            <bool name='CanCollide'>true</bool>
+            <bool name='CanTouch'>false</bool>
+            <bool name='CanQuery'>true</bool>
+            <bool name='CastShadow'>true</bool>
+            <float name='Transparency'>0.0</float>
+            <float name='Reflectance'>0</float>
+            <token name='TopSurface'>0</token>
+            <token name='BottomSurface'>0</token>
+          </Properties>
+        </Item>
+      </Item>
+      <Item class='Model' referent='RBX00000056'>
+        <Properties>
+          <string name='Name'>waterline_rocks-17</string>
+        </Properties>
+        <Item class='Part' referent='RBX00000057'>
+          <Properties>
+            <string name='Name'>Rock</string>
+            <CoordinateFrame name='CFrame'>
+              <X>2.69017</X>
+              <Y>0.31131</Y>
+              <Z>-14.90235</Z>
+              <R00>0.86705711</R00>
+              <R01>-0.15864647</R01>
+              <R02>-0.47227457</R02>
+              <R10>0.16005398</R10>
+              <R11>0.98639554</R11>
+              <R12>-0.037504088</R12>
+              <R20>0.47179942</R20>
+              <R21>-0.043071239</R21>
+              <R22>0.88065327</R22>
+            </CoordinateFrame>
+            <Vector3 name='size'>
+              <X>1.3836</X>
+              <Y>0.79557</Y>
+              <Z>1.14147</Z>
+            </Vector3>
+            <Color3uint8 name='Color3uint8'>4287797402</Color3uint8>
+            <token name='Material'>896</token>
+            <token name='shape'>0</token>
+            <bool name='Anchored'>true</bool>
+            <bool name='CanCollide'>true</bool>
+            <bool name='CanTouch'>false</bool>
+            <bool name='CanQuery'>true</bool>
+            <bool name='CastShadow'>true</bool>
+            <float name='Transparency'>0.0</float>
+            <float name='Reflectance'>0</float>
+            <token name='TopSurface'>0</token>
+            <token name='BottomSurface'>0</token>
+          </Properties>
+        </Item>
+      </Item>
+      <Item class='Model' referent='RBX00000058'>
+        <Properties>
+          <string name='Name'>waterline_rocks-18</string>
+        </Properties>
+        <Item class='Part' referent='RBX00000059'>
+          <Properties>
+            <string name='Name'>Rock</string>
+            <CoordinateFrame name='CFrame'>
+              <X>36.66478</X>
+              <Y>0.66924</Y>
+              <Z>-9.14385</Z>
+              <R00>-0.26263559</R00>
+              <R01>-0.12378689</R01>
+              <R02>-0.95692181</R02>
+              <R10>0.12209978</R10>
+              <R11>0.97950064</R11>
+              <R12>-0.16021903</R12>
+              <R20>0.95713854</R20>
+              <R21>-0.15891916</R21>
+              <R22>-0.24213738</R22>
+            </CoordinateFrame>
+            <Vector3 name='size'>
+              <X>2.97441</X>
+              <Y>1.71029</Y>
+              <Z>2.45389</Z>
+            </Vector3>
+            <Color3uint8 name='Color3uint8'>4287797402</Color3uint8>
+            <token name='Material'>896</token>
+            <token name='shape'>0</token>
+            <bool name='Anchored'>true</bool>
+            <bool name='CanCollide'>true</bool>
+            <bool name='CanTouch'>false</bool>
+            <bool name='CanQuery'>true</bool>
+            <bool name='CastShadow'>true</bool>
+            <float name='Transparency'>0.0</float>
+            <float name='Reflectance'>0</float>
+            <token name='TopSurface'>0</token>
+            <token name='BottomSurface'>0</token>
+          </Properties>
+        </Item>
+      </Item>
+      <Item class='Model' referent='RBX00000060'>
+        <Properties>
+          <string name='Name'>dune_bushes-1</string>
+        </Properties>
+        <Item class='Part' referent='RBX00000061'>
+          <Properties>
+            <string name='Name'>Bush crown 1</string>
+            <CoordinateFrame name='CFrame'>
+              <X>-34.34934</X>
+              <Y>0.67084</Y>
+              <Z>44.72018</Z>
+              <R00>1</R00>
+              <R01>0</R01>
+              <R02>0</R02>
+              <R10>0</R10>
+              <R11>1</R11>
+              <R12>0</R12>
+              <R20>0</R20>
+              <R21>0</R21>
+              <R22>1</R22>
+            </CoordinateFrame>
+            <Vector3 name='size'>
+              <X>1.58126</X>
+              <Y>1.34407</Y>
+              <Z>1.58126</Z>
+            </Vector3>
+            <Color3uint8 name='Color3uint8'>4282348616</Color3uint8>
+            <token name='Material'>1280</token>
+            <token name='shape'>0</token>
+            <bool name='Anchored'>true</bool>
+            <bool name='CanCollide'>false</bool>
+            <bool name='CanTouch'>false</bool>
+            <bool name='CanQuery'>true</bool>
+            <bool name='CastShadow'>true</bool>
+            <float name='Transparency'>0.0</float>
+            <float name='Reflectance'>0</float>
+            <token name='TopSurface'>0</token>
+            <token name='BottomSurface'>0</token>
+          </Properties>
+        </Item>
+        <Item class='Part' referent='RBX00000062'>
+          <Properties>
+            <string name='Name'>Bush crown 2</string>
+            <CoordinateFrame name='CFrame'>
+              <X>-34.97226</X>
+              <Y>0.46</Y>
+              <Z>44.81602</Z>
+              <R00>1</R00>
+              <R01>0</R01>
+              <R02>0</R02>
+              <R10>0</R10>
+              <R11>1</R11>
+              <R12>0</R12>
+              <R20>0</R20>
+              <R21>0</R21>
+              <R22>1</R22>
+            </CoordinateFrame>
+            <Vector3 name='size'>
+              <X>1.19793</X>
+              <Y>1.01824</Y>
+              <Z>1.19793</Z>
+            </Vector3>
+            <Color3uint8 name='Color3uint8'>4285504344</Color3uint8>
+            <token name='Material'>1280</token>
+            <token name='shape'>0</token>
+            <bool name='Anchored'>true</bool>
+            <bool name='CanCollide'>false</bool>
+            <bool name='CanTouch'>false</bool>
+            <bool name='CanQuery'>true</bool>
+            <bool name='CastShadow'>true</bool>
+            <float name='Transparency'>0.0</float>
+            <float name='Reflectance'>0</float>
+            <token name='TopSurface'>0</token>
+            <token name='BottomSurface'>0</token>
+          </Properties>
+        </Item>
+        <Item class='Part' referent='RBX00000063'>
+          <Properties>
+            <string name='Name'>Bush crown 3</string>
+            <CoordinateFrame name='CFrame'>
+              <X>-33.7935</X>
+              <Y>0.47917</Y>
+              <Z>44.89268</Z>
+              <R00>1</R00>
+              <R01>0</R01>
+              <R02>0</R02>
+              <R10>0</R10>
+              <R11>1</R11>
+              <R12>0</R12>
+              <R20>0</R20>
+              <R21>0</R21>
+              <R22>1</R22>
+            </CoordinateFrame>
+            <Vector3 name='size'>
+              <X>1.19793</X>
+              <Y>1.01824</Y>
+              <Z>1.19793</Z>
+            </Vector3>
+            <Color3uint8 name='Color3uint8'>4282348616</Color3uint8>
+            <token name='Material'>1280</token>
+            <token name='shape'>0</token>
+            <bool name='Anchored'>true</bool>
+            <bool name='CanCollide'>false</bool>
+            <bool name='CanTouch'>false</bool>
+            <bool name='CanQuery'>true</bool>
+            <bool name='CastShadow'>true</bool>
+            <float name='Transparency'>0.0</float>
+            <float name='Reflectance'>0</float>
+            <token name='TopSurface'>0</token>
+            <token name='BottomSurface'>0</token>
+          </Properties>
+        </Item>
+        <Item class='Part' referent='RBX00000064'>
+          <Properties>
+            <string name='Name'>Bush crown 4</string>
+            <CoordinateFrame name='CFrame'>
+              <X>-34.30142</X>
+              <Y>0.46</Y>
+              <Z>44.12601</Z>
+              <R00>1</R00>
+              <R01>0</R01>
+              <R02>0</R02>
+              <R10>0</R10>
+              <R11>1</R11>
+              <R12>0</R12>
+              <R20>0</R20>
+              <R21>0</R21>
+              <R22>1</R22>
+            </CoordinateFrame>
+            <Vector3 name='size'>
+              <X>1.19793</X>
+              <Y>1.01824</Y>
+              <Z>1.19793</Z>
+            </Vector3>
+            <Color3uint8 name='Color3uint8'>4285504344</Color3uint8>
+            <token name='Material'>1280</token>
+            <token name='shape'>0</token>
+            <bool name='Anchored'>true</bool>
+            <bool name='CanCollide'>false</bool>
+            <bool name='CanTouch'>false</bool>
+            <bool name='CanQuery'>true</bool>
+            <bool name='CastShadow'>true</bool>
+            <float name='Transparency'>0.0</float>
+            <float name='Reflectance'>0</float>
+            <token name='TopSurface'>0</token>
+            <token name='BottomSurface'>0</token>
+          </Properties>
+        </Item>
+      </Item>
+      <Item class='Model' referent='RBX00000065'>
+        <Properties>
+          <string name='Name'>dune_bushes-2</string>
+        </Properties>
+        <Item class='Part' referent='RBX00000066'>
+          <Properties>
+            <string name='Name'>Bush crown 1</string>
+            <CoordinateFrame name='CFrame'>
+              <X>-28.57229</X>
+              <Y>0.71239</Y>
+              <Z>38.80245</Z>
+              <R00>1</R00>
+              <R01>0</R01>
+              <R02>0</R02>
+              <R10>0</R10>
+              <R11>1</R11>
+              <R12>0</R12>
+              <R20>0</R20>
+              <R21>0</R21>
+              <R22>1</R22>
+            </CoordinateFrame>
+            <Vector3 name='size'>
+              <X>1.67922</X>
+              <Y>1.42733</Y>
+              <Z>1.67922</Z>
+            </Vector3>
+            <Color3uint8 name='Color3uint8'>4282348616</Color3uint8>
+            <token name='Material'>1280</token>
+            <token name='shape'>0</token>
+            <bool name='Anchored'>true</bool>
+            <bool name='CanCollide'>false</bool>
+            <bool name='CanTouch'>false</bool>
+            <bool name='CanQuery'>true</bool>
+            <bool name='CastShadow'>true</bool>
+            <float name='Transparency'>0.0</float>
+            <float name='Reflectance'>0</float>
+            <token name='TopSurface'>0</token>
+            <token name='BottomSurface'>0</token>
+          </Properties>
+        </Item>
+        <Item class='Part' referent='RBX00000067'>
+          <Properties>
+            <string name='Name'>Bush crown 2</string>
+            <CoordinateFrame name='CFrame'>
+              <X>-29.2338</X>
+              <Y>0.4885</Y>
+              <Z>38.90422</Z>
+              <R00>1</R00>
+              <R01>0</R01>
+              <R02>0</R02>
+              <R10>0</R10>
+              <R11>1</R11>
+              <R12>0</R12>
+              <R20>0</R20>
+              <R21>0</R21>
+              <R22>1</R22>
+            </CoordinateFrame>
+            <Vector3 name='size'>
+              <X>1.27213</X>
+              <Y>1.08131</Y>
+              <Z>1.27213</Z>
+            </Vector3>
+            <Color3uint8 name='Color3uint8'>4285504344</Color3uint8>
+            <token name='Material'>1280</token>
+            <token name='shape'>0</token>
+            <bool name='Anchored'>true</bool>
+            <bool name='CanCollide'>false</bool>
+            <bool name='CanTouch'>false</bool>
+            <bool name='CanQuery'>true</bool>
+            <bool name='CastShadow'>true</bool>
+            <float name='Transparency'>0.0</float>
+            <float name='Reflectance'>0</float>
+            <token name='TopSurface'>0</token>
+            <token name='BottomSurface'>0</token>
+          </Properties>
+        </Item>
+        <Item class='Part' referent='RBX00000068'>
+          <Properties>
+            <string name='Name'>Bush crown 3</string>
+            <CoordinateFrame name='CFrame'>
+              <X>-27.98202</X>
+              <Y>0.50885</Y>
+              <Z>38.98564</Z>
+              <R00>1</R00>
+              <R01>0</R01>
+              <R02>0</R02>
+              <R10>0</R10>
+              <R11>1</R11>
+              <R12>0</R12>
+              <R20>0</R20>
+              <R21>0</R21>
+              <R22>1</R22>
+            </CoordinateFrame>
+            <Vector3 name='size'>
+              <X>1.27213</X>
+              <Y>1.08131</Y>
+              <Z>1.27213</Z>
+            </Vector3>
+            <Color3uint8 name='Color3uint8'>4282348616</Color3uint8>
+            <token name='Material'>1280</token>
+            <token name='shape'>0</token>
+            <bool name='Anchored'>true</bool>
+            <bool name='CanCollide'>false</bool>
+            <bool name='CanTouch'>false</bool>
+            <bool name='CanQuery'>true</bool>
+            <bool name='CastShadow'>true</bool>
+            <float name='Transparency'>0.0</float>
+            <float name='Reflectance'>0</float>
+            <token name='TopSurface'>0</token>
+            <token name='BottomSurface'>0</token>
+          </Properties>
+        </Item>
+        <Item class='Part' referent='RBX00000069'>
+          <Properties>
+            <string name='Name'>Bush crown 4</string>
+            <CoordinateFrame name='CFrame'>
+              <X>-28.5214</X>
+              <Y>0.4885</Y>
+              <Z>38.17147</Z>
+              <R00>1</R00>
+              <R01>0</R01>
+              <R02>0</R02>
+              <R10>0</R10>
+              <R11>1</R11>
+              <R12>0</R12>
+              <R20>0</R20>
+              <R21>0</R21>
+              <R22>1</R22>
+            </CoordinateFrame>
+            <Vector3 name='size'>
+              <X>1.27213</X>
+              <Y>1.08131</Y>
+              <Z>1.27213</Z>
+            </Vector3>
+            <Color3uint8 name='Color3uint8'>4285504344</Color3uint8>
+            <token name='Material'>1280</token>
+            <token name='shape'>0</token>
+            <bool name='Anchored'>true</bool>
+            <bool name='CanCollide'>false</bool>
+            <bool name='CanTouch'>false</bool>
+            <bool name='CanQuery'>true</bool>
+            <bool name='CastShadow'>true</bool>
+            <float name='Transparency'>0.0</float>
+            <float name='Reflectance'>0</float>
+            <token name='TopSurface'>0</token>
+            <token name='BottomSurface'>0</token>
+          </Properties>
+        </Item>
+      </Item>
+      <Item class='Model' referent='RBX00000070'>
+        <Properties>
+          <string name='Name'>dune_bushes-3</string>
+        </Properties>
+        <Item class='Part' referent='RBX00000071'>
+          <Properties>
+            <string name='Name'>Bush crown 1</string>
+            <CoordinateFrame name='CFrame'>
+              <X>41.40676</X>
+              <Y>0.63159</Y>
+              <Z>34.95484</Z>
+              <R00>1</R00>
+              <R01>0</R01>
+              <R02>0</R02>
+              <R10>0</R10>
+              <R11>1</R11>
+              <R12>0</R12>
+              <R20>0</R20>
+              <R21>0</R21>
+              <R22>1</R22>
+            </CoordinateFrame>
+            <Vector3 name='size'>
+              <X>1.48875</X>
+              <Y>1.26543</Y>
+              <Z>1.48875</Z>
+            </Vector3>
+            <Color3uint8 name='Color3uint8'>4282348616</Color3uint8>
+            <token name='Material'>1280</token>
+            <token name='shape'>0</token>
+            <bool name='Anchored'>true</bool>
+            <bool name='CanCollide'>false</bool>
+            <bool name='CanTouch'>false</bool>
+            <bool name='CanQuery'>true</bool>
+            <bool name='CastShadow'>true</bool>
+            <float name='Transparency'>0.0</float>
+            <float name='Reflectance'>0</float>
+            <token name='TopSurface'>0</token>
+            <token name='BottomSurface'>0</token>
+          </Properties>
+        </Item>
+        <Item class='Part' referent='RBX00000072'>
+          <Properties>
+            <string name='Name'>Bush crown 2</string>
+            <CoordinateFrame name='CFrame'>
+              <X>40.82028</X>
+              <Y>0.43309</Y>
+              <Z>35.04506</Z>
+              <R00>1</R00>
+              <R01>0</R01>
+              <R02>0</R02>
+              <R10>0</R10>
+              <R11>1</R11>
+              <R12>0</R12>
+              <R20>0</R20>
+              <R21>0</R21>
+              <R22>1</R22>
+            </CoordinateFrame>
+            <Vector3 name='size'>
+              <X>1.12784</X>
+              <Y>0.95866</Y>
+              <Z>1.12784</Z>
+            </Vector3>
+            <Color3uint8 name='Color3uint8'>4285504344</Color3uint8>
+            <token name='Material'>1280</token>
+            <token name='shape'>0</token>
+            <bool name='Anchored'>true</bool>
+            <bool name='CanCollide'>false</bool>
+            <bool name='CanTouch'>false</bool>
+            <bool name='CanQuery'>true</bool>
+            <bool name='CastShadow'>true</bool>
+            <float name='Transparency'>0.0</float>
+            <float name='Reflectance'>0</float>
+            <token name='TopSurface'>0</token>
+            <token name='BottomSurface'>0</token>
+          </Properties>
+        </Item>
+        <Item class='Part' referent='RBX00000073'>
+          <Properties>
+            <string name='Name'>Bush crown 3</string>
+            <CoordinateFrame name='CFrame'>
+              <X>41.93007</X>
+              <Y>0.45114</Y>
+              <Z>35.11725</Z>
+              <R00>1</R00>
+              <R01>0</R01>
+              <R02>0</R02>
+              <R10>0</R10>
+              <R11>1</R11>
+              <R12>0</R12>
+              <R20>0</R20>
+              <R21>0</R21>
+              <R22>1</R22>
+            </CoordinateFrame>
+            <Vector3 name='size'>
+              <X>1.12784</X>
+              <Y>0.95866</Y>
+              <Z>1.12784</Z>
+            </Vector3>
+            <Color3uint8 name='Color3uint8'>4282348616</Color3uint8>
+            <token name='Material'>1280</token>
+            <token name='shape'>0</token>
+            <bool name='Anchored'>true</bool>
+            <bool name='CanCollide'>false</bool>
+            <bool name='CanTouch'>false</bool>
+            <bool name='CanQuery'>true</bool>
+            <bool name='CastShadow'>true</bool>
+            <float name='Transparency'>0.0</float>
+            <float name='Reflectance'>0</float>
+            <token name='TopSurface'>0</token>
+            <token name='BottomSurface'>0</token>
+          </Properties>
+        </Item>
+        <Item class='Part' referent='RBX00000074'>
+          <Properties>
+            <string name='Name'>Bush crown 4</string>
+            <CoordinateFrame name='CFrame'>
+              <X>41.45187</X>
+              <Y>0.43309</Y>
+              <Z>34.39543</Z>
+              <R00>1</R00>
+              <R01>0</R01>
+              <R02>0</R02>
+              <R10>0</R10>
+              <R11>1</R11>
+              <R12>0</R12>
+              <R20>0</R20>
+              <R21>0</R21>
+              <R22>1</R22>
+            </CoordinateFrame>
+            <Vector3 name='size'>
+              <X>1.12784</X>
+              <Y>0.95866</Y>
+              <Z>1.12784</Z>
+            </Vector3>
+            <Color3uint8 name='Color3uint8'>4285504344</Color3uint8>
+            <token name='Material'>1280</token>
+            <token name='shape'>0</token>
+            <bool name='Anchored'>true</bool>
+            <bool name='CanCollide'>false</bool>
+            <bool name='CanTouch'>false</bool>
+            <bool name='CanQuery'>true</bool>
+            <bool name='CastShadow'>true</bool>
+            <float name='Transparency'>0.0</float>
+            <float name='Reflectance'>0</float>
+            <token name='TopSurface'>0</token>
+            <token name='BottomSurface'>0</token>
+          </Properties>
+        </Item>
+      </Item>
+      <Item class='Model' referent='RBX00000075'>
+        <Properties>
+          <string name='Name'>dune_bushes-4</string>
+        </Properties>
+        <Item class='Part' referent='RBX00000076'>
+          <Properties>
+            <string name='Name'>Bush crown 1</string>
+            <CoordinateFrame name='CFrame'>
+              <X>10.44037</X>
+              <Y>0.48556</Y>
+              <Z>33.36416</Z>
+              <R00>1</R00>
+              <R01>0</R01>
+              <R02>0</R02>
+              <R10>0</R10>
+              <R11>1</R11>
+              <R12>0</R12>
+              <R20>0</R20>
+              <R21>0</R21>
+              <R22>1</R22>
+            </CoordinateFrame>
+            <Vector3 name='size'>
+              <X>1.14454</X>
+              <Y>0.97286</Y>
+              <Z>1.14454</Z>
+            </Vector3>
+            <Color3uint8 name='Color3uint8'>4282348616</Color3uint8>
+            <token name='Material'>1280</token>
+            <token name='shape'>0</token>
+            <bool name='Anchored'>true</bool>
+            <bool name='CanCollide'>false</bool>
+            <bool name='CanTouch'>false</bool>
+            <bool name='CanQuery'>true</bool>
+            <bool name='CastShadow'>true</bool>
+            <float name='Transparency'>0.0</float>
+            <float name='Reflectance'>0</float>
+            <token name='TopSurface'>0</token>
+            <token name='BottomSurface'>0</token>
+          </Properties>
+        </Item>
+        <Item class='Part' referent='RBX00000077'>
+          <Properties>
+            <string name='Name'>Bush crown 2</string>
+            <CoordinateFrame name='CFrame'>
+              <X>9.98949</X>
+              <Y>0.33296</Y>
+              <Z>33.43353</Z>
+              <R00>1</R00>
+              <R01>0</R01>
+              <R02>0</R02>
+              <R10>0</R10>
+              <R11>1</R11>
+              <R12>0</R12>
+              <R20>0</R20>
+              <R21>0</R21>
+              <R22>1</R22>
+            </CoordinateFrame>
+            <Vector3 name='size'>
+              <X>0.86708</X>
+              <Y>0.73702</Y>
+              <Z>0.86708</Z>
+            </Vector3>
+            <Color3uint8 name='Color3uint8'>4285504344</Color3uint8>
+            <token name='Material'>1280</token>
+            <token name='shape'>0</token>
+            <bool name='Anchored'>true</bool>
+            <bool name='CanCollide'>false</bool>
+            <bool name='CanTouch'>false</bool>
+            <bool name='CanQuery'>true</bool>
+            <bool name='CastShadow'>true</bool>
+            <float name='Transparency'>0.0</float>
+            <float name='Reflectance'>0</float>
+            <token name='TopSurface'>0</token>
+            <token name='BottomSurface'>0</token>
+          </Properties>
+        </Item>
+        <Item class='Part' referent='RBX00000078'>
+          <Properties>
+            <string name='Name'>Bush crown 3</string>
+            <CoordinateFrame name='CFrame'>
+              <X>10.84269</X>
+              <Y>0.34683</Y>
+              <Z>33.48902</Z>
+              <R00>1</R00>
+              <R01>0</R01>
+              <R02>0</R02>
+              <R10>0</R10>
+              <R11>1</R11>
+              <R12>0</R12>
+              <R20>0</R20>
+              <R21>0</R21>
+              <R22>1</R22>
+            </CoordinateFrame>
+            <Vector3 name='size'>
+              <X>0.86708</X>
+              <Y>0.73702</Y>
+              <Z>0.86708</Z>
+            </Vector3>
+            <Color3uint8 name='Color3uint8'>4282348616</Color3uint8>
+            <token name='Material'>1280</token>
+            <token name='shape'>0</token>
+            <bool name='Anchored'>true</bool>
+            <bool name='CanCollide'>false</bool>
+            <bool name='CanTouch'>false</bool>
+            <bool name='CanQuery'>true</bool>
+            <bool name='CastShadow'>true</bool>
+            <float name='Transparency'>0.0</float>
+            <float name='Reflectance'>0</float>
+            <token name='TopSurface'>0</token>
+            <token name='BottomSurface'>0</token>
+          </Properties>
+        </Item>
+        <Item class='Part' referent='RBX00000079'>
+          <Properties>
+            <string name='Name'>Bush crown 4</string>
+            <CoordinateFrame name='CFrame'>
+              <X>10.47505</X>
+              <Y>0.33296</Y>
+              <Z>32.93409</Z>
+              <R00>1</R00>
+              <R01>0</R01>
+              <R02>0</R02>
+              <R10>0</R10>
+              <R11>1</R11>
+              <R12>0</R12>
+              <R20>0</R20>
+              <R21>0</R21>
+              <R22>1</R22>
+            </CoordinateFrame>
+            <Vector3 name='size'>
+              <X>0.86708</X>
+              <Y>0.73702</Y>
+              <Z>0.86708</Z>
+            </Vector3>
+            <Color3uint8 name='Color3uint8'>4285504344</Color3uint8>
+            <token name='Material'>1280</token>
+            <token name='shape'>0</token>
+            <bool name='Anchored'>true</bool>
+            <bool name='CanCollide'>false</bool>
+            <bool name='CanTouch'>false</bool>
+            <bool name='CanQuery'>true</bool>
+            <bool name='CastShadow'>true</bool>
+            <float name='Transparency'>0.0</float>
+            <float name='Reflectance'>0</float>
+            <token name='TopSurface'>0</token>
+            <token name='BottomSurface'>0</token>
+          </Properties>
+        </Item>
+      </Item>
+      <Item class='Model' referent='RBX00000080'>
+        <Properties>
+          <string name='Name'>dune_bushes-5</string>
+        </Properties>
+        <Item class='Part' referent='RBX00000081'>
+          <Properties>
+            <string name='Name'>Bush crown 1</string>
+            <CoordinateFrame name='CFrame'>
+              <X>27.22312</X>
+              <Y>0.61252</Y>
+              <Z>43.91039</Z>
+              <R00>1</R00>
+              <R01>0</R01>
+              <R02>0</R02>
+              <R10>0</R10>
+              <R11>1</R11>
+              <R12>0</R12>
+              <R20>0</R20>
+              <R21>0</R21>
+              <R22>1</R22>
+            </CoordinateFrame>
+            <Vector3 name='size'>
+              <X>1.4438</X>
+              <Y>1.22723</Y>
+              <Z>1.4438</Z>
+            </Vector3>
+            <Color3uint8 name='Color3uint8'>4282348616</Color3uint8>
+            <token name='Material'>1280</token>
+            <token name='shape'>0</token>
+            <bool name='Anchored'>true</bool>
+            <bool name='CanCollide'>false</bool>
+            <bool name='CanTouch'>false</bool>
+            <bool name='CanQuery'>true</bool>
+            <bool name='CastShadow'>true</bool>
+            <float name='Transparency'>0.0</float>
+            <float name='Reflectance'>0</float>
+            <token name='TopSurface'>0</token>
+            <token name='BottomSurface'>0</token>
+          </Properties>
+        </Item>
+        <Item class='Part' referent='RBX00000082'>
+          <Properties>
+            <string name='Name'>Bush crown 2</string>
+            <CoordinateFrame name='CFrame'>
+              <X>26.65435</X>
+              <Y>0.42001</Y>
+              <Z>43.99789</Z>
+              <R00>1</R00>
+              <R01>0</R01>
+              <R02>0</R02>
+              <R10>0</R10>
+              <R11>1</R11>
+              <R12>0</R12>
+              <R20>0</R20>
+              <R21>0</R21>
+              <R22>1</R22>
+            </CoordinateFrame>
+            <Vector3 name='size'>
+              <X>1.09379</X>
+              <Y>0.92972</Y>
+              <Z>1.09379</Z>
+            </Vector3>
+            <Color3uint8 name='Color3uint8'>4285504344</Color3uint8>
+            <token name='Material'>1280</token>
+            <token name='shape'>0</token>
+            <bool name='Anchored'>true</bool>
+            <bool name='CanCollide'>false</bool>
+            <bool name='CanTouch'>false</bool>
+            <bool name='CanQuery'>true</bool>
+            <bool name='CastShadow'>true</bool>
+            <float name='Transparency'>0.0</float>
+            <float name='Reflectance'>0</float>
+            <token name='TopSurface'>0</token>
+            <token name='BottomSurface'>0</token>
+          </Properties>
+        </Item>
+        <Item class='Part' referent='RBX00000083'>
+          <Properties>
+            <string name='Name'>Bush crown 3</string>
+            <CoordinateFrame name='CFrame'>
+              <X>27.73063</X>
+              <Y>0.43752</Y>
+              <Z>44.06789</Z>
+              <R00>1</R00>
+              <R01>0</R01>
+              <R02>0</R02>
+              <R10>0</R10>
+              <R11>1</R11>
+              <R12>0</R12>
+              <R20>0</R20>
+              <R21>0</R21>
+              <R22>1</R22>
+            </CoordinateFrame>
+            <Vector3 name='size'>
+              <X>1.09379</X>
+              <Y>0.92972</Y>
+              <Z>1.09379</Z>
+            </Vector3>
+            <Color3uint8 name='Color3uint8'>4282348616</Color3uint8>
+            <token name='Material'>1280</token>
+            <token name='shape'>0</token>
+            <bool name='Anchored'>true</bool>
+            <bool name='CanCollide'>false</bool>
+            <bool name='CanTouch'>false</bool>
+            <bool name='CanQuery'>true</bool>
+            <bool name='CastShadow'>true</bool>
+            <float name='Transparency'>0.0</float>
+            <float name='Reflectance'>0</float>
+            <token name='TopSurface'>0</token>
+            <token name='BottomSurface'>0</token>
+          </Properties>
+        </Item>
+        <Item class='Part' referent='RBX00000084'>
+          <Properties>
+            <string name='Name'>Bush crown 4</string>
+            <CoordinateFrame name='CFrame'>
+              <X>27.26687</X>
+              <Y>0.42001</Y>
+              <Z>43.36787</Z>
+              <R00>1</R00>
+              <R01>0</R01>
+              <R02>0</R02>
+              <R10>0</R10>
+              <R11>1</R11>
+              <R12>0</R12>
+              <R20>0</R20>
+              <R21>0</R21>
+              <R22>1</R22>
+            </CoordinateFrame>
+            <Vector3 name='size'>
+              <X>1.09379</X>
+              <Y>0.92972</Y>
+              <Z>1.09379</Z>
+            </Vector3>
+            <Color3uint8 name='Color3uint8'>4285504344</Color3uint8>
+            <token name='Material'>1280</token>
+            <token name='shape'>0</token>
+            <bool name='Anchored'>true</bool>
+            <bool name='CanCollide'>false</bool>
+            <bool name='CanTouch'>false</bool>
+            <bool name='CanQuery'>true</bool>
+            <bool name='CastShadow'>true</bool>
+            <float name='Transparency'>0.0</float>
+            <float name='Reflectance'>0</float>
+            <token name='TopSurface'>0</token>
+            <token name='BottomSurface'>0</token>
+          </Properties>
+        </Item>
+      </Item>
+      <Item class='Model' referent='RBX00000085'>
+        <Properties>
+          <string name='Name'>dune_bushes-6</string>
+        </Properties>
+        <Item class='Part' referent='RBX00000086'>
+          <Properties>
+            <string name='Name'>Bush crown 1</string>
+            <CoordinateFrame name='CFrame'>
+              <X>47.23481</X>
+              <Y>0.76092</Y>
+              <Z>42.34268</Z>
+              <R00>1</R00>
+              <R01>0</R01>
+              <R02>0</R02>
+              <R10>0</R10>
+              <R11>1</R11>
+              <R12>0</R12>
+              <R20>0</R20>
+              <R21>0</R21>
+              <R22>1</R22>
+            </CoordinateFrame>
+            <Vector3 name='size'>
+              <X>1.7936</X>
+              <Y>1.52456</Y>
+              <Z>1.7936</Z>
+            </Vector3>
+            <Color3uint8 name='Color3uint8'>4282348616</Color3uint8>
+            <token name='Material'>1280</token>
+            <token name='shape'>0</token>
+            <bool name='Anchored'>true</bool>
+            <bool name='CanCollide'>false</bool>
+            <bool name='CanTouch'>false</bool>
+            <bool name='CanQuery'>true</bool>
+            <bool name='CastShadow'>true</bool>
+            <float name='Transparency'>0.0</float>
+            <float name='Reflectance'>0</float>
+            <token name='TopSurface'>0</token>
+            <token name='BottomSurface'>0</token>
+          </Properties>
+        </Item>
+        <Item class='Part' referent='RBX00000087'>
+          <Properties>
+            <string name='Name'>Bush crown 2</string>
+            <CoordinateFrame name='CFrame'>
+              <X>46.52823</X>
+              <Y>0.52178</Y>
+              <Z>42.45138</Z>
+              <R00>1</R00>
+              <R01>0</R01>
+              <R02>0</R02>
+              <R10>0</R10>
+              <R11>1</R11>
+              <R12>0</R12>
+              <R20>0</R20>
+              <R21>0</R21>
+              <R22>1</R22>
+            </CoordinateFrame>
+            <Vector3 name='size'>
+              <X>1.35879</X>
+              <Y>1.15497</Y>
+              <Z>1.35879</Z>
+            </Vector3>
+            <Color3uint8 name='Color3uint8'>4285504344</Color3uint8>
+            <token name='Material'>1280</token>
+            <token name='shape'>0</token>
+            <bool name='Anchored'>true</bool>
+            <bool name='CanCollide'>false</bool>
+            <bool name='CanTouch'>false</bool>
+            <bool name='CanQuery'>true</bool>
+            <bool name='CastShadow'>true</bool>
+            <float name='Transparency'>0.0</float>
+            <float name='Reflectance'>0</float>
+            <token name='TopSurface'>0</token>
+            <token name='BottomSurface'>0</token>
+          </Properties>
+        </Item>
+        <Item class='Part' referent='RBX00000088'>
+          <Properties>
+            <string name='Name'>Bush crown 3</string>
+            <CoordinateFrame name='CFrame'>
+              <X>47.86528</X>
+              <Y>0.54352</Y>
+              <Z>42.53834</Z>
+              <R00>1</R00>
+              <R01>0</R01>
+              <R02>0</R02>
+              <R10>0</R10>
+              <R11>1</R11>
+              <R12>0</R12>
+              <R20>0</R20>
+              <R21>0</R21>
+              <R22>1</R22>
+            </CoordinateFrame>
+            <Vector3 name='size'>
+              <X>1.35879</X>
+              <Y>1.15497</Y>
+              <Z>1.35879</Z>
+            </Vector3>
+            <Color3uint8 name='Color3uint8'>4282348616</Color3uint8>
+            <token name='Material'>1280</token>
+            <token name='shape'>0</token>
+            <bool name='Anchored'>true</bool>
+            <bool name='CanCollide'>false</bool>
+            <bool name='CanTouch'>false</bool>
+            <bool name='CanQuery'>true</bool>
+            <bool name='CastShadow'>true</bool>
+            <float name='Transparency'>0.0</float>
+            <float name='Reflectance'>0</float>
+            <token name='TopSurface'>0</token>
+            <token name='BottomSurface'>0</token>
+          </Properties>
+        </Item>
+        <Item class='Part' referent='RBX00000089'>
+          <Properties>
+            <string name='Name'>Bush crown 4</string>
+            <CoordinateFrame name='CFrame'>
+              <X>47.28916</X>
+              <Y>0.52178</Y>
+              <Z>41.66872</Z>
+              <R00>1</R00>
+              <R01>0</R01>
+              <R02>0</R02>
+              <R10>0</R10>
+              <R11>1</R11>
+              <R12>0</R12>
+              <R20>0</R20>
+              <R21>0</R21>
+              <R22>1</R22>
+            </CoordinateFrame>
+            <Vector3 name='size'>
+              <X>1.35879</X>
+              <Y>1.15497</Y>
+              <Z>1.35879</Z>
+            </Vector3>
+            <Color3uint8 name='Color3uint8'>4285504344</Color3uint8>
+            <token name='Material'>1280</token>
+            <token name='shape'>0</token>
+            <bool name='Anchored'>true</bool>
+            <bool name='CanCollide'>false</bool>
+            <bool name='CanTouch'>false</bool>
+            <bool name='CanQuery'>true</bool>
+            <bool name='CastShadow'>true</bool>
+            <float name='Transparency'>0.0</float>
+            <float name='Reflectance'>0</float>
+            <token name='TopSurface'>0</token>
+            <token name='BottomSurface'>0</token>
+          </Properties>
+        </Item>
+      </Item>
+      <Item class='Model' referent='RBX00000090'>
+        <Properties>
+          <string name='Name'>dune_bushes-7</string>
+        </Properties>
+        <Item class='Part' referent='RBX00000091'>
+          <Properties>
+            <string name='Name'>Bush crown 1</string>
+            <CoordinateFrame name='CFrame'>
+              <X>-13.42342</X>
+              <Y>0.77732</Y>
+              <Z>37.57618</Z>
+              <R00>1</R00>
+              <R01>0</R01>
+              <R02>0</R02>
+              <R10>0</R10>
+              <R11>1</R11>
+              <R12>0</R12>
+              <R20>0</R20>
+              <R21>0</R21>
+              <R22>1</R22>
+            </CoordinateFrame>
+            <Vector3 name='size'>
+              <X>1.83224</X>
+              <Y>1.55741</Y>
+              <Z>1.83224</Z>
+            </Vector3>
+            <Color3uint8 name='Color3uint8'>4282348616</Color3uint8>
+            <token name='Material'>1280</token>
+            <token name='shape'>0</token>
+            <bool name='Anchored'>true</bool>
+            <bool name='CanCollide'>false</bool>
+            <bool name='CanTouch'>false</bool>
+            <bool name='CanQuery'>true</bool>
+            <bool name='CastShadow'>true</bool>
+            <float name='Transparency'>0.0</float>
+            <float name='Reflectance'>0</float>
+            <token name='TopSurface'>0</token>
+            <token name='BottomSurface'>0</token>
+          </Properties>
+        </Item>
+        <Item class='Part' referent='RBX00000092'>
+          <Properties>
+            <string name='Name'>Bush crown 2</string>
+            <CoordinateFrame name='CFrame'>
+              <X>-14.14522</X>
+              <Y>0.53302</Y>
+              <Z>37.68722</Z>
+              <R00>1</R00>
+              <R01>0</R01>
+              <R02>0</R02>
+              <R10>0</R10>
+              <R11>1</R11>
+              <R12>0</R12>
+              <R20>0</R20>
+              <R21>0</R21>
+              <R22>1</R22>
+            </CoordinateFrame>
+            <Vector3 name='size'>
+              <X>1.38806</X>
+              <Y>1.17985</Y>
+              <Z>1.38806</Z>
+            </Vector3>
+            <Color3uint8 name='Color3uint8'>4285504344</Color3uint8>
+            <token name='Material'>1280</token>
+            <token name='shape'>0</token>
+            <bool name='Anchored'>true</bool>
+            <bool name='CanCollide'>false</bool>
+            <bool name='CanTouch'>false</bool>
+            <bool name='CanQuery'>true</bool>
+            <bool name='CastShadow'>true</bool>
+            <float name='Transparency'>0.0</float>
+            <float name='Reflectance'>0</float>
+            <token name='TopSurface'>0</token>
+            <token name='BottomSurface'>0</token>
+          </Properties>
+        </Item>
+        <Item class='Part' referent='RBX00000093'>
+          <Properties>
+            <string name='Name'>Bush crown 3</string>
+            <CoordinateFrame name='CFrame'>
+              <X>-12.77936</X>
+              <Y>0.55523</Y>
+              <Z>37.77606</Z>
+              <R00>1</R00>
+              <R01>0</R01>
+              <R02>0</R02>
+              <R10>0</R10>
+              <R11>1</R11>
+              <R12>0</R12>
+              <R20>0</R20>
+              <R21>0</R21>
+              <R22>1</R22>
+            </CoordinateFrame>
+            <Vector3 name='size'>
+              <X>1.38806</X>
+              <Y>1.17985</Y>
+              <Z>1.38806</Z>
+            </Vector3>
+            <Color3uint8 name='Color3uint8'>4282348616</Color3uint8>
+            <token name='Material'>1280</token>
+            <token name='shape'>0</token>
+            <bool name='Anchored'>true</bool>
+            <bool name='CanCollide'>false</bool>
+            <bool name='CanTouch'>false</bool>
+            <bool name='CanQuery'>true</bool>
+            <bool name='CastShadow'>true</bool>
+            <float name='Transparency'>0.0</float>
+            <float name='Reflectance'>0</float>
+            <token name='TopSurface'>0</token>
+            <token name='BottomSurface'>0</token>
+          </Properties>
+        </Item>
+        <Item class='Part' referent='RBX00000094'>
+          <Properties>
+            <string name='Name'>Bush crown 4</string>
+            <CoordinateFrame name='CFrame'>
+              <X>-13.3679</X>
+              <Y>0.53302</Y>
+              <Z>36.8877</Z>
+              <R00>1</R00>
+              <R01>0</R01>
+              <R02>0</R02>
+              <R10>0</R10>
+              <R11>1</R11>
+              <R12>0</R12>
+              <R20>0</R20>
+              <R21>0</R21>
+              <R22>1</R22>
+            </CoordinateFrame>
+            <Vector3 name='size'>
+              <X>1.38806</X>
+              <Y>1.17985</Y>
+              <Z>1.38806</Z>
+            </Vector3>
+            <Color3uint8 name='Color3uint8'>4285504344</Color3uint8>
+            <token name='Material'>1280</token>
+            <token name='shape'>0</token>
+            <bool name='Anchored'>true</bool>
+            <bool name='CanCollide'>false</bool>
+            <bool name='CanTouch'>false</bool>
+            <bool name='CanQuery'>true</bool>
+            <bool name='CastShadow'>true</bool>
+            <float name='Transparency'>0.0</float>
+            <float name='Reflectance'>0</float>
+            <token name='TopSurface'>0</token>
+            <token name='BottomSurface'>0</token>
+          </Properties>
+        </Item>
+      </Item>
+      <Item class='Model' referent='RBX00000095'>
+        <Properties>
+          <string name='Name'>dune_bushes-8</string>
+        </Properties>
+        <Item class='Part' referent='RBX00000096'>
+          <Properties>
+            <string name='Name'>Bush crown 1</string>
+            <CoordinateFrame name='CFrame'>
+              <X>49.13711</X>
+              <Y>0.54475</Y>
+              <Z>41.73561</Z>
+              <R00>1</R00>
+              <R01>0</R01>
+              <R02>0</R02>
+              <R10>0</R10>
+              <R11>1</R11>
+              <R12>0</R12>
+              <R20>0</R20>
+              <R21>0</R21>
+              <R22>1</R22>
+            </CoordinateFrame>
+            <Vector3 name='size'>
+              <X>1.28405</X>
+              <Y>1.09144</Y>
+              <Z>1.28405</Z>
+            </Vector3>
+            <Color3uint8 name='Color3uint8'>4282348616</Color3uint8>
+            <token name='Material'>1280</token>
+            <token name='shape'>0</token>
+            <bool name='Anchored'>true</bool>
+            <bool name='CanCollide'>false</bool>
+            <bool name='CanTouch'>false</bool>
+            <bool name='CanQuery'>true</bool>
+            <bool name='CastShadow'>true</bool>
+            <float name='Transparency'>0.0</float>
+            <float name='Reflectance'>0</float>
+            <token name='TopSurface'>0</token>
+            <token name='BottomSurface'>0</token>
+          </Properties>
+        </Item>
+        <Item class='Part' referent='RBX00000097'>
+          <Properties>
+            <string name='Name'>Bush crown 2</string>
+            <CoordinateFrame name='CFrame'>
+              <X>48.63127</X>
+              <Y>0.37354</Y>
+              <Z>41.81343</Z>
+              <R00>1</R00>
+              <R01>0</R01>
+              <R02>0</R02>
+              <R10>0</R10>
+              <R11>1</R11>
+              <R12>0</R12>
+              <R20>0</R20>
+              <R21>0</R21>
+              <R22>1</R22>
+            </CoordinateFrame>
+            <Vector3 name='size'>
+              <X>0.97276</X>
+              <Y>0.82685</Y>
+              <Z>0.97276</Z>
+            </Vector3>
+            <Color3uint8 name='Color3uint8'>4285504344</Color3uint8>
+            <token name='Material'>1280</token>
+            <token name='shape'>0</token>
+            <bool name='Anchored'>true</bool>
+            <bool name='CanCollide'>false</bool>
+            <bool name='CanTouch'>false</bool>
+            <bool name='CanQuery'>true</bool>
+            <bool name='CastShadow'>true</bool>
+            <float name='Transparency'>0.0</float>
+            <float name='Reflectance'>0</float>
+            <token name='TopSurface'>0</token>
+            <token name='BottomSurface'>0</token>
+          </Properties>
+        </Item>
+        <Item class='Part' referent='RBX00000098'>
+          <Properties>
+            <string name='Name'>Bush crown 3</string>
+            <CoordinateFrame name='CFrame'>
+              <X>49.58847</X>
+              <Y>0.3891</Y>
+              <Z>41.87569</Z>
+              <R00>1</R00>
+              <R01>0</R01>
+              <R02>0</R02>
+              <R10>0</R10>
+              <R11>1</R11>
+              <R12>0</R12>
+              <R20>0</R20>
+              <R21>0</R21>
+              <R22>1</R22>
+            </CoordinateFrame>
+            <Vector3 name='size'>
+              <X>0.97276</X>
+              <Y>0.82685</Y>
+              <Z>0.97276</Z>
+            </Vector3>
+            <Color3uint8 name='Color3uint8'>4282348616</Color3uint8>
+            <token name='Material'>1280</token>
+            <token name='shape'>0</token>
+            <bool name='Anchored'>true</bool>
+            <bool name='CanCollide'>false</bool>
+            <bool name='CanTouch'>false</bool>
+            <bool name='CanQuery'>true</bool>
+            <bool name='CastShadow'>true</bool>
+            <float name='Transparency'>0.0</float>
+            <float name='Reflectance'>0</float>
+            <token name='TopSurface'>0</token>
+            <token name='BottomSurface'>0</token>
+          </Properties>
+        </Item>
+        <Item class='Part' referent='RBX00000099'>
+          <Properties>
+            <string name='Name'>Bush crown 4</string>
+            <CoordinateFrame name='CFrame'>
+              <X>49.17602</X>
+              <Y>0.37354</Y>
+              <Z>41.25312</Z>
+              <R00>1</R00>
+              <R01>0</R01>
+              <R02>0</R02>
+              <R10>0</R10>
+              <R11>1</R11>
+              <R12>0</R12>
+              <R20>0</R20>
+              <R21>0</R21>
+              <R22>1</R22>
+            </CoordinateFrame>
+            <Vector3 name='size'>
+              <X>0.97276</X>
+              <Y>0.82685</Y>
+              <Z>0.97276</Z>
+            </Vector3>
+            <Color3uint8 name='Color3uint8'>4285504344</Color3uint8>
+            <token name='Material'>1280</token>
+            <token name='shape'>0</token>
+            <bool name='Anchored'>true</bool>
+            <bool name='CanCollide'>false</bool>
+            <bool name='CanTouch'>false</bool>
+            <bool name='CanQuery'>true</bool>
+            <bool name='CastShadow'>true</bool>
+            <float name='Transparency'>0.0</float>
+            <float name='Reflectance'>0</float>
+            <token name='TopSurface'>0</token>
+            <token name='BottomSurface'>0</token>
+          </Properties>
+        </Item>
+      </Item>
+      <Item class='Model' referent='RBX00000100'>
+        <Properties>
+          <string name='Name'>dune_bushes-9</string>
+        </Properties>
+        <Item class='Part' referent='RBX00000101'>
+          <Properties>
+            <string name='Name'>Bush crown 1</string>
+            <CoordinateFrame name='CFrame'>
+              <X>19.02788</X>
+              <Y>0.72661</Y>
+              <Z>43.28331</Z>
+              <R00>1</R00>
+              <R01>0</R01>
+              <R02>0</R02>
+              <R10>0</R10>
+              <R11>1</R11>
+              <R12>0</R12>
+              <R20>0</R20>
+              <R21>0</R21>
+              <R22>1</R22>
+            </CoordinateFrame>
+            <Vector3 name='size'>
+              <X>1.71273</X>
+              <Y>1.45582</Y>
+              <Z>1.71273</Z>
+            </Vector3>
+            <Color3uint8 name='Color3uint8'>4282348616</Color3uint8>
+            <token name='Material'>1280</token>
+            <token name='shape'>0</token>
+            <bool name='Anchored'>true</bool>
+            <bool name='CanCollide'>false</bool>
+            <bool name='CanTouch'>false</bool>
+            <bool name='CanQuery'>true</bool>
+            <bool name='CastShadow'>true</bool>
+            <float name='Transparency'>0.0</float>
+            <float name='Reflectance'>0</float>
+            <token name='TopSurface'>0</token>
+            <token name='BottomSurface'>0</token>
+          </Properties>
+        </Item>
+        <Item class='Part' referent='RBX00000102'>
+          <Properties>
+            <string name='Name'>Bush crown 2</string>
+            <CoordinateFrame name='CFrame'>
+              <X>18.35317</X>
+              <Y>0.49825</Y>
+              <Z>43.38711</Z>
+              <R00>1</R00>
+              <R01>0</R01>
+              <R02>0</R02>
+              <R10>0</R10>
+              <R11>1</R11>
+              <R12>0</R12>
+              <R20>0</R20>
+              <R21>0</R21>
+              <R22>1</R22>
+            </CoordinateFrame>
+            <Vector3 name='size'>
+              <X>1.29752</X>
+              <Y>1.10289</Y>
+              <Z>1.29752</Z>
+            </Vector3>
+            <Color3uint8 name='Color3uint8'>4285504344</Color3uint8>
+            <token name='Material'>1280</token>
+            <token name='shape'>0</token>
+            <bool name='Anchored'>true</bool>
+            <bool name='CanCollide'>false</bool>
+            <bool name='CanTouch'>false</bool>
+            <bool name='CanQuery'>true</bool>
+            <bool name='CastShadow'>true</bool>
+            <float name='Transparency'>0.0</float>
+            <float name='Reflectance'>0</float>
+            <token name='TopSurface'>0</token>
+            <token name='BottomSurface'>0</token>
+          </Properties>
+        </Item>
+        <Item class='Part' referent='RBX00000103'>
+          <Properties>
+            <string name='Name'>Bush crown 3</string>
+            <CoordinateFrame name='CFrame'>
+              <X>19.62993</X>
+              <Y>0.51901</Y>
+              <Z>43.47015</Z>
+              <R00>1</R00>
+              <R01>0</R01>
+              <R02>0</R02>
+              <R10>0</R10>
+              <R11>1</R11>
+              <R12>0</R12>
+              <R20>0</R20>
+              <R21>0</R21>
+              <R22>1</R22>
+            </CoordinateFrame>
+            <Vector3 name='size'>
+              <X>1.29752</X>
+              <Y>1.10289</Y>
+              <Z>1.29752</Z>
+            </Vector3>
+            <Color3uint8 name='Color3uint8'>4282348616</Color3uint8>
+            <token name='Material'>1280</token>
+            <token name='shape'>0</token>
+            <bool name='Anchored'>true</bool>
+            <bool name='CanCollide'>false</bool>
+            <bool name='CanTouch'>false</bool>
+            <bool name='CanQuery'>true</bool>
+            <bool name='CastShadow'>true</bool>
+            <float name='Transparency'>0.0</float>
+            <float name='Reflectance'>0</float>
+            <token name='TopSurface'>0</token>
+            <token name='BottomSurface'>0</token>
+          </Properties>
+        </Item>
+        <Item class='Part' referent='RBX00000104'>
+          <Properties>
+            <string name='Name'>Bush crown 4</string>
+            <CoordinateFrame name='CFrame'>
+              <X>19.07978</X>
+              <Y>0.49825</Y>
+              <Z>42.63974</Z>
+              <R00>1</R00>
+              <R01>0</R01>
+              <R02>0</R02>
+              <R10>0</R10>
+              <R11>1</R11>
+              <R12>0</R12>
+              <R20>0</R20>
+              <R21>0</R21>
+              <R22>1</R22>
+            </CoordinateFrame>
+            <Vector3 name='size'>
+              <X>1.29752</X>
+              <Y>1.10289</Y>
+              <Z>1.29752</Z>
+            </Vector3>
+            <Color3uint8 name='Color3uint8'>4285504344</Color3uint8>
+            <token name='Material'>1280</token>
+            <token name='shape'>0</token>
+            <bool name='Anchored'>true</bool>
+            <bool name='CanCollide'>false</bool>
+            <bool name='CanTouch'>false</bool>
+            <bool name='CanQuery'>true</bool>
+            <bool name='CastShadow'>true</bool>
+            <float name='Transparency'>0.0</float>
+            <float name='Reflectance'>0</float>
+            <token name='TopSurface'>0</token>
+            <token name='BottomSurface'>0</token>
+          </Properties>
+        </Item>
+      </Item>
+      <Item class='Model' referent='RBX00000105'>
+        <Properties>
+          <string name='Name'>spawn</string>
+        </Properties>
+        <Item class='SpawnLocation' referent='RBX00000106'>
+          <Properties>
+            <string name='Name'>Player spawn</string>
+            <CoordinateFrame name='CFrame'>
+              <X>-48</X>
+              <Y>0.35</Y>
+              <Z>34</Z>
+              <R00>0.25881905</R00>
+              <R01>0</R01>
+              <R02>0.96592583</R02>
+              <R10>0</R10>
+              <R11>1</R11>
+              <R12>0</R12>
+              <R20>-0.96592583</R20>
+              <R21>0</R21>
+              <R22>0.25881905</R22>
+            </CoordinateFrame>
+            <Vector3 name='size'>
+              <X>6</X>
+              <Y>0.3</Y>
+              <Z>6</Z>
+            </Vector3>
+            <Color3uint8 name='Color3uint8'>4291282363</Color3uint8>
+            <token name='Material'>816</token>
+            <bool name='Anchored'>true</bool>
+            <bool name='CanCollide'>true</bool>
+            <bool name='CanTouch'>false</bool>
+            <bool name='CanQuery'>true</bool>
+            <bool name='CastShadow'>false</bool>
+            <float name='Transparency'>1.0</float>
+            <float name='Reflectance'>0</float>
+            <token name='TopSurface'>0</token>
+            <token name='BottomSurface'>0</token>
+            <bool name='Neutral'>true</bool>
+            <bool name='Enabled'>true</bool>
+            <bool name='AllowTeamChangeOnTouch'>false</bool>
+            <float name='Duration'>0</float>
+          </Properties>
+        </Item>
+      </Item>
+    </Item>
+    <Item class='Camera' referent='RBX00000107'>
+      <Properties>
+        <string name='Name'>Camera</string>
+        <CoordinateFrame name='CFrame'>
+          <X>54</X>
+          <Y>31</Y>
+          <Z>58</Z>
+          <R00>0.77859618</R00>
+          <R01>-0.20657733</R01>
+          <R02>0.59254855</R02>
+          <R10>0</R10>
+          <R11>0.94426244</R11>
+          <R12>0.32919364</R12>
+          <R20>-0.62752528</R20>
+          <R21>-0.25630891</R21>
+          <R22>0.73519913</R22>
+        </CoordinateFrame>
+        <CoordinateFrame name='Focus'>
+          <X>0</X>
+          <Y>1</Y>
+          <Z>-9</Z>
+          <R00>1</R00>
+          <R01>0</R01>
+          <R02>0</R02>
+          <R10>0</R10>
+          <R11>1</R11>
+          <R12>0</R12>
+          <R20>0</R20>
+          <R21>0</R21>
+          <R22>1</R22>
+        </CoordinateFrame>
+        <float name='FieldOfView'>52</float>
+        <token name='CameraType'>0</token>
+      </Properties>
+    </Item>
+  </Item>
+  <Item class='MaterialService' referent='RBX00000108'>
+    <Properties>
+      <string name='Name'>MaterialService</string>
+      <bool name='Use2022Materials'>true</bool>
+    </Properties>
+  </Item>
+  <Item class='Lighting' referent='RBX00000109'>
+    <Properties>
+      <string name='Name'>Lighting</string>
+      <float name='ClockTime'>15.25</float>
+      <float name='Brightness'>2.2</float>
+      <bool name='GlobalShadows'>true</bool>
+      <Color3 name='Ambient'>
+        <R>0.40784314</R>
+        <G>0.45882353</G>
+        <B>0.50588235</B>
+      </Color3>
+      <Color3 name='OutdoorAmbient'>
+        <R>0.60392157</R>
+        <G>0.63921569</G>
+        <B>0.65882353</B>
+      </Color3>
+      <float name='ExposureCompensation'>0.05</float>
+      <float name='GeographicLatitude'>42</float>
+      <float name='ShadowSoftness'>0.32</float>
+      <float name='FogStart'>400</float>
+      <float name='FogEnd'>1500</float>
+      <Color3 name='FogColor'>
+        <R>0.74509804</R>
+        <G>0.81960784</G>
+        <B>0.8627451</B>
+      </Color3>
+    </Properties>
+    <Item class='Sky' referent='RBX00000110'>
+      <Properties>
+        <string name='Name'>Clear daylight</string>
+        <int name='StarCount'>0</int>
+      </Properties>
+    </Item>
+  </Item>
+  <Item class='StarterPlayer' referent='RBX00000111'>
+    <Properties>
+      <string name='Name'>StarterPlayer</string>
+      <float name='CameraMinZoomDistance'>2</float>
+      <float name='CameraMaxZoomDistance'>180</float>
+      <float name='CharacterWalkSpeed'>16</float>
+    </Properties>
+  </Item>
+  <Item class='Players' referent='RBX00000112'>
+    <Properties>
+      <string name='Name'>Players</string>
+    </Properties>
+  </Item>
+  <Item class='ReplicatedStorage' referent='RBX00000113'>
+    <Properties>
+      <string name='Name'>ReplicatedStorage</string>
+    </Properties>
+  </Item>
+  <Item class='ServerScriptService' referent='RBX00000114'>
+    <Properties>
+      <string name='Name'>ServerScriptService</string>
+    </Properties>
+  </Item>
+  <Item class='Teams' referent='RBX00000115'>
+    <Properties>
+      <string name='Name'>Teams</string>
+    </Properties>
+  </Item>
+</roblox>
