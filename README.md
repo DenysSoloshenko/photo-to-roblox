@@ -1,59 +1,91 @@
-# SceneFoundry — photo to editable Roblox map
+# SceneFoundry — Photo to Editable Roblox Map
 
-Первый сквозной прототип сервиса, который превращает фотографию реальной локации в редактируемую Roblox-карту:
+SceneFoundry is an end-to-end prototype that turns a photograph of a real location into an editable Roblox place:
 
-`photo → OpenAI vision → SceneSpec JSON → deterministic compiler → SceneIR → Three.js preview / .rbxlx`
+`photo → OpenAI Vision → SceneSpec JSON → deterministic compiler → SceneIR → Three.js preview / .rbxlx`
 
-Пользовательский JSON не подготавливается вручную: production-сценарий получает его как strict structured output от vision-модели. Три JSON-файла в `examples/` используются только для разработки и автоматических тестов.
+The production workflow does not require a user to write JSON or custom code for each photograph. The vision model creates a compact, structured scene description; trusted application code validates it, builds the geometry, renders the preview, and exports a real Roblox XML place file.
 
-## Что уже работает
+## Visual Example
 
-- загрузка JPEG, PNG или WebP до 10 MB;
-- vision-анализ через OpenAI Responses API с изображением в Base64 data URL;
-- компактный `SceneSpec 1.0` с поверхностями, ломаными дорожками, объектами, повторяемыми группами, точкой появления и камерой;
-- серверная валидация диапазонов, semantic ID, ссылок, позиции spawn и лимитов сцены с точными JSON-путями ошибок;
-- детерминированная сборка: одинаковые `SceneSpec + seed + component_version` дают одинаковую геометрию;
-- единый `SceneIR` для интерактивного Three.js-превью и Roblox-экспорта;
-- настоящий XML place-файл `.rbxlx` с редактируемыми `Model`, `Part`, `SpawnLocation`, камерой и освещением;
-- время vision, сборки и всего заказа, token usage, расчётная стоимость API и `order_id` в ответе; успешный заказ также пишется структурированным событием `scene_order_completed` в Rails log;
-- безопасная сборка без генерации/исполнения кода моделью, скриптов Roblox и внешних asset ID.
+### Real-world reference photograph
 
-## Быстрый старт
+![A waterfront path with trees, vegetation, water, and distant terrain](docs/images/reference-waterfront.jpg)
 
-Нужны Ruby 3.3.4, Bundler, Node.js 22+ и npm.
+### Editable scene preview
+
+![SceneFoundry interface showing an editable Riverside Park SceneIR preview](docs/images/editable-scene-preview.jpg)
+
+The second image is the checked-in development fixture rendered by the running application. It demonstrates the editable SceneIR, Three.js preview, metrics, and export workflow; it is not presented as a live inference result for the photograph above. Add `OPENAI_API_KEY` and upload a new image to exercise the complete vision path.
+
+## What Works
+
+- JPEG, PNG, and WebP uploads up to 10 MB.
+- Image analysis through the OpenAI Responses API using a Base64 data URL.
+- Strict structured output using the versioned `SceneSpec 1.0` schema.
+- Surfaces, polyline paths, objects, repeated object groups, spawn position, camera, and source assumptions.
+- Server-side validation of numeric ranges, semantic IDs, references, spawn safety, and scene budgets with precise JSON error paths.
+- Deterministic compilation: the same `SceneSpec + seed + component_version` produces the same geometry.
+- A shared `SceneIR` consumed by both the interactive Three.js preview and the Roblox exporter.
+- A genuine `.rbxlx` XML place containing editable `Model`, `Part`, and `SpawnLocation` instances, plus camera and lighting configuration.
+- Per-order timing, token usage, estimated API cost, and an `order_id` in the API response.
+- Structured `scene_order_completed` events in the Rails log.
+- Safe geometry generation without model-produced executable code, Roblox scripts, or untrusted external asset IDs.
+
+## Architecture
+
+| Layer | Responsibility |
+| --- | --- |
+| React + TypeScript | Upload workflow, SceneSpec editor, metrics, Three.js preview, and `.rbxlx` download |
+| Rails API | File validation, orchestration, compilation, export, and error handling |
+| OpenAI Vision | Converts a new photograph into strict `SceneSpec 1.0` structured output |
+| `Scene::Validator` | Enforces semantic, geometric, reference, spawn, and budget constraints |
+| `Scene::Compiler` | Expands registered components into deterministic, portable `SceneIR` |
+| `Roblox::Exporter` | Serializes the same `SceneIR` into an editable Roblox XML place |
+
+The coordinate system is fixed to `Y up` and `-Z forward`, with dimensions expressed in Roblox studs. Inferred content outside the photograph is recorded in `source.assumptions`, while `source.scale_confidence` communicates scale uncertainty.
+
+### Processing flow
+
+1. `POST /api/v1/scenes/analyze` validates the uploaded image and sends it to the vision model.
+2. The model must return data matching `config/schema/scene_spec.schema.json`.
+3. `Scene::Validator` applies the constraints that are intentionally kept outside the Structured Outputs-compatible schema.
+4. `Scene::Compiler` expands only registered components: `tree`, `bush`, `rock`, `bench`, `fence`, and `building`.
+5. A semantic object's seed is derived from the global seed, semantic ID, and component-library version, so editing one object does not reshuffle unrelated geometry.
+6. React/Three.js renders the resulting `SceneIR`.
+7. `Roblox::Exporter` converts that same `SceneIR` into `.rbxlx`, grouping parts by semantic ID.
+
+## Quick Start
+
+Requirements:
+
+- Ruby 3.3.4
+- Bundler
+- Node.js 22 or newer
+- npm
 
 ```bash
 cp .env.example .env
-# впишите OPENAI_API_KEY в .env
+# Add OPENAI_API_KEY to .env
 bin/setup --skip-server
 bin/dev
 ```
 
-Откройте `http://127.0.0.1:5173`. `bin/dev` запускает Rails на `3000`, Vite на `5173` и читает локальный `.env`; уже заданные переменные окружения имеют приоритет.
+Open [http://127.0.0.1:5173](http://127.0.0.1:5173). `bin/dev` starts Rails on port `3000`, Vite on port `5173`, and loads the local `.env` file. Existing environment variables take precedence.
 
-Без ключа UI честно блокирует загрузку фото. Кнопка development-примера остаётся доступной только в `development`/`test` и не выдаётся за результат распознавания.
-
-## Архитектура
-
-1. `POST /api/v1/scenes/analyze` проверяет файл и отправляет фото vision-модели.
-2. Модель обязана вернуть структуру из `config/schema/scene_spec.schema.json`. Схема ограничена поддерживаемым Structured Outputs подмножеством JSON Schema; числовые диапазоны и межобъектные правила дополнительно проверяет `Scene::Validator`.
-3. `Scene::Compiler` раскрывает только зарегистрированные компоненты (`tree`, `bush`, `rock`, `bench`, `fence`, `building`) в плоский, переносимый `SceneIR`.
-4. Seed каждого semantic object выводится из глобального seed, semantic ID и версии библиотеки. Изменение одного объекта не перетасовывает остальные.
-5. React/Three.js отображает `SceneIR`. `Roblox::Exporter` получает тот же `SceneIR`, группирует части по semantic ID и сериализует Roblox XML place.
-
-Оси зафиксированы как `Y up`, `-Z forward`; размеры указаны в studs. Невидимые области описываются в `source.assumptions`, а масштаб — через `source.scale_confidence`.
+Without an API key, the UI blocks photograph analysis and explains why. The development example remains available only in `development` and `test`; it is never reported as a vision result.
 
 ## API
 
-| Метод | Endpoint | Назначение |
+| Method | Endpoint | Purpose |
 | --- | --- | --- |
-| `GET` | `/api/v1/status` | готовность vision, модель, версия компонентов |
-| `GET` | `/api/v1/scenes/schema` | strict-generation JSON Schema |
-| `POST` | `/api/v1/scenes/analyze` | multipart `photo` + необязательный `hint` → SceneSpec, SceneIR, metrics |
-| `POST` | `/api/v1/scenes/compile` | изменённый `scene_spec` → SceneIR |
-| `POST` | `/api/v1/scenes/export` | изменённый `scene_spec` → `.rbxlx` |
+| `GET` | `/api/v1/status` | Vision readiness, selected model, and component version |
+| `GET` | `/api/v1/scenes/schema` | Structured-generation JSON Schema |
+| `POST` | `/api/v1/scenes/analyze` | Multipart `photo` and optional `hint` → SceneSpec, SceneIR, and metrics |
+| `POST` | `/api/v1/scenes/compile` | Edited `scene_spec` → SceneIR |
+| `POST` | `/api/v1/scenes/export` | Edited `scene_spec` → `.rbxlx` |
 
-Успешный анализ возвращает, среди прочего:
+A successful analysis includes operational metrics:
 
 ```json
 {
@@ -71,41 +103,50 @@ bin/dev
 }
 ```
 
-Стоимость вычисляется из фактического token usage ответа. Тарифы в `Vision::SceneAnalyzer` проверены 2026-09-10; для неизвестной модели стоимость возвращается как `null`, а не угадывается.
+Estimated cost is calculated from the response's actual token usage. Pricing entries in `Vision::SceneAnalyzer` were last checked on 2026-09-10. An unknown model returns `null` for cost rather than inventing an estimate.
 
-## Детерминизм и ограничения
+## Determinism and Safety
 
-- Лимиты по умолчанию: 1 500 частей и 120 000 оценочных треугольников; expansion повторяемых групп проверяется заранее.
-- Spawn запрещён в воде и внутри зданий; semantic ID уникальны, ссылки на поверхность/путь обязаны существовать.
-- Одна фотография не даёт истинную глубину или скрытую геометрию. Прототип сохраняет узнаваемую композицию и явно отмечает предположения, но не обещает фотограмметрическую точность.
-- Геометрия первого этапа собрана из Roblox primitives. Текстуры, MeshPart, Terrain voxels и multiplayer/job persistence оставлены за следующим этапом.
-- API-цена является расчётной по usage и прайсу, а не биллинговой квитанцией.
+- Default limits are 1,500 parts and 120,000 estimated triangles.
+- Repeated-group expansion is checked before geometry is produced.
+- Semantic IDs must be unique, and surface/path references must resolve.
+- Spawn locations are rejected when they intersect water or buildings.
+- The model produces data, not executable source code.
+- The compiler uses a fixed component registry and the exporter emits no Roblox scripts.
+- Local secrets such as `.env`, `config/master.key`, and API keys are excluded from Git.
 
-## Проверка
+## Verification
 
 ```bash
 bin/verify
 bundle exec rails scenes:generate
 ```
 
-`bin/verify` запускает Rails-тесты, TypeScript typecheck, production build и `git diff --check`. Генератор создаёт три контрольных файла в `generated_maps/` и записывает фактические локальные времена/размеры в `generated_maps/generation_metrics.json`.
+`bin/verify` runs the Rails test suite, TypeScript type checking, the Vite production build, and `git diff --check`. The scene generator writes three development fixtures to `generated_maps/` and records actual local processing time and file sizes in `generated_maps/generation_metrics.json`.
 
-Последняя проверка этого коммита:
+Latest verified baseline:
 
-- Rails: 15 tests, 68 assertions, 0 failures;
-- frontend: TypeScript typecheck и Vite production build — успешно;
-- browser E2E: сцена появилась в WebGL, изменение repeat count уменьшило карту со 105 до 77 частей, export endpoint отдал `.rbxlx`;
-- `.rbxlx`: XML разбирается, число частей совпадает с SceneIR, есть ровно один SpawnLocation, scripts отсутствуют;
-- контрольная генерация: coast 70 parts / 108.52 ms, courtyard 110 / 121.55 ms, park 105 / 129.51 ms.
+- Rails: 15 tests, 68 assertions, 0 failures.
+- Frontend: TypeScript type check and Vite production build pass.
+- Browser workflow: the scene renders in WebGL; changing repeat count reduces the map from 105 to 77 parts; the export endpoint returns `.rbxlx`.
+- Roblox export: XML parses successfully, the part count matches SceneIR, exactly one `SpawnLocation` exists, and no scripts are present.
+- Fixture generation: coast — 70 parts / 108.52 ms; courtyard — 110 parts / 121.55 ms; park — 105 parts / 129.51 ms.
 
-Live vision-вызов в текущем окружении не выполнялся: `OPENAI_API_KEY` отсутствовал. Контракт Responses API покрыт fake-transport тестом, а multipart upload → analyzer → validator → compiler — интеграционным тестом. Для полного приёмочного теста добавьте ключ и загрузите новое фото через UI.
+A live vision request was not run in the committed environment because `OPENAI_API_KEY` is intentionally absent. The Responses API contract is covered by a fake-transport test, while the multipart upload → analyzer → validator → compiler path is covered by an integration test.
 
-## Основные файлы
+## Current Limitations
 
-- `config/schema/scene_spec.schema.json` — контракт структурированного ответа;
-- `app/services/vision/scene_analyzer.rb` — vision request и метрики;
-- `app/services/scene/validator.rb` — семантическая и budget-валидация;
-- `app/services/scene/compiler.rb` — детерминированная сборка;
-- `app/services/scene/component_registry.rb` — библиотека компонентов;
-- `app/services/roblox/exporter.rb` — экспорт `.rbxlx`;
-- `frontend/src/App.tsx` и `frontend/src/SceneViewer.tsx` — пользовательский сценарий и 3D-превью.
+- A single photograph cannot reveal true depth or hidden geometry. SceneFoundry preserves the recognizable composition and records assumptions, but it does not claim photogrammetric accuracy.
+- This first milestone builds geometry from Roblox primitives. `MeshPart`, terrain voxels, textures, multiplayer support, and persistent jobs are intentionally deferred.
+- API cost is an estimate derived from token usage, not a billing receipt.
+
+## Key Files
+
+- `config/schema/scene_spec.schema.json` — structured-output contract.
+- `app/services/vision/scene_analyzer.rb` — vision request and usage metrics.
+- `app/services/scene/validator.rb` — semantic and budget validation.
+- `app/services/scene/compiler.rb` — deterministic scene compilation.
+- `app/services/scene/component_registry.rb` — trusted component library.
+- `app/services/roblox/exporter.rb` — `.rbxlx` export.
+- `frontend/src/App.tsx` — upload, editing, metrics, and export workflow.
+- `frontend/src/SceneViewer.tsx` — interactive Three.js scene preview.
