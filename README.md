@@ -2,7 +2,7 @@
 
 SceneFoundry is a manual-first service and an end-to-end AI prototype for turning photographs of real locations into editable Roblox places.
 
-The customer-facing beta uses a low-risk offer: uploading is free, a human-reviewed preview is delivered with a 24-hour target, and the customer pays $9 only if they choose to unlock the editable `.rbxlx`. Payment collection is deliberately manual in this milestone so demand can be validated before adding a processor such as Stripe.
+The customer-facing beta uses a low-risk offer: uploading is free, a human-reviewed interactive preview is delivered with a 24-hour target, and the customer pays $19 through Stripe only if they choose to unlock the editable `.rbxlx`.
 
 The separate AI Lab keeps the automated pipeline available for internal experiments:
 
@@ -27,11 +27,12 @@ The park is the checked-in development fixture rendered by the running applicati
 ## What Works
 
 - Email/password registration with bcrypt password hashing and encrypted, HttpOnly cookie sessions.
-- Optional Google, GitHub, and Discord OAuth login; providers appear only when their credentials are configured.
+- Google, GitHub, and Discord OAuth login controls with clear setup state until provider credentials are configured.
 - Private customer accounts with a persistent order history.
 - Free requests containing one to three private source photos, a scene/style brief, and a recorded image-rights confirmation.
-- A manual operator queue with source downloads, status changes, private notes, preview upload, `.rbxlx` upload, and payment state.
-- Free authenticated preview access followed by a $9 purchase request. The real map stays unavailable until the operator marks the order paid.
+- A manual operator queue with source downloads, status changes, private notes, optional preview-image upload, and `.rbxlx` delivery upload.
+- Automatic extraction of safe browser-preview geometry from the operator's `.rbxlx`; no second JSON upload is required.
+- Free authenticated interactive 3D preview access followed by a $19 Stripe Checkout. The real map stays unavailable until a verified Stripe webhook marks the order paid.
 - In-app notifications and email when the preview or paid download becomes ready.
 - JPEG, PNG, and WebP uploads up to 10 MB.
 - A fully localized interface in English and French, with English as the default and the selected language saved in the browser.
@@ -56,8 +57,9 @@ The park is the checked-in development fixture rendered by the running applicati
 | Layer | Responsibility |
 | --- | --- |
 | React + TypeScript | Customer accounts, free order/preview workflow, operator queue, AI Lab, Three.js preview, and `.rbxlx` download |
-| Rails API + SQLite | Authentication, private orders/files, notifications, file validation, orchestration, compilation, and export |
-| Active Storage + Action Mailer | Private order artifacts and preview/download-ready email delivery |
+| Rails API + PostgreSQL | Authentication, private orders, payment state, notifications, preview geometry, validation, orchestration, compilation, and export |
+| Active Storage + Action Mailer | Private local order artifacts (S3-ready) and preview/download-ready email delivery |
+| Stripe Checkout + signed webhook | Hosted card collection and authoritative payment/unlock state |
 | OpenAI Vision | Creates a strict `SceneSpec 1.1` draft and reviews its visual composition using the request-selected Terra or Astra Max profile |
 | Geometry and budget normalizers | Scale oversized scenes uniformly and reduce only repeated groups when required |
 | `Scene::Validator` | Enforces semantic, geometric, reference, spawn, and budget constraints |
@@ -90,11 +92,13 @@ Requirements:
 - Bundler
 - Node.js 22 or newer
 - npm
+- PostgreSQL 16 or newer
 
 ```bash
 cp .env.example .env
 # Add OPENAI_API_KEY to .env
 # Set ADMIN_EMAILS to the account that will fulfill orders
+# Add Stripe test keys and OAuth credentials when testing those integrations
 # Defaults: Terra high draft + Terra medium refinement
 # Optional premium profile, after configuring authentication, quotas, and spend limits:
 # ASTRA_QUALITY_ENABLED=true
@@ -106,17 +110,29 @@ Open [http://127.0.0.1:5173](http://127.0.0.1:5173). `bin/dev` starts Rails on p
 
 Without an API key, the UI blocks photograph analysis and explains why. The development example remains available only in `development` and `test`; it is never reported as a vision result.
 
-The manual order workflow does not require an OpenAI key. In development, notification emails are written to `tmp/mails` unless SMTP variables are supplied. Register using an address listed in `ADMIN_EMAILS` to reveal the operator queue.
+The manual order workflow does not require an OpenAI key. It does require PostgreSQL. In development, notification emails are written to `tmp/mails` unless SMTP variables are supplied. Register using an address listed in `ADMIN_EMAILS` to reveal the operator queue.
 
 ### Social login
 
-Create OAuth applications only for the providers you want to show, then put their client ID and secret in `.env`. For the default local setup, register these callback URLs:
+Create OAuth applications for the providers you want to enable, then put their client ID and secret in `.env`. All supported options stay visible in the account dialog; unconfigured providers are disabled and labeled “Setup required.” For the default local setup, register these callback URLs:
 
 - Google: `http://127.0.0.1:3000/api/v1/auth/oauth/google/callback`
 - GitHub: `http://127.0.0.1:3000/api/v1/auth/oauth/github/callback`
 - Discord: `http://127.0.0.1:3000/api/v1/auth/oauth/discord/callback`
 
 Set `APP_URL` to the browser-facing origin and `API_URL` to the Rails origin. Verified provider email addresses are required before a social identity is linked to an existing account.
+
+### Payments and private files
+
+Set `STRIPE_SECRET_KEY` to a Stripe test-mode secret. For local webhook testing, install the Stripe CLI and run:
+
+```bash
+stripe listen --forward-to 127.0.0.1:3000/api/v1/payments/stripe/webhook
+```
+
+Copy the emitted `whsec_…` value to `STRIPE_WEBHOOK_SECRET`, then restart `bin/dev`. The browser is redirected to Stripe Checkout; only a signed, paid event with the matching order ID, amount, and currency unlocks the file.
+
+PostgreSQL stores relational data and the compact preview SceneIR. Active Storage stores source photos, optional preview images, and `.rbxlx` files under private local `storage/` during development. Set `ACTIVE_STORAGE_SERVICE=amazon` plus the AWS/S3 variables in `.env` to move binaries to private S3 later without changing the order model.
 
 The interface opens in English. Use the `EN` / `FR` control in the header to switch languages; the choice persists across browser sessions. Localization is implemented with `i18next` and `react-i18next`, and the document language is updated for assistive technologies.
 
@@ -130,7 +146,8 @@ The interface opens in English. Use the `EN` / `FR` control in the header to swi
 | `POST` | `/api/v1/auth/login` | Start an encrypted browser session |
 | `POST` | `/api/v1/auth/oauth/:provider` | Start Google, GitHub, or Discord OAuth |
 | `GET, POST` | `/api/v1/orders` | List private orders or submit a free preview request |
-| `POST` | `/api/v1/orders/:public_id/purchase` | Record that the customer wants to unlock the $9 map |
+| `POST` | `/api/v1/orders/:public_id/purchase` | Create a hosted $19 Stripe Checkout session |
+| `POST` | `/api/v1/payments/stripe/webhook` | Verify Stripe events and unlock paid maps |
 | `GET` | `/api/v1/notifications` | List in-app order notifications |
 | `GET, PATCH` | `/api/v1/admin/orders` | Operate the manual fulfillment queue |
 | `GET` | `/api/v1/scenes/schema` | Structured-generation JSON Schema |
@@ -198,7 +215,7 @@ Estimated cost is calculated from the response's actual token usage. Pricing ent
 
 - Customer and operator mutations require a per-session CSRF token; login sessions are encrypted and HttpOnly.
 - Source photos, previews, and result files are served only after owner/admin authorization.
-- A customer cannot download the `.rbxlx` until both the order and payment status are ready.
+- A customer cannot download the `.rbxlx` until a matching signed Stripe event marks both the order and payment ready.
 - Social accounts are linked by email only when the provider confirms that email is verified.
 - Default limits are 1,500 parts and 120,000 estimated triangles.
 - Repeated-group expansion is checked before geometry is produced.
@@ -220,7 +237,7 @@ bundle exec rails scenes:generate
 
 Latest verified AI-pipeline baseline (the account/order suite is also run by `bin/verify`):
 
-- Rails: 42 tests, 238 assertions, 0 failures. The suite covers accounts, CSRF, OAuth identity linking, private manual orders, operator fulfillment, preview/payment gating, notifications, four unrelated scene families, exact quality profiles, incomplete API responses, and ready-map integrity.
+- Rails: 45 tests, 256 assertions, 0 failures. The suite covers accounts, CSRF, OAuth identity linking, private manual orders, `.rbxlx` preview extraction, Stripe payment gating, operator fulfillment, notifications, four unrelated scene families, exact quality profiles, incomplete API responses, and ready-map integrity.
 - Frontend: TypeScript type check and Vite production build pass.
 - Live two-pass Terra workflow: a new garden image completed in 75.73 seconds for an estimated $0.116264 (45.86-second high-reasoning draft plus 29.57-second medium review), normalized an over-budget draft from 1,720 to 1,244 estimated parts, and compiled without photo-specific code.
 - Live Astra Max workflow on a new 5.14 MB garden photograph: 830.44 seconds of vision work (634.56-second `max` draft plus 195.88-second `high` review), estimated API cost $2.999685 from 15,444 input and 56,133 output tokens, then a 1.40 MB ready `.rbxlx` response with 1,040 compiled parts. End-to-end server time was 832.27 seconds.
@@ -231,9 +248,9 @@ The live verification used a local ignored `OPENAI_API_KEY`; no secret is commit
 
 ## Current Limitations
 
-- Payment is not charged online yet. “Unlock map” records a purchase request; the operator collects payment externally and marks it paid. Add a signed Stripe webhook before accepting unattended card payments.
-- Local SQLite and Active Storage are suitable for the current single-instance beta. Production hosting must mount `storage/` as a persistent private volume, or migrate the database to Postgres and files to private object storage.
-- OAuth buttons remain hidden until provider credentials and matching callback URLs are configured.
+- Stripe Checkout code is complete, but checkout is disabled until test/live Stripe keys and a webhook secret are supplied in the deployment environment.
+- PostgreSQL is production-ready for relational data, while local Active Storage is suitable only for a single persistent instance. Set the existing S3 environment variables before horizontally scaling or deploying to ephemeral storage.
+- OAuth controls remain disabled until provider credentials and matching callback URLs are configured.
 - A single photograph cannot reveal true depth or hidden geometry. SceneFoundry preserves the recognizable composition and records assumptions, but it does not claim photogrammetric accuracy.
 - This milestone builds geometry from Roblox primitives. A visually unusual object can be preserved as an editable approximate mass, but dedicated assets, `MeshPart`, terrain voxels, and textures will be required for product-grade object fidelity.
 - The second pass reviews structured composition, not a rendered preview. The largest remaining quality improvement is a render-and-compare loop that lets the model correct the actual generated image.
@@ -251,6 +268,9 @@ The live verification used a local ignored `OPENAI_API_KEY`; no secret is commit
 - `app/services/scene/component_registry.rb` — trusted component library.
 - `app/services/roblox/exporter.rb` — `.rbxlx` export.
 - `app/services/roblox/map_artifact.rb` — checksummed Base64 ready-map response envelope.
+- `app/services/roblox/preview_extractor.rb` — safe interactive preview extraction from an operator-delivered `.rbxlx`.
+- `app/services/payments/stripe_checkout.rb` — hosted checkout creation.
+- `app/services/payments/stripe_event_handler.rb` — verified payment-to-download unlock transition.
 - `frontend/src/App.tsx` — upload, editing, metrics, and export workflow.
 - `frontend/src/i18n.ts` — English and French interface resources and language persistence.
 - `frontend/src/SceneViewer.tsx` — interactive Three.js scene preview.
