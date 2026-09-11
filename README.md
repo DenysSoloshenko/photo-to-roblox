@@ -6,21 +6,24 @@ SceneFoundry is an end-to-end prototype that turns a photograph of a real locati
 
 The production workflow does not require a user to write JSON or custom code for each photograph. The vision model creates a compact, structured scene description; trusted application code validates it, builds the geometry, renders the preview, and exports a real Roblox XML place file.
 
-## Visual Example
+## Visual Gallery
 
-### Real-world reference photograph
+### House and landscaped grounds
 
-![A waterfront path with trees, vegetation, water, and distant terrain](docs/images/reference-waterfront.jpg)
+![A reconstructed Roblox house with landscaped grounds, a pool, trees, and paths](docs/images/house-scene.png)
 
-### Editable scene preview
+This representative environment was created during prototype development and demonstrates the level of composition the project is designed to preserve: the building footprint, surrounding paths, vegetation, elevation changes, and pool remain individually editable.
 
-![SceneFoundry interface showing an editable Riverside Park SceneIR preview](docs/images/editable-scene-preview.jpg)
+### Park scene in the English interface
 
-The second image is the checked-in development fixture rendered by the running application. It demonstrates the editable SceneIR, Three.js preview, metrics, and export workflow; it is not presented as a live inference result for the photograph above. Add `OPENAI_API_KEY` and upload a new image to exercise the complete vision path.
+![SceneFoundry English interface showing an editable Riverside Park SceneIR preview](docs/images/park-editor-en.jpg)
+
+The park is the checked-in development fixture rendered by the running application. It demonstrates the localized editor, editable SceneIR, Three.js preview, metrics, and export workflow. It is not presented as a live vision inference result. Add `OPENAI_API_KEY` and upload a new image to exercise the complete vision path.
 
 ## What Works
 
 - JPEG, PNG, and WebP uploads up to 10 MB.
+- A fully localized interface in English and French, with English as the default and the selected language saved in the browser.
 - Image analysis through the OpenAI Responses API using a Base64 data URL.
 - Strict structured output using the versioned `SceneSpec 1.0` schema.
 - Surfaces, polyline paths, objects, repeated object groups, spawn position, camera, and source assumptions.
@@ -74,6 +77,8 @@ bin/dev
 Open [http://127.0.0.1:5173](http://127.0.0.1:5173). `bin/dev` starts Rails on port `3000`, Vite on port `5173`, and loads the local `.env` file. Existing environment variables take precedence.
 
 Without an API key, the UI blocks photograph analysis and explains why. The development example remains available only in `development` and `test`; it is never reported as a vision result.
+
+The interface opens in English. Use the `EN` / `FR` control in the header to switch languages; the choice persists across browser sessions. Localization is implemented with `i18next` and `react-i18next`, and the document language is updated for assistive technologies.
 
 ## API
 
@@ -149,4 +154,5 @@ A live vision request was not run in the committed environment because `OPENAI_A
 - `app/services/scene/component_registry.rb` — trusted component library.
 - `app/services/roblox/exporter.rb` — `.rbxlx` export.
 - `frontend/src/App.tsx` — upload, editing, metrics, and export workflow.
+- `frontend/src/i18n.ts` — English and French interface resources and language persistence.
 - `frontend/src/SceneViewer.tsx` — interactive Three.js scene preview.
