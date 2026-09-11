@@ -33,6 +33,7 @@ export interface SceneIR {
 export interface Metrics {
   order_id?: string;
   vision_model?: string;
+  quality_mode?: "terra" | "astra_max";
   reasoning_effort?: string | null;
   refinement_enabled?: boolean;
   refinement_reasoning_effort?: string | null;
@@ -42,6 +43,9 @@ export interface Metrics {
   refinement_api_cost_usd?: number | null;
   vision_ms?: number;
   compile_ms?: number;
+  export_ms?: number;
+  rbxlx_bytes?: number;
+  map_ready?: boolean;
   total_ms?: number;
   input_tokens?: number;
   cached_input_tokens?: number;
@@ -58,14 +62,76 @@ export interface Metrics {
   bounds_expanded?: boolean;
 }
 
+export interface RobloxFile {
+  filename: string;
+  media_type: "application/xml";
+  encoding: "base64";
+  data: string;
+  byte_size: number;
+  sha256: string;
+  spec_digest: string;
+}
+
 export interface SceneResponse {
   scene_spec: Record<string, unknown>;
   scene_ir: SceneIR;
+  roblox_file?: RobloxFile;
   metrics: Metrics;
 }
 
 export interface ApiErrorPayload {
   error?: string;
   message?: string;
-  errors?: Array<{ path: string; message: string; id?: string }>;
+  errors?: Array<{ path: string; message: string; id?: string }> | Record<string, string[]> | string[];
+}
+
+export interface AccountUser {
+  id: number;
+  email: string;
+  display_name: string;
+  admin: boolean;
+  oauth_only: boolean;
+}
+
+export interface SessionResponse {
+  user: AccountUser | null;
+  csrf_token: string;
+  oauth_providers: Array<"google" | "github" | "discord">;
+}
+
+export type OrderStatus = "submitted" | "reviewing" | "building" | "preview_ready" | "ready" | "delivered" | "cancelled";
+export type PaymentStatus = "unpaid" | "requested" | "paid" | "refunded";
+
+export interface ManualOrder {
+  public_id: string;
+  status: OrderStatus;
+  payment_status: PaymentStatus;
+  title: string;
+  scene_type: string;
+  style: string;
+  must_preserve: string | null;
+  instructions: string | null;
+  price_cents: number;
+  currency: string;
+  submitted_at: string;
+  delivery_due_at: string;
+  completed_at: string | null;
+  purchase_requested_at: string | null;
+  paid_at: string | null;
+  rights_confirmed: boolean;
+  source_photos: Array<{ id?: number; filename: string; byte_size: number; content_type: string; download_url?: string }>;
+  preview_url: string | null;
+  result_url: string | null;
+  user?: { email: string; display_name: string };
+  admin_notes?: string | null;
+}
+
+export interface InboxNotification {
+  id: number;
+  order_public_id: string;
+  kind: string;
+  title: string;
+  body: string;
+  read: boolean;
+  created_at: string;
 }
