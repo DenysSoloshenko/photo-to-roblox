@@ -34,6 +34,12 @@ export interface Metrics {
   order_id?: string;
   vision_model?: string;
   reasoning_effort?: string | null;
+  refinement_enabled?: boolean;
+  refinement_reasoning_effort?: string | null;
+  draft_vision_ms?: number;
+  refinement_ms?: number;
+  draft_api_cost_usd?: number | null;
+  refinement_api_cost_usd?: number | null;
   vision_ms?: number;
   compile_ms?: number;
   total_ms?: number;

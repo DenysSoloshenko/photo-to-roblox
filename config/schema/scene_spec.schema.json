@@ -1,10 +1,10 @@
 {
-  "title": "SceneSpec 1.0",
+  "title": "SceneSpec 1.1",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema_version", "name", "seed", "units", "axes", "bounds", "source", "surfaces", "paths", "objects", "groups", "spawn", "camera"],
+  "required": ["schema_version", "name", "seed", "units", "axes", "bounds", "source", "surfaces", "paths", "objects", "groups", "patterns", "spawn", "camera"],
   "properties": {
-    "schema_version": { "type": "string", "enum": ["1.0"] },
+    "schema_version": { "type": "string", "enum": ["1.1"] },
     "name": { "type": "string" },
     "seed": { "type": "integer" },
     "units": { "type": "string", "enum": ["studs"] },
@@ -52,6 +52,10 @@
     "groups": {
       "type": "array",
       "items": { "$ref": "#/$defs/group" }
+    },
+    "patterns": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/pattern" }
     },
     "spawn": {
       "type": "object",
@@ -120,28 +124,36 @@
     "surface": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "kind", "center", "size", "elevation", "thickness", "rotation_y", "material"],
+      "required": ["id", "kind", "center", "size", "points", "elevation", "thickness", "rotation_y", "material", "border_width", "border_height", "border_material"],
       "properties": {
         "id": { "$ref": "#/$defs/id" },
-        "kind": { "type": "string", "enum": ["ground", "platform", "ellipse", "water"] },
+        "kind": { "type": "string", "enum": ["ground", "platform", "ellipse", "polygon", "water"] },
         "center": { "$ref": "#/$defs/vector3" },
         "size": { "$ref": "#/$defs/vector2Positive" },
+        "points": { "anyOf": [{ "type": "array", "items": { "$ref": "#/$defs/vector3" } }, { "type": "null" }] },
         "elevation": { "type": "number" },
         "thickness": { "type": "number" },
         "rotation_y": { "type": "number" },
-        "material": { "$ref": "#/$defs/material" }
+        "material": { "$ref": "#/$defs/material" },
+        "border_width": { "$ref": "#/$defs/nullableNumber" },
+        "border_height": { "$ref": "#/$defs/nullableNumber" },
+        "border_material": { "anyOf": [{ "$ref": "#/$defs/material" }, { "type": "null" }] }
       }
     },
     "path": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "points", "width", "material", "surface_id"],
+      "required": ["id", "points", "width", "material", "surface_id", "curve", "border_width", "border_height", "border_material"],
       "properties": {
         "id": { "$ref": "#/$defs/id" },
         "points": { "type": "array", "items": { "$ref": "#/$defs/vector3" } },
         "width": { "type": "number" },
         "material": { "$ref": "#/$defs/material" },
-        "surface_id": { "$ref": "#/$defs/nullableId" }
+        "surface_id": { "$ref": "#/$defs/nullableId" },
+        "curve": { "type": "boolean" },
+        "border_width": { "$ref": "#/$defs/nullableNumber" },
+        "border_height": { "$ref": "#/$defs/nullableNumber" },
+        "border_material": { "anyOf": [{ "$ref": "#/$defs/material" }, { "type": "null" }] }
       }
     },
     "object": {
@@ -150,7 +162,7 @@
       "required": ["id", "type", "position", "rotation_y", "scale", "surface_id", "params"],
       "properties": {
         "id": { "$ref": "#/$defs/id" },
-        "type": { "type": "string", "enum": ["tree", "bush", "flower", "hedge", "conifer", "arch", "mountain", "rock", "bench", "fence", "building"] },
+        "type": { "type": "string", "enum": ["tree", "bush", "flower", "hedge", "conifer", "arch", "mountain", "rock", "bench", "fence", "building", "mass"] },
         "position": { "$ref": "#/$defs/vector3" },
         "rotation_y": { "type": "number" },
         "scale": {
@@ -179,6 +191,91 @@
         "surface_id": { "$ref": "#/$defs/nullableId" },
         "path_id": { "$ref": "#/$defs/nullableId" },
         "params": { "$ref": "#/$defs/params" }
+      }
+    },
+    "pattern": {
+      "anyOf": [
+        { "$ref": "#/$defs/formalGardenPattern" },
+        { "$ref": "#/$defs/terracePattern" },
+        { "$ref": "#/$defs/mountainRidgePattern" },
+        { "$ref": "#/$defs/forestFramePattern" }
+      ]
+    },
+    "formalGardenPattern": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "type", "center", "rotation_y", "surface_id", "width", "depth", "petal_count", "ring_count", "center_radius", "path_width", "bed_height", "border_width", "border_height", "flower_density", "palette", "central_arch"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "type": { "type": "string", "enum": ["formal_garden"] },
+        "center": { "$ref": "#/$defs/vector3" },
+        "rotation_y": { "type": "number" },
+        "surface_id": { "$ref": "#/$defs/nullableId" },
+        "width": { "type": "number" },
+        "depth": { "type": "number" },
+        "petal_count": { "type": "integer" },
+        "ring_count": { "type": "integer" },
+        "center_radius": { "type": "number" },
+        "path_width": { "type": "number" },
+        "bed_height": { "type": "number" },
+        "border_width": { "type": "number" },
+        "border_height": { "type": "number" },
+        "flower_density": { "type": "number" },
+        "palette": { "type": "array", "items": { "$ref": "#/$defs/material" } },
+        "central_arch": { "type": "boolean" }
+      }
+    },
+    "terracePattern": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "type", "center", "rotation_y", "surface_id", "width", "depth", "levels", "rise", "material", "edge_material"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "type": { "type": "string", "enum": ["terrace"] },
+        "center": { "$ref": "#/$defs/vector3" },
+        "rotation_y": { "type": "number" },
+        "surface_id": { "$ref": "#/$defs/nullableId" },
+        "width": { "type": "number" },
+        "depth": { "type": "number" },
+        "levels": { "type": "integer" },
+        "rise": { "type": "number" },
+        "material": { "$ref": "#/$defs/material" },
+        "edge_material": { "$ref": "#/$defs/material" }
+      }
+    },
+    "mountainRidgePattern": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "type", "center", "rotation_y", "surface_id", "width", "depth", "height", "peak_count", "material"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "type": { "type": "string", "enum": ["mountain_ridge"] },
+        "center": { "$ref": "#/$defs/vector3" },
+        "rotation_y": { "type": "number" },
+        "surface_id": { "$ref": "#/$defs/nullableId" },
+        "width": { "type": "number" },
+        "depth": { "type": "number" },
+        "height": { "type": "number" },
+        "peak_count": { "type": "integer" },
+        "material": { "$ref": "#/$defs/material" }
+      }
+    },
+    "forestFramePattern": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "type", "center", "rotation_y", "surface_id", "width", "depth", "count", "min_height", "max_height", "evergreen_ratio"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "type": { "type": "string", "enum": ["forest_frame"] },
+        "center": { "$ref": "#/$defs/vector3" },
+        "rotation_y": { "type": "number" },
+        "surface_id": { "$ref": "#/$defs/nullableId" },
+        "width": { "type": "number" },
+        "depth": { "type": "number" },
+        "count": { "type": "integer" },
+        "min_height": { "type": "number" },
+        "max_height": { "type": "number" },
+        "evergreen_ratio": { "type": "number" }
       }
     }
   }

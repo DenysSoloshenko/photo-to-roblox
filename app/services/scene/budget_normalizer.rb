@@ -11,6 +11,7 @@ module Scene
       original_group_instances = group_instances
 
       reduce_groups_to(part_budget) if original_estimated_parts > part_budget
+      reduce_patterns_to(part_budget) if Validator.estimated_parts(@spec) > part_budget
 
       estimated_parts = Validator.estimated_parts(@spec)
       {
@@ -47,6 +48,49 @@ module Scene
         break unless group
 
         group["count"] -= 1
+      end
+    end
+
+    def reduce_patterns_to(part_budget)
+      patterns = Array(@spec["patterns"])
+      100.times do
+        break if Validator.estimated_parts(@spec) <= part_budget
+
+        candidate = patterns.max_by { |pattern| Validator.pattern_estimated_parts(pattern) }
+        break unless candidate
+
+        changed = case candidate["type"]
+        when "formal_garden"
+          if candidate.fetch("ring_count", 0).to_i.positive?
+            candidate["ring_count"] -= 1
+            true
+          elsif candidate.fetch("flower_density", 0).to_f > 0.2
+            candidate["flower_density"] = [candidate["flower_density"].to_f * 0.85, 0.2].max.round(3)
+            true
+          elsif candidate.fetch("petal_count", 0).to_i > 3
+            candidate["petal_count"] -= 1
+            true
+          else
+            false
+          end
+        when "forest_frame"
+          if candidate.fetch("count", 0).to_i > 4
+            candidate["count"] -= 1
+            true
+          else
+            false
+          end
+        when "mountain_ridge"
+          if candidate.fetch("peak_count", 0).to_i > 3
+            candidate["peak_count"] -= 1
+            true
+          else
+            false
+          end
+        else
+          false
+        end
+        break unless changed
       end
     end
 

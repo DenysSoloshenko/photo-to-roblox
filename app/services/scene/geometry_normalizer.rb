@@ -29,12 +29,20 @@ module Scene
       positions << @spec.dig("spawn", "position")
       positions.concat(@spec.fetch("objects", []).filter_map { |object| object["position"] if object.is_a?(Hash) })
       positions.concat(@spec.fetch("groups", []).filter_map { |group| group["area_center"] if group.is_a?(Hash) })
+      positions.concat(@spec.fetch("patterns", []).filter_map { |pattern| pattern["center"] if pattern.is_a?(Hash) })
       @spec.fetch("paths", []).each { |path| positions.concat(Array(path["points"])) if path.is_a?(Hash) }
+      @spec.fetch("surfaces", []).each { |surface| positions.concat(Array(surface["points"])) if surface.is_a?(Hash) }
       positions.select! { |position| position.is_a?(Array) && position.length == 3 && position.all? { |value| value.is_a?(Numeric) } }
       return false if positions.empty?
 
       required_width = positions.map { |position| position[0].abs * 2.0 }.max
       required_depth = positions.map { |position| position[2].abs * 2.0 }.max
+      @spec.fetch("patterns", []).each do |pattern|
+        next unless pattern.is_a?(Hash) && pattern["center"].is_a?(Array)
+
+        required_width = [required_width, (pattern["center"][0].abs + pattern.fetch("width", 0).to_f / 2.0) * 2.0].max
+        required_depth = [required_depth, (pattern["center"][2].abs + pattern.fetch("depth", 0).to_f / 2.0) * 2.0].max
+      end
       original_width = bounds["width"]
       original_depth = bounds["depth"]
       bounds["width"] = required_width if original_width.is_a?(Numeric) && required_width > original_width
@@ -60,11 +68,15 @@ module Scene
     end
 
     def largest_component_dimension
-      (@spec.fetch("objects", []) + @spec.fetch("groups", [])).filter_map do |item|
+      component_max = (@spec.fetch("objects", []) + @spec.fetch("groups", [])).filter_map do |item|
         next unless item.is_a?(Hash) && item["params"].is_a?(Hash)
 
         item["params"].values.select { |value| value.is_a?(Numeric) }.max
       end.max
+      pattern_max = @spec.fetch("patterns", []).filter_map do |pattern|
+        pattern.values.select { |value| value.is_a?(Numeric) }.max if pattern.is_a?(Hash)
+      end.max
+      [component_max, pattern_max].compact.max
     end
 
     def apply_scale(scale)
@@ -74,11 +86,12 @@ module Scene
       @spec.fetch("surfaces", []).each do |surface|
         scale_vector(surface["center"], scale)
         scale_vector(surface["size"], scale)
-        %w[elevation thickness].each { |key| scale_number(surface, key, scale) }
+        Array(surface["points"]).each { |point| scale_vector(point, scale) }
+        %w[elevation thickness border_width border_height].each { |key| scale_number(surface, key, scale) }
       end
       @spec.fetch("paths", []).each do |path|
         Array(path["points"]).each { |point| scale_vector(point, scale) }
-        scale_number(path, "width", scale)
+        %w[width border_width border_height].each { |key| scale_number(path, key, scale) }
       end
       @spec.fetch("objects", []).each do |object|
         scale_vector(object["position"], scale)
@@ -88,6 +101,12 @@ module Scene
         scale_vector(group["area_center"], scale)
         scale_vector(group["area_size"], scale)
         scale_params(group["params"], scale)
+      end
+      @spec.fetch("patterns", []).each do |pattern|
+        scale_vector(pattern["center"], scale)
+        %w[width depth height center_radius path_width bed_height border_width border_height rise min_height max_height].each do |key|
+          scale_number(pattern, key, scale)
+        end
       end
       scale_vector(@spec.dig("spawn", "position"), scale)
       scale_vector(@spec.dig("camera", "position"), scale)
@@ -105,8 +124,14 @@ module Scene
         clamp_number(surface, "elevation", -50, 150)
         clamp_number(surface, "thickness", 0.05, 20)
         clamp_number(surface, "rotation_y", -360, 360)
+        clamp_number(surface, "border_width", 0.05, 5)
+        clamp_number(surface, "border_height", 0.05, 5)
       end
-      @spec.fetch("paths", []).each { |path| clamp_number(path, "width", 2, 30) }
+      @spec.fetch("paths", []).each do |path|
+        clamp_number(path, "width", 2, 30)
+        clamp_number(path, "border_width", 0.05, 5)
+        clamp_number(path, "border_height", 0.05, 5)
+      end
       @spec.fetch("objects", []).each do |object|
         clamp_number(object, "rotation_y", -360, 360)
         clamp_params(object["params"])
@@ -114,6 +139,30 @@ module Scene
       @spec.fetch("groups", []).each do |group|
         clamp_number(group, "count", 1, 200)
         clamp_params(group["params"])
+      end
+      @spec.fetch("patterns", []).each do |pattern|
+        clamp_number(pattern, "rotation_y", -360, 360)
+        case pattern["type"]
+        when "formal_garden"
+          %w[width depth].each { |key| clamp_number(pattern, key, 8, 200) }
+          clamp_number(pattern, "petal_count", 3, 10)
+          clamp_number(pattern, "ring_count", 0, 3)
+          %w[center_radius path_width].each { |key| clamp_number(pattern, key, 1, 30) }
+          %w[bed_height border_width border_height].each { |key| clamp_number(pattern, key, 0.05, 5) }
+          clamp_number(pattern, "flower_density", 0.1, 1)
+        when "terrace"
+          %w[width depth].each { |key| clamp_number(pattern, key, 8, 200) }
+          clamp_number(pattern, "levels", 2, 8)
+          clamp_number(pattern, "rise", 0.25, 10)
+        when "mountain_ridge"
+          %w[width depth height].each { |key| clamp_number(pattern, key, 3, 200) }
+          clamp_number(pattern, "peak_count", 3, 12)
+        when "forest_frame"
+          %w[width depth].each { |key| clamp_number(pattern, key, 8, 200) }
+          clamp_number(pattern, "count", 4, 40)
+          %w[min_height max_height].each { |key| clamp_number(pattern, key, 3, 80) }
+          clamp_number(pattern, "evergreen_ratio", 0, 1)
+        end
       end
       clamp_number(@spec.fetch("spawn", {}), "rotation_y", -360, 360)
       clamp_number(@spec.fetch("camera", {}), "fov", 25, 90)

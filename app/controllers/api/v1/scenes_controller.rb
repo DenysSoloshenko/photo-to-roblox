@@ -9,7 +9,10 @@ module Api
           ok: true,
           vision_configured: ENV["OPENAI_API_KEY"].present?,
           vision_model: ENV.fetch("VISION_MODEL", Vision::SceneAnalyzer::DEFAULT_MODEL),
-          vision_reasoning_effort: ENV["VISION_REASONING_EFFORT"].presence,
+          vision_reasoning_effort: ENV.fetch("VISION_REASONING_EFFORT", Vision::SceneAnalyzer::DEFAULT_REASONING_EFFORT).presence,
+          vision_refinement_enabled: ENV.fetch("VISION_REFINEMENT_ENABLED", "true") == "true",
+          vision_refinement_reasoning_effort: ENV.fetch("VISION_REFINEMENT_REASONING_EFFORT", Vision::SceneAnalyzer::DEFAULT_REFINEMENT_REASONING_EFFORT).presence,
+          development_examples_enabled: Rails.env.development? || Rails.env.test?,
           component_version: Scene::Compiler::COMPONENT_VERSION
         }
       end
@@ -22,7 +25,7 @@ module Api
         return head :not_found unless Rails.env.development? || Rails.env.test?
 
         name = params[:name].to_s
-        return head :not_found unless %w[park courtyard coast].include?(name)
+        return head :not_found unless %w[park courtyard coast garden].include?(name)
 
         scene_spec = JSON.parse(Rails.root.join("examples/#{name}.json").read)
         scene_ir = Scene::Compiler.new.compile_scene(scene_spec)

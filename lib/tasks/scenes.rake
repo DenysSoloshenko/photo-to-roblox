@@ -1,5 +1,5 @@
 namespace :scenes do
-  desc "Compile the three development SceneSpecs and generate editable .rbxlx maps"
+  desc "Compile the development SceneSpecs and generate editable .rbxlx maps"
   task generate: :environment do
     output_dir = Rails.root.join("generated_maps")
     FileUtils.mkdir_p(output_dir)

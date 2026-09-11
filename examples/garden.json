@@ -1,0 +1,29 @@
+{
+  "schema_version": "1.1",
+  "name": "Coastal Rose Garden",
+  "seed": 260910,
+  "units": "studs",
+  "axes": { "up": "Y", "forward": "-Z" },
+  "bounds": { "width": 150, "depth": 130, "max_height": 42 },
+  "source": {
+    "summary": "A symmetrical formal rose garden overlooking water and a layered mountain skyline.",
+    "scale_confidence": 0.78,
+    "assumptions": ["The garden continues symmetrically outside the frame", "The water and mountains are distant scenic layers"]
+  },
+  "surfaces": [
+    { "id": "garden_lawn", "kind": "ground", "center": [0, 0, 5], "size": [150, 115], "points": null, "elevation": 0, "thickness": 2, "rotation_y": 0, "material": "grass", "border_width": null, "border_height": null, "border_material": null },
+    { "id": "coastal_water", "kind": "water", "center": [0, -0.3, -62], "size": [150, 30], "points": null, "elevation": -0.3, "thickness": 0.35, "rotation_y": 0, "material": "water", "border_width": null, "border_height": null, "border_material": null }
+  ],
+  "paths": [
+    { "id": "central_axis", "points": [[0, 0.15, 57], [0, 0.15, 28], [0, 0.15, 4], [0, 0.15, -26]], "width": 7, "material": "path", "surface_id": "garden_lawn", "curve": false, "border_width": 0.45, "border_height": 0.3, "border_material": "stone" }
+  ],
+  "objects": [],
+  "groups": [],
+  "patterns": [
+    { "id": "rose_parterre", "type": "formal_garden", "center": [0, 0.18, 14], "rotation_y": 0, "surface_id": "garden_lawn", "width": 82, "depth": 82, "petal_count": 6, "ring_count": 1, "center_radius": 5.5, "path_width": 5, "bed_height": 0.55, "border_width": 0.7, "border_height": 0.65, "flower_density": 0.92, "palette": ["flower_red", "flower_orange", "flower_pink", "flower_yellow"], "central_arch": true },
+    { "id": "coastal_ridge", "type": "mountain_ridge", "center": [0, 2, -60], "rotation_y": 0, "surface_id": null, "width": 145, "depth": 24, "height": 19, "peak_count": 9, "material": "mountain" },
+    { "id": "garden_tree_frame", "type": "forest_frame", "center": [0, 0, -18], "rotation_y": 0, "surface_id": "garden_lawn", "width": 142, "depth": 46, "count": 18, "min_height": 12, "max_height": 24, "evergreen_ratio": 0.7 }
+  ],
+  "spawn": { "position": [0, 0.2, 55], "rotation_y": 180 },
+  "camera": { "position": [0, 25, 72], "target": [0, 3.2, -4], "fov": 46 }
+}

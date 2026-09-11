@@ -1,5 +1,5 @@
 {
-  "schema_version": "1.0",
+  "schema_version": "1.1",
   "name": "Garden Courtyard",
   "seed": 24680,
   "units": "studs",
@@ -11,12 +11,12 @@
     "assumptions": ["The house rear is a simple rectangular volume", "The boundary fence continues behind the camera"]
   },
   "surfaces": [
-    { "id": "yard", "kind": "ground", "center": [0, 0, 0], "size": [90, 75], "elevation": 0, "thickness": 2, "rotation_y": 0, "material": "grass" },
-    { "id": "house_pad", "kind": "platform", "center": [7, 0.35, -18], "size": [33, 25], "elevation": 0.35, "thickness": 0.7, "rotation_y": -4, "material": "concrete" },
-    { "id": "patio", "kind": "platform", "center": [8, 0.18, 9], "size": [24, 16], "elevation": 0.18, "thickness": 0.35, "rotation_y": 0, "material": "stone" }
+    { "id": "yard", "kind": "ground", "center": [0, 0, 0], "size": [90, 75], "points": null, "elevation": 0, "thickness": 2, "rotation_y": 0, "material": "grass", "border_width": null, "border_height": null, "border_material": null },
+    { "id": "house_pad", "kind": "platform", "center": [7, 0.35, -18], "size": [33, 25], "points": null, "elevation": 0.35, "thickness": 0.7, "rotation_y": -4, "material": "concrete", "border_width": null, "border_height": null, "border_material": null },
+    { "id": "patio", "kind": "platform", "center": [8, 0.18, 9], "size": [24, 16], "points": null, "elevation": 0.18, "thickness": 0.35, "rotation_y": 0, "material": "stone", "border_width": 0.5, "border_height": 0.25, "border_material": "concrete" }
   ],
   "paths": [
-    { "id": "entry_path", "points": [[-5, 0.14, 35], [-3, 0.14, 18], [3, 0.28, 7], [7, 0.48, -6]], "width": 5, "material": "path", "surface_id": "yard" }
+    { "id": "entry_path", "points": [[-5, 0.14, 35], [-3, 0.14, 18], [3, 0.28, 7], [7, 0.48, -6]], "width": 5, "material": "path", "surface_id": "yard", "curve": true, "border_width": 0.35, "border_height": 0.22, "border_material": "stone" }
   ],
   "objects": [
     { "id": "main_house", "type": "building", "position": [7, 0.35, -18], "rotation_y": -4, "scale": [1, 1, 1], "surface_id": "house_pad", "params": { "width": 30, "depth": 22, "height": 10, "roof_height": 4, "wall_thickness": 0.65, "door_width": 4, "door_height": 7, "trunk_height": null, "trunk_diameter": null, "canopy_radius": null, "radius": null, "length": null, "post_spacing": null, "material": "white", "roof_material": "roof", "roof_style": "gable" } },
@@ -28,6 +28,7 @@
   "groups": [
     { "id": "border_shrubs", "object_type": "bush", "distribution": "grid", "count": 12, "area_center": [0, 0, 28], "area_size": [58, 7], "scale_range": [0.7, 1.1], "surface_id": "yard", "path_id": null, "params": { "width": null, "depth": null, "height": null, "roof_height": null, "wall_thickness": null, "door_width": null, "door_height": null, "trunk_height": null, "trunk_diameter": null, "canopy_radius": 1.4, "radius": null, "length": null, "post_spacing": null, "material": null, "roof_material": null, "roof_style": null } }
   ],
+  "patterns": [],
   "spawn": { "position": [-12, 0.2, 32], "rotation_y": 10 },
   "camera": { "position": [-42, 27, 48], "target": [4, 4, -8], "fov": 50 }
 }

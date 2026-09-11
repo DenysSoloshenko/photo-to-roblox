@@ -1,5 +1,5 @@
 {
-  "schema_version": "1.0",
+  "schema_version": "1.1",
   "name": "Rocky Coast",
   "seed": 99173,
   "units": "studs",
@@ -11,12 +11,12 @@
     "assumptions": ["The sea continues beyond the north boundary", "Rock forms behind the visible ridge are approximated"]
   },
   "surfaces": [
-    { "id": "sand_beach", "kind": "ground", "center": [0, 0, 18], "size": [130, 64], "elevation": 0, "thickness": 2, "rotation_y": 0, "material": "sand" },
-    { "id": "sea", "kind": "water", "center": [0, -0.15, -34], "size": [130, 44], "elevation": -0.15, "thickness": 0.45, "rotation_y": 0, "material": "water" },
-    { "id": "rock_shelf", "kind": "platform", "center": [-38, 1.8, -5], "size": [28, 30], "elevation": 1.8, "thickness": 3.8, "rotation_y": 12, "material": "stone" }
+    { "id": "sand_beach", "kind": "ground", "center": [0, 0, 18], "size": [130, 64], "points": null, "elevation": 0, "thickness": 2, "rotation_y": 0, "material": "sand", "border_width": null, "border_height": null, "border_material": null },
+    { "id": "sea", "kind": "water", "center": [0, -0.15, -34], "size": [130, 44], "points": null, "elevation": -0.15, "thickness": 0.45, "rotation_y": 0, "material": "water", "border_width": null, "border_height": null, "border_material": null },
+    { "id": "rock_shelf", "kind": "platform", "center": [-38, 1.8, -5], "size": [28, 30], "points": null, "elevation": 1.8, "thickness": 3.8, "rotation_y": 12, "material": "stone", "border_width": null, "border_height": null, "border_material": null }
   ],
   "paths": [
-    { "id": "shore_path", "points": [[-52, 0.14, 33], [-28, 0.14, 22], [-4, 0.14, 18], [22, 0.14, 22], [48, 0.14, 34]], "width": 5, "material": "path", "surface_id": "sand_beach" }
+    { "id": "shore_path", "points": [[-52, 0.14, 33], [-28, 0.14, 22], [-4, 0.14, 18], [22, 0.14, 22], [48, 0.14, 34]], "width": 5, "material": "path", "surface_id": "sand_beach", "curve": true, "border_width": null, "border_height": null, "border_material": null }
   ],
   "objects": [
     { "id": "shelf_rock", "type": "rock", "position": [-38, 1.8, -4], "rotation_y": 16, "scale": [2.6, 1.8, 2.2], "surface_id": "rock_shelf", "params": { "width": null, "depth": null, "height": null, "roof_height": null, "wall_thickness": null, "door_width": null, "door_height": null, "trunk_height": null, "trunk_diameter": null, "canopy_radius": null, "radius": 3.6, "length": null, "post_spacing": null, "material": "stone", "roof_material": null, "roof_style": null } },
@@ -25,6 +25,9 @@
   "groups": [
     { "id": "waterline_rocks", "object_type": "rock", "distribution": "scatter", "count": 18, "area_center": [4, 0, -10], "area_size": [105, 15], "scale_range": [0.45, 1.35], "surface_id": "sand_beach", "path_id": null, "params": { "width": null, "depth": null, "height": null, "roof_height": null, "wall_thickness": null, "door_width": null, "door_height": null, "trunk_height": null, "trunk_diameter": null, "canopy_radius": null, "radius": 1.5, "length": null, "post_spacing": null, "material": "stone", "roof_material": null, "roof_style": null } },
     { "id": "dune_bushes", "object_type": "bush", "distribution": "scatter", "count": 9, "area_center": [4, 0, 39], "area_size": [92, 13], "scale_range": [0.55, 0.95], "surface_id": "sand_beach", "path_id": null, "params": { "width": null, "depth": null, "height": null, "roof_height": null, "wall_thickness": null, "door_width": null, "door_height": null, "trunk_height": null, "trunk_diameter": null, "canopy_radius": 1.2, "radius": null, "length": null, "post_spacing": null, "material": null, "roof_material": null, "roof_style": null } }
+  ],
+  "patterns": [
+    { "id": "distant_ridge", "type": "mountain_ridge", "center": [0, -1, -48], "rotation_y": 0, "surface_id": null, "width": 118, "depth": 18, "height": 15, "peak_count": 7, "material": "mountain" }
   ],
   "spawn": { "position": [-48, 0.2, 34], "rotation_y": 75 },
   "camera": { "position": [54, 31, 58], "target": [0, 1, -9], "fov": 52 }

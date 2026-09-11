@@ -23,6 +23,23 @@ class SceneCompilerTest < ActiveSupport::TestCase
     assert_equal first.fetch("parts"), second.fetch("parts")
   end
 
+  test "preserves an unfamiliar dominant form as a generic mass" do
+    scene_spec = Marshal.load(Marshal.dump(@park))
+    blank_params = scene_spec.dig("objects", 0, "params").transform_values { nil }
+    scene_spec.fetch("objects") << {
+      "id" => "unknown_landmark", "type" => "mass", "position" => [12, 0, -8], "rotation_y" => 25,
+      "scale" => [1, 1, 1], "surface_id" => "main_lawn",
+      "params" => blank_params.merge("width" => 11, "depth" => 5, "height" => 7, "material" => "concrete")
+    }
+
+    scene = @compiler.compile_scene(scene_spec)
+    part = scene.fetch("parts").find { |candidate| candidate["source_id"] == "unknown_landmark" }
+
+    assert_equal "block", part.fetch("shape")
+    assert_equal [11.0, 7.0, 5.0], part.fetch("size")
+    assert_equal [0.0, 25.0, 0.0], part.fetch("rotation")
+  end
+
   test "compiles expressive garden geometry with color and curved forms" do
     garden = Marshal.load(Marshal.dump(@park))
     blank_params = garden.dig("objects", 0, "params").transform_values { nil }
@@ -62,7 +79,7 @@ class SceneCompilerTest < ActiveSupport::TestCase
     scene = @compiler.compile_scene(garden)
 
     assert_equal "cylinder", scene.fetch("parts").find { |part| part["source_id"] == "round_bed" }.fetch("shape")
-    assert_equal 9, scene.fetch("parts").count { |part| part["source_id"] == "main_walk" }
+    assert_equal 49, scene.fetch("parts").count { |part| part["source_id"] == "main_walk" }
     assert_equal 20, scene.fetch("parts").count { |part| part["source_id"].start_with?("red_roses-") }
     assert scene.fetch("parts").any? { |part| part["source_id"].start_with?("red_roses-") && part["material"] == "flower_red" }
     assert_equal 27, scene.fetch("parts").count { |part| part["source_id"] == "rose_arch" }

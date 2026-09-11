@@ -1,8 +1,9 @@
 module Scene
   class Validator
-    OBJECT_TYPES = %w[tree bush flower hedge conifer arch mountain rock bench fence building].freeze
+    OBJECT_TYPES = %w[tree bush flower hedge conifer arch mountain rock bench fence building mass].freeze
     GROUP_OBJECT_TYPES = %w[tree bush flower hedge conifer rock].freeze
     DISTRIBUTIONS = %w[scatter grid along_path frame].freeze
+    PATTERN_TYPES = %w[formal_garden terrace mountain_ridge forest_frame].freeze
     PARAM_KEYS = %w[
       width depth height roof_height wall_thickness door_width door_height
       trunk_height trunk_diameter canopy_radius radius length post_spacing
@@ -14,15 +15,20 @@ module Scene
     PART_ESTIMATES = {
       "tree" => 5, "bush" => 4, "flower" => 5, "hedge" => 1, "conifer" => 5,
       "arch" => 27, "mountain" => 3, "rock" => 1,
-      "bench" => 7, "fence" => 32, "building" => 10
+      "bench" => 7, "fence" => 32, "building" => 10, "mass" => 1
     }.freeze
 
     class << self
       def estimated_parts(spec)
         collection = ->(key) { spec[key].is_a?(Array) ? spec[key] : [] }
-        surface_parts = collection.call("surfaces").length
+        surface_parts = collection.call("surfaces").sum { |surface| surface_estimated_parts(surface) }
         path_parts = collection.call("paths").sum do |route|
-          route.is_a?(Hash) ? [Array(route["points"]).length * 2 - 1, 0].max : 0
+          next 0 unless route.is_a?(Hash)
+
+          point_count = Array(route["points"]).length
+          point_count = (point_count - 1) * 3 + 1 if route["curve"] && point_count >= 3
+          base = [point_count * 2 - 1, 0].max
+          route["border_width"] ? base + [2 * (point_count - 1), 0].max : base
         end
         object_parts = collection.call("objects").sum do |object|
           object.is_a?(Hash) ? PART_ESTIMATES.fetch(object["type"], 1) : 1
@@ -32,7 +38,38 @@ module Scene
 
           group.fetch("count", 0).to_i * PART_ESTIMATES.fetch(group["object_type"], 1)
         end
-        surface_parts + path_parts + object_parts + group_parts + 1
+        pattern_parts = collection.call("patterns").sum { |pattern| pattern_estimated_parts(pattern) }
+        surface_parts + path_parts + object_parts + group_parts + pattern_parts + 1
+      end
+
+      def surface_estimated_parts(surface)
+        return 1 unless surface.is_a?(Hash)
+
+        base = surface["kind"] == "polygon" ? 24 : 1
+        return base unless surface["border_width"]
+
+        border = case surface["kind"]
+        when "ellipse", "water" then 28
+        when "polygon" then Array(surface["points"]).length
+        else 4
+        end
+        base + border
+      end
+
+      def pattern_estimated_parts(pattern)
+        return 0 unless pattern.is_a?(Hash)
+
+        case pattern["type"]
+        when "formal_garden"
+          petals = pattern.fetch("petal_count", 0).to_i
+          length = [pattern.fetch("width", 0).to_f, pattern.fetch("depth", 0).to_f].min / 2.0
+          flower_count = [(length * length * pattern.fetch("flower_density", 0).to_f * 0.087).round, 16].max.clamp(16, 44)
+          petals * (64 + flower_count * 2) + 29 + pattern.fetch("ring_count", 0).to_i * 32 + (pattern["central_arch"] ? 27 : 0)
+        when "terrace" then pattern.fetch("levels", 0).to_i * 2
+        when "mountain_ridge" then pattern.fetch("peak_count", 0).to_i
+        when "forest_frame" then pattern.fetch("count", 0).to_i * 5
+        else 0
+        end
       end
 
       def effective_part_budget(budgets = DEFAULT_BUDGETS)
@@ -54,7 +91,7 @@ module Scene
         raise ValidationError.new([{ path: "$", message: "must be a JSON object" }])
       end
 
-      exact("schema_version", "1.0")
+      exact("schema_version", "1.1")
       exact("units", "studs")
       error("$.axes.up", "must equal \"Y\"") unless spec.dig("axes", "up") == "Y"
       error("$.axes.forward", "must equal \"-Z\"") unless spec.dig("axes", "forward") == "-Z"
@@ -67,6 +104,7 @@ module Scene
       validate_paths
       validate_objects
       validate_groups
+      validate_patterns
       validate_spawn_and_camera
       validate_global_ids
       validate_references
@@ -129,7 +167,7 @@ module Scene
     end
 
     def validate_collection_sizes
-      { "surfaces" => 30, "paths" => 20, "objects" => 100, "groups" => 30 }.each do |key, max|
+      { "surfaces" => 30, "paths" => 20, "objects" => 100, "groups" => 30, "patterns" => 8 }.each do |key, max|
         values = collection(key)
         error("$.#{key}", "must contain at most #{max} items") if values.length > max
       end
@@ -141,13 +179,24 @@ module Scene
         next error(path, "must be an object") unless surface.is_a?(Hash)
 
         id(surface, path)
-        enum(surface["kind"], %w[ground platform ellipse water], "#{path}.kind")
+        enum(surface["kind"], %w[ground platform ellipse polygon water], "#{path}.kind")
         vector(surface["center"], 3, "#{path}.center")
         vector(surface["size"], 2, "#{path}.size", positive: true)
+        points = surface["points"]
+        if surface["kind"] == "polygon"
+          if !points.is_a?(Array) || points.length < 3
+            error("#{path}.points", "must contain at least three [x,y,z] points for a polygon", id: surface["id"])
+          else
+            points.each_with_index { |point, point_index| vector(point, 3, "#{path}.points[#{point_index}]") }
+          end
+        elsif !points.nil?
+          error("#{path}.points", "must be null unless kind is polygon", id: surface["id"])
+        end
         number(surface["elevation"], "#{path}.elevation", min: -50, max: 150)
         number(surface["thickness"], "#{path}.thickness", min: 0.05, max: 20)
         number(surface["rotation_y"], "#{path}.rotation_y", min: -360, max: 360)
         material(surface["material"], "#{path}.material")
+        validate_border(surface, path)
       end
       error("$.surfaces", "must contain at least one ground surface") unless collection("surfaces").any? { |surface| surface.is_a?(Hash) && surface["kind"] == "ground" }
     end
@@ -167,6 +216,8 @@ module Scene
         number(route["width"], "#{path}.width", min: 2, max: 30)
         material(route["material"], "#{path}.material")
         optional_string(route["surface_id"], "#{path}.surface_id")
+        error("#{path}.curve", "must be true or false") unless [true, false].include?(route["curve"])
+        validate_border(route, path)
       end
     end
 
@@ -203,6 +254,56 @@ module Scene
       end
     end
 
+    def validate_patterns
+      collection("patterns").each_with_index do |pattern, index|
+        path = "$.patterns[#{index}]"
+        next error(path, "must be an object") unless pattern.is_a?(Hash)
+
+        id(pattern, path)
+        enum(pattern["type"], PATTERN_TYPES, "#{path}.type", id: pattern["id"])
+        vector(pattern["center"], 3, "#{path}.center")
+        number(pattern["rotation_y"], "#{path}.rotation_y", min: -360, max: 360)
+        optional_string(pattern["surface_id"], "#{path}.surface_id")
+        case pattern["type"]
+        when "formal_garden"
+          dimensions(pattern, path, %w[width depth], min: 8, max: 200)
+          integer(pattern["petal_count"], "#{path}.petal_count", min: 3, max: 10)
+          integer(pattern["ring_count"], "#{path}.ring_count", min: 0, max: 3)
+          dimensions(pattern, path, %w[center_radius path_width], min: 1, max: 30)
+          dimensions(pattern, path, %w[bed_height border_width border_height], min: 0.05, max: 5)
+          number(pattern["flower_density"], "#{path}.flower_density", min: 0.1, max: 1)
+          palette = pattern["palette"]
+          if !palette.is_a?(Array) || palette.empty? || palette.length > 6
+            error("#{path}.palette", "must contain between one and six flower materials", id: pattern["id"])
+          else
+            palette.each_with_index do |value, palette_index|
+              material(value, "#{path}.palette[#{palette_index}]")
+              error("#{path}.palette[#{palette_index}]", "must be a flower material", id: pattern["id"]) unless value.to_s.start_with?("flower_")
+            end
+          end
+          error("#{path}.central_arch", "must be true or false") unless [true, false].include?(pattern["central_arch"])
+        when "terrace"
+          dimensions(pattern, path, %w[width depth], min: 8, max: 200)
+          integer(pattern["levels"], "#{path}.levels", min: 2, max: 8)
+          number(pattern["rise"], "#{path}.rise", min: 0.25, max: 10)
+          material(pattern["material"], "#{path}.material")
+          material(pattern["edge_material"], "#{path}.edge_material")
+        when "mountain_ridge"
+          dimensions(pattern, path, %w[width depth height], min: 3, max: 200)
+          integer(pattern["peak_count"], "#{path}.peak_count", min: 3, max: 12)
+          material(pattern["material"], "#{path}.material")
+        when "forest_frame"
+          dimensions(pattern, path, %w[width depth], min: 8, max: 200)
+          integer(pattern["count"], "#{path}.count", min: 4, max: 40)
+          dimensions(pattern, path, %w[min_height max_height], min: 3, max: 80)
+          if pattern["min_height"].is_a?(Numeric) && pattern["max_height"].is_a?(Numeric) && pattern["min_height"] > pattern["max_height"]
+            error("#{path}.max_height", "must be greater than or equal to min_height", id: pattern["id"])
+          end
+          number(pattern["evergreen_ratio"], "#{path}.evergreen_ratio", min: 0, max: 1)
+        end
+      end
+    end
+
     def validate_spawn_and_camera
       spawn = spec["spawn"]
       if spawn.is_a?(Hash)
@@ -223,7 +324,7 @@ module Scene
     end
 
     def validate_global_ids
-      entries = %w[surfaces paths objects groups].flat_map do |key|
+      entries = %w[surfaces paths objects groups patterns].flat_map do |key|
         collection(key).filter_map.with_index { |item, index| [item["id"], "$.#{key}[#{index}].id"] if item.is_a?(Hash) }
       end
       entries.group_by(&:first).each do |value, matches|
@@ -252,6 +353,9 @@ module Scene
           error("$.groups[#{index}].path_id", "is required for along_path", id: group["id"])
         end
       end
+      collection("patterns").each_with_index do |pattern, index|
+        validate_reference(pattern, "surface_id", surface_ids, "$.patterns[#{index}]", pattern["id"]) if pattern.is_a?(Hash)
+      end
     end
 
     def validate_positions
@@ -261,8 +365,12 @@ module Scene
       half_depth = spec["bounds"]["depth"].to_f / 2.0
       checks = [[spec.dig("spawn", "position"), "$.spawn.position", "spawn"]]
       collection("objects").each_with_index { |object, index| checks << [object["position"], "$.objects[#{index}].position", object["id"]] if object.is_a?(Hash) }
+      collection("patterns").each_with_index { |pattern, index| checks << [pattern["center"], "$.patterns[#{index}].center", pattern["id"]] if pattern.is_a?(Hash) }
       collection("paths").each_with_index do |route, index|
         Array(route["points"]).each_with_index { |point, point_index| checks << [point, "$.paths[#{index}].points[#{point_index}]", route["id"]] } if route.is_a?(Hash)
+      end
+      collection("surfaces").each_with_index do |surface, index|
+        Array(surface["points"]).each_with_index { |point, point_index| checks << [point, "$.surfaces[#{index}].points[#{point_index}]", surface["id"]] } if surface.is_a?(Hash)
       end
       checks.each do |position, path, semantic_id|
         next unless position.is_a?(Array) && position.length == 3 && position.all? { |item| item.is_a?(Numeric) }
@@ -325,6 +433,26 @@ module Scene
         material(value, "#{path}.#{key}") unless value.nil?
       end
       enum(params["roof_style"], ["gable", "flat", nil], "#{path}.roof_style", id: semantic_id)
+    end
+
+    def validate_border(value, path)
+      width = value["border_width"]
+      height = value["border_height"]
+      material_name = value["border_material"]
+      present = [width, height, material_name].count { |item| !item.nil? }
+      return if present.zero?
+
+      if present != 3
+        error("#{path}.border_width", "border width, height, and material must be set together")
+        return
+      end
+      number(width, "#{path}.border_width", min: 0.05, max: 5)
+      number(height, "#{path}.border_height", min: 0.05, max: 5)
+      material(material_name, "#{path}.border_material")
+    end
+
+    def dimensions(value, path, keys, min:, max:)
+      keys.each { |key| number(value[key], "#{path}.#{key}", min: min, max: max) }
     end
 
     def id(value, path)

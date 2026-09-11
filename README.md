@@ -25,8 +25,11 @@ The park is the checked-in development fixture rendered by the running applicati
 - JPEG, PNG, and WebP uploads up to 10 MB.
 - A fully localized interface in English and French, with English as the default and the selected language saved in the browser.
 - Image analysis through the OpenAI Responses API using a Base64 data URL.
-- Strict structured output using the versioned `SceneSpec 1.0` schema.
-- Surfaces, polyline paths, objects, repeated object groups, spawn position, camera, and source assumptions.
+- Two-pass Terra analysis: a high-reasoning spatial draft followed by a lower-cost composition review.
+- Strict structured output using the versioned `SceneSpec 1.1` schema.
+- Rectangular, elliptical, and arbitrary polygon surfaces; straight or curved bordered paths; semantic objects; repeated groups; procedural composition patterns; spawn position; camera; and source assumptions.
+- Reusable procedural patterns for formal gardens, terraces, mountain ridges, and forest framing. These are selected only when the photograph contains that scene structure.
+- A generic solid-mass fallback keeps unfamiliar but important objects in the composition instead of silently dropping them.
 - Server-side validation of numeric ranges, semantic IDs, references, spawn safety, and scene budgets with precise JSON error paths.
 - Automatic proportional normalization of oversized vision geometry and repeated groups before validation, preserving the scene layout while keeping exports within safe limits.
 - Deterministic compilation: the same `SceneSpec + seed + component_version` produces the same geometry.
@@ -42,7 +45,7 @@ The park is the checked-in development fixture rendered by the running applicati
 | --- | --- |
 | React + TypeScript | Upload workflow, SceneSpec editor, metrics, Three.js preview, and `.rbxlx` download |
 | Rails API | File validation, orchestration, compilation, export, and error handling |
-| OpenAI Vision | Converts a new photograph into strict `SceneSpec 1.0` structured output |
+| OpenAI Vision | Creates a high-reasoning `SceneSpec 1.1` draft and reviews its visual composition in a cheaper second pass |
 | Geometry and budget normalizers | Scale oversized scenes uniformly and reduce only repeated groups when required |
 | `Scene::Validator` | Enforces semantic, geometric, reference, spawn, and budget constraints |
 | `Scene::Compiler` | Expands registered components into deterministic, portable `SceneIR` |
@@ -52,14 +55,17 @@ The coordinate system is fixed to `Y up` and `-Z forward`, with dimensions expre
 
 ### Processing flow
 
-1. `POST /api/v1/scenes/analyze` validates the uploaded image and sends it to the vision model.
-2. The model must return data matching `config/schema/scene_spec.schema.json`.
-3. Geometry and budget normalizers uniformly scale unsupported real-world dimensions and proportionally reduce repeated groups when required.
-4. `Scene::Validator` applies the constraints that are intentionally kept outside the Structured Outputs-compatible schema.
-5. `Scene::Compiler` expands only registered components: `tree`, `bush`, `rock`, `bench`, `fence`, and `building`.
-6. A semantic object's seed is derived from the global seed, semantic ID, and component-library version, so editing one object does not reshuffle unrelated geometry.
-7. React/Three.js renders the resulting `SceneIR`.
-8. `Roblox::Exporter` converts that same `SceneIR` into `.rbxlx`, grouping parts by semantic ID.
+1. `POST /api/v1/scenes/analyze` validates the uploaded image and sends it to Terra at `high` reasoning effort.
+2. Terra identifies the scene family, camera, depth layers, major footprints, paths, terrain, and composition anchors as strict `SceneSpec 1.1` data.
+3. A second Terra pass at `medium` effort audits the draft against the same photograph and corrects material composition gaps.
+4. Geometry and budget normalizers uniformly scale unsupported dimensions and reduce procedural density when required.
+5. `Scene::Validator` applies the constraints intentionally kept outside the Structured Outputs-compatible schema.
+6. `Scene::Compiler` expands registered semantic components, generic masses, arbitrary contours, curved paths, and matching procedural patterns into deterministic geometry.
+7. A semantic object's seed is derived from the global seed, semantic ID, and component-library version, so editing one object does not reshuffle unrelated geometry.
+8. React/Three.js renders the resulting `SceneIR`.
+9. `Roblox::Exporter` converts that same `SceneIR` into `.rbxlx`, grouping parts by semantic ID.
+
+No coordinates or rules are tied to a particular photograph. A garden can use `formal_garden`, while a house, street, coast, or unknown scene is assembled from the same reusable surfaces, paths, buildings, masses, elevation patterns, and distributions.
 
 ## Quick Start
 
@@ -73,6 +79,7 @@ Requirements:
 ```bash
 cp .env.example .env
 # Add OPENAI_API_KEY to .env
+# Defaults: Terra high draft + Terra medium refinement
 bin/setup --skip-server
 bin/dev
 ```
@@ -100,6 +107,11 @@ A successful analysis includes operational metrics:
   "metrics": {
     "order_id": "request-id",
     "vision_model": "gpt-5.6-terra",
+    "reasoning_effort": "high",
+    "refinement_enabled": true,
+    "refinement_reasoning_effort": "medium",
+    "draft_vision_ms": 0,
+    "refinement_ms": 0,
     "vision_ms": 0,
     "compile_ms": 0,
     "total_ms": 0,
@@ -130,22 +142,23 @@ bin/verify
 bundle exec rails scenes:generate
 ```
 
-`bin/verify` runs the Rails test suite, TypeScript type checking, the Vite production build, and `git diff --check`. The scene generator writes three development fixtures to `generated_maps/` and records actual local processing time and file sizes in `generated_maps/generation_metrics.json`.
+`bin/verify` runs the Rails test suite, TypeScript type checking, the Vite production build, and `git diff --check`. The scene generator writes all development fixtures to `generated_maps/` and records actual local processing time and file sizes in `generated_maps/generation_metrics.json`.
 
 Latest verified baseline:
 
-- Rails: 20 tests, 96 assertions, 0 failures.
+- Rails: 26 tests, 134 assertions, 0 failures. The compiler suite covers four unrelated scene families (formal garden, residential courtyard, public park, and coast) plus the generic unknown-object fallback.
 - Frontend: TypeScript type check and Vite production build pass.
-- Live browser workflow: a new waterfront photograph produced a 625-part scene in 32.7 seconds for an estimated $0.044751; changing a repeated bush count from 20 to 10 rebuilt it to 585 parts.
+- Live two-pass Terra workflow: a new garden image completed in 75.73 seconds for an estimated $0.116264 (45.86-second high-reasoning draft plus 29.57-second medium review), normalized an over-budget draft from 1,720 to 1,244 estimated parts, and compiled without photo-specific code.
 - Roblox export: XML parses successfully, the part count matches SceneIR, exactly one `SpawnLocation` exists, and no scripts are present.
-- Fixture generation: coast — 70 parts / 108.52 ms; courtyard — 110 parts / 121.55 ms; park — 105 parts / 129.51 ms.
+- Fixture compilation: coast — 98 parts; courtyard — 148 parts; formal garden — 971 parts; park — 194 parts.
 
 The live verification used a local ignored `OPENAI_API_KEY`; no secret is committed. The Responses API contract is also covered by a fake-transport test, while the multipart upload → analyzer → normalization → validator → compiler path is covered by integration tests.
 
 ## Current Limitations
 
 - A single photograph cannot reveal true depth or hidden geometry. SceneFoundry preserves the recognizable composition and records assumptions, but it does not claim photogrammetric accuracy.
-- This first milestone builds geometry from Roblox primitives. `MeshPart`, terrain voxels, textures, multiplayer support, and persistent jobs are intentionally deferred.
+- This milestone builds geometry from Roblox primitives. A visually unusual object can be preserved as an editable approximate mass, but dedicated assets, `MeshPart`, terrain voxels, and textures will be required for product-grade object fidelity.
+- The second pass reviews structured composition, not a rendered preview. The largest remaining quality improvement is a render-and-compare loop that lets the model correct the actual generated image.
 - API cost is an estimate derived from token usage, not a billing receipt.
 
 ## Key Files

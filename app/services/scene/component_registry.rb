@@ -15,6 +15,7 @@ module Scene
       registry.register("bench") { |builder, object| Components.bench(builder, object) }
       registry.register("fence") { |builder, object| Components.fence(builder, object) }
       registry.register("building") { |builder, object| Components.building(builder, object) }
+      registry.register("mass") { |builder, object| Components.mass(builder, object) }
       registry
     end
 
@@ -291,6 +292,21 @@ module Scene
           builder.part(name: "Gable roof", shape: "block", position: builder.world(base, [side * width / 4.0, height + roof_height / 2.0, 0], yaw), size: [panel_width + 0.5, 0.4, depth + 1.2], rotation: [0, yaw, side * angle], material: roof_material)
         end
       end
+    end
+
+    # Generic solid used to preserve dominant forms that do not have a
+    # dedicated semantic component yet (sheds, piers, vehicles, sculptures).
+    def mass(builder, object)
+      base, yaw, scale, params = unpack(object)
+      width = numeric(params, "width", 6.0) * scale[0]
+      depth = numeric(params, "depth", 6.0) * scale[2]
+      height = numeric(params, "height", 5.0) * scale[1]
+      builder.part(
+        name: "Generic mass", shape: "block",
+        position: builder.world(base, [0, height / 2.0, 0], yaw),
+        size: [width, height, depth], rotation: [0, yaw, 0],
+        material: params["material"] || "concrete"
+      )
     end
 
     def unpack(object)

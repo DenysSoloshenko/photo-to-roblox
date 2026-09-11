@@ -45,7 +45,7 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [resetToken, setResetToken] = useState(0);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [visionStatus, setVisionStatus] = useState<{ configured: boolean; model: string; reasoningEffort?: string } | null>(null);
+  const [visionStatus, setVisionStatus] = useState<{ configured: boolean; model: string; reasoningEffort?: string; refinementEnabled: boolean; examplesEnabled: boolean } | null>(null);
 
   useEffect(() => {
     fetch("/api/v1/status")
@@ -54,6 +54,8 @@ export default function App() {
         configured: Boolean(body.vision_configured),
         model: String(body.vision_model),
         reasoningEffort: body.vision_reasoning_effort ? String(body.vision_reasoning_effort) : undefined,
+        refinementEnabled: Boolean(body.vision_refinement_enabled),
+        examplesEnabled: Boolean(body.development_examples_enabled),
       }))
       .catch(() => setVisionStatus(null));
   }, []);
@@ -119,7 +121,7 @@ export default function App() {
     setStatus("building");
     setError(null);
     try {
-      const response = await fetch("/api/v1/scenes/examples/park");
+      const response = await fetch("/api/v1/scenes/examples/garden");
       if (!response.ok) throw new Error(t("errors.developmentUnavailable"));
       receiveScene((await response.json()) as SceneResponse);
     } catch (reason) {
@@ -151,7 +153,7 @@ export default function App() {
           </nav>
           <div className={`api-badge ${visionStatus?.configured ? "online" : "offline"}`}>
             <span /> {visionStatus?.configured
-              ? t("api.connected", { model: `${visionStatus.model}${visionStatus.reasoningEffort ? ` · ${visionStatus.reasoningEffort}` : ""}` })
+              ? t("api.connected", { model: `${visionStatus.model}${visionStatus.reasoningEffort ? ` · ${visionStatus.reasoningEffort}` : ""}${visionStatus.refinementEnabled ? ` · ${t("api.refinement")}` : ""}` })
               : t("api.notConfigured")}
           </div>
         </div>
@@ -173,7 +175,7 @@ export default function App() {
             {status === "analyzing" ? <><span className="spinner" /> {t("upload.analyzing")}</> : t("upload.create")}
           </button>
           {!visionStatus?.configured && <p className="setup-note"><Trans i18nKey="upload.setupNote" components={{ code: <code /> }} /></p>}
-          {import.meta.env.DEV && <button className="text-button" onClick={loadDevelopmentScene} disabled={busy}>{t("upload.developmentExample")}</button>}
+          {visionStatus?.examplesEnabled && <button className="text-button" onClick={loadDevelopmentScene} disabled={busy}>{t("upload.developmentExample")}</button>}
           {error && <pre className="error-box" role="alert">{error}</pre>}
         </aside>
 
@@ -196,7 +198,7 @@ export default function App() {
         </section>
 
         <aside className="panel editor-panel">
-          <div className="editor-heading"><div><span className="eyebrow">{t("editor.step")}</span><h2>{t("editor.title")}</h2></div><span className="schema-pill">v1.0</span></div>
+          <div className="editor-heading"><div><span className="eyebrow">{t("editor.step")}</span><h2>{t("editor.title")}</h2></div><span className="schema-pill">v1.1</span></div>
           <p>{t("editor.description")}</p>
           <textarea className="json-editor" aria-label="SceneSpec JSON" spellCheck={false} value={editor} onChange={(event) => setEditor(event.target.value)} placeholder={t("editor.placeholder")} />
           <div className="editor-actions">

@@ -25,6 +25,7 @@ const resources = {
       },
       api: {
         connected: "{{model}} connected",
+        refinement: "2-pass",
         notConfigured: "Vision API not configured",
       },
       upload: {
@@ -95,6 +96,7 @@ const resources = {
       },
       api: {
         connected: "{{model}} connecté",
+        refinement: "2 passages",
         notConfigured: "API Vision non configurée",
       },
       upload: {

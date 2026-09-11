@@ -1,26 +1,34 @@
 {
   "coast": {
-    "part_count": 70,
-    "triangle_estimate": 5460,
-    "compile_ms": 3.45,
-    "total_generate_ms": 108.52,
-    "spec_digest": "639f754b86125b5293ecbf69c111f4d1212d6e88728c5445ed105152b254446a",
-    "rbxlx_bytes": 102554
+    "part_count": 98,
+    "triangle_estimate": 7476,
+    "compile_ms": 9.63,
+    "total_generate_ms": 273.6,
+    "spec_digest": "05c396ee6cfc97da8aacf5384fa8dc300549c2d5844c60bc119260d087dadd46",
+    "rbxlx_bytes": 139692
   },
   "courtyard": {
-    "part_count": 110,
-    "triangle_estimate": 5772,
-    "compile_ms": 2.49,
-    "total_generate_ms": 121.55,
-    "spec_digest": "b0f7fba683b8ec1b4670d3aca1769d2055bd3b837399f99d2606aab115d37d81",
-    "rbxlx_bytes": 151620
+    "part_count": 148,
+    "triangle_estimate": 7068,
+    "compile_ms": 7.88,
+    "total_generate_ms": 320.59,
+    "spec_digest": "683c3d6873efb9d5d01aac1cf4e55ecf002ba97e29e4d325e2fd64a4a20d0899",
+    "rbxlx_bytes": 203302
+  },
+  "garden": {
+    "part_count": 971,
+    "triangle_estimate": 52644,
+    "compile_ms": 34.72,
+    "total_generate_ms": 1805.54,
+    "spec_digest": "80a20db8383b51beda29553656858765dc9ac467fc257a9ed4aeed5603c2cd6c",
+    "rbxlx_bytes": 1293260
   },
   "park": {
-    "part_count": 105,
-    "triangle_estimate": 7980,
-    "compile_ms": 2.93,
-    "total_generate_ms": 129.51,
-    "spec_digest": "a296f877d4b7971fe640aa7766dec653f28c82ff82a0e3136f87dccff9a226ac",
-    "rbxlx_bytes": 146246
+    "part_count": 194,
+    "triangle_estimate": 10980,
+    "compile_ms": 6.82,
+    "total_generate_ms": 525.48,
+    "spec_digest": "eb6f398d31170b80354b06e24effd6f3397c0ca7c45992c64d9d68e37c213b8f",
+    "rbxlx_bytes": 266123
   }
 }
