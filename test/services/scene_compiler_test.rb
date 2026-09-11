@@ -23,6 +23,56 @@ class SceneCompilerTest < ActiveSupport::TestCase
     assert_equal first.fetch("parts"), second.fetch("parts")
   end
 
+  test "compiles expressive garden geometry with color and curved forms" do
+    garden = Marshal.load(Marshal.dump(@park))
+    blank_params = garden.dig("objects", 0, "params").transform_values { nil }
+    garden.fetch("surfaces") << {
+      "id" => "round_bed", "kind" => "ellipse", "center" => [0, 0.5, 4], "size" => [18, 12],
+      "elevation" => 0.5, "thickness" => 1, "rotation_y" => 0, "material" => "earth"
+    }
+    garden.fetch("objects") << {
+      "id" => "rose_arch", "type" => "arch", "position" => [0, 0, 2], "rotation_y" => 0,
+      "scale" => [1, 1, 1], "surface_id" => "main_lawn",
+      "params" => blank_params.merge("width" => 10, "depth" => 4, "height" => 14, "material" => "metal", "roof_material" => "stone")
+    }
+    garden.fetch("objects") << {
+      "id" => "distant_peak", "type" => "mountain", "position" => [0, 0, -36], "rotation_y" => 0,
+      "scale" => [1, 1, 1], "surface_id" => "main_lawn",
+      "params" => blank_params.merge("width" => 24, "depth" => 10, "height" => 12, "material" => "mountain")
+    }
+    garden.fetch("groups") << {
+      "id" => "red_roses", "object_type" => "flower", "distribution" => "grid", "count" => 4,
+      "area_center" => [0, 0.5, 4], "area_size" => [10, 6], "scale_range" => [0.9, 1.1],
+      "surface_id" => "round_bed", "path_id" => nil,
+      "params" => blank_params.merge("height" => 2.2, "radius" => 0.6, "material" => "flower_red")
+    }
+    garden.fetch("groups") << {
+      "id" => "clipped_border", "object_type" => "hedge", "distribution" => "grid", "count" => 4,
+      "area_center" => [0, 0.5, 10], "area_size" => [16, 1], "scale_range" => [0.95, 1.05],
+      "surface_id" => "main_lawn", "path_id" => nil,
+      "params" => blank_params.merge("width" => 4, "depth" => 1.2, "height" => 1.5, "material" => "evergreen")
+    }
+    garden.fetch("groups") << {
+      "id" => "vista_conifers", "object_type" => "conifer", "distribution" => "frame", "count" => 4,
+      "area_center" => [0, 0, -30], "area_size" => [40, 8], "scale_range" => [0.9, 1.1],
+      "surface_id" => "main_lawn", "path_id" => nil,
+      "params" => blank_params.merge("trunk_height" => 12, "trunk_diameter" => 1.2, "canopy_radius" => 4, "material" => "evergreen")
+    }
+
+    scene = @compiler.compile_scene(garden)
+
+    assert_equal "cylinder", scene.fetch("parts").find { |part| part["source_id"] == "round_bed" }.fetch("shape")
+    assert_equal 9, scene.fetch("parts").count { |part| part["source_id"] == "main_walk" }
+    assert_equal 20, scene.fetch("parts").count { |part| part["source_id"].start_with?("red_roses-") }
+    assert scene.fetch("parts").any? { |part| part["source_id"].start_with?("red_roses-") && part["material"] == "flower_red" }
+    assert_equal 27, scene.fetch("parts").count { |part| part["source_id"] == "rose_arch" }
+    assert_equal 3, scene.fetch("parts").count { |part| part["source_id"] == "distant_peak" }
+    assert_equal 4, scene.fetch("parts").count { |part| part["source_id"].start_with?("clipped_border-") }
+    conifer_trunks = scene.fetch("parts").select { |part| part["source_id"].start_with?("vista_conifers-") && part["name"] == "Trunk" }
+    assert_equal 4, conifer_trunks.length
+    assert conifer_trunks.all? { |part| part.dig("position", 0).abs >= 8.8 }
+  end
+
   test "invalid reference reports exact path and semantic id" do
     @park.fetch("objects").first["surface_id"] = "missing_surface"
     error = assert_raises(Scene::ValidationError) { @compiler.compile_scene(@park) }
@@ -59,7 +109,7 @@ class SceneCompilerTest < ActiveSupport::TestCase
 
     assert_includes error.errors, {
       path: "$.groups[0].object_type",
-      message: "must be one of tree, bush, rock",
+      message: "must be one of #{Scene::Validator::GROUP_OBJECT_TYPES.join(', ')}",
       id: "north_trees"
     }
   end

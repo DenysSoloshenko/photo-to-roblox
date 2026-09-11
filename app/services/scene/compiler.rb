@@ -2,7 +2,7 @@ require "digest"
 
 module Scene
   class Compiler
-    COMPONENT_VERSION = "1.0.0"
+    COMPONENT_VERSION = "1.1.0"
 
     def initialize(registry: ComponentRegistry.default, budgets: Validator::DEFAULT_BUDGETS)
       @registry = registry
@@ -52,9 +52,10 @@ module Scene
       spec.fetch("surfaces").each do |surface|
         material = surface.fetch("material")
         builder = builder_for(parts, spec, surface.fetch("id"))
+        ellipse = surface.fetch("kind") == "ellipse"
         builder.part(
           name: surface.fetch("kind").capitalize,
-          shape: "block",
+          shape: ellipse ? "cylinder" : "block",
           position: [surface.dig("center", 0), surface.fetch("elevation") - surface.fetch("thickness") / 2.0, surface.dig("center", 2)],
           size: [surface.dig("size", 0), surface.fetch("thickness"), surface.dig("size", 1)],
           rotation: [0, surface.fetch("rotation_y"), 0],
@@ -81,6 +82,13 @@ module Scene
             name: "Path segment #{index + 1}", shape: "block",
             position: [(from[0] + to[0]) / 2.0, (from[1] + to[1]) / 2.0 - 0.02, (from[2] + to[2]) / 2.0],
             size: [route.fetch("width"), 0.25, length + 0.08], rotation: [pitch, yaw, 0],
+            material: route.fetch("material"), collidable: true
+          )
+        end
+        route.fetch("points").each_with_index do |point, index|
+          builder.part(
+            name: "Rounded path joint #{index + 1}", shape: "cylinder",
+            position: [point[0], point[1] - 0.015, point[2]], size: [route.fetch("width"), 0.255, route.fetch("width")],
             material: route.fetch("material"), collidable: true
           )
         end
@@ -128,6 +136,13 @@ module Scene
       when "along_path"
         route = paths.fetch(group.fetch("path_id"))
         count.times.map { |index| interpolate_path(route.fetch("points"), (index + 1.0) / (count + 1.0), rng.rand(-size[0] / 2.0..size[0] / 2.0)) }
+      when "frame"
+        inner_edge = size[0] * 0.22
+        outer_edge = size[0] / 2.0
+        count.times.map do |index|
+          side = index.even? ? -1 : 1
+          [center[0] + side * rng.rand(inner_edge..outer_edge), center[1], center[2] + rng.rand(-size[1] / 2.0..size[1] / 2.0)]
+        end
       else
         count.times.map do
           [center[0] + rng.rand(-size[0] / 2.0..size[0] / 2.0), center[1], center[2] + rng.rand(-size[1] / 2.0..size[1] / 2.0)]

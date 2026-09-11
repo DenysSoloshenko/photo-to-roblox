@@ -6,6 +6,11 @@ module Scene
       registry = new
       registry.register("tree") { |builder, object| Components.tree(builder, object) }
       registry.register("bush") { |builder, object| Components.bush(builder, object) }
+      registry.register("flower") { |builder, object| Components.flower(builder, object) }
+      registry.register("hedge") { |builder, object| Components.hedge(builder, object) }
+      registry.register("conifer") { |builder, object| Components.conifer(builder, object) }
+      registry.register("arch") { |builder, object| Components.arch(builder, object) }
+      registry.register("mountain") { |builder, object| Components.mountain(builder, object) }
       registry.register("rock") { |builder, object| Components.rock(builder, object) }
       registry.register("bench") { |builder, object| Components.bench(builder, object) }
       registry.register("fence") { |builder, object| Components.fence(builder, object) }
@@ -104,14 +109,113 @@ module Scene
     def bush(builder, object)
       base, = unpack(object)
       scale = object.fetch("scale")
-      radius = numeric(object.fetch("params"), "canopy_radius", 1.7)
+      params = object.fetch("params")
+      radius = numeric(params, "radius", numeric(params, "canopy_radius", 1.7))
+      material = params["material"] || "foliage"
       [[0, 0.7, 0], [-0.65, 0.48, 0.1], [0.58, 0.5, 0.18], [0.05, 0.48, -0.62]].each_with_index do |offset, index|
         size = radius * (index.zero? ? 1.65 : 1.25)
         builder.part(
           name: "Bush crown #{index + 1}", shape: "ball",
           position: add(base, [offset[0] * radius * scale[0], offset[1] * radius * scale[1], offset[2] * radius * scale[2]]),
           size: [size * scale[0], size * 0.85 * scale[1], size * scale[2]],
-          material: index.even? ? "foliage" : "foliage_light", collidable: false
+          material: material == "foliage" && index.odd? ? "foliage_light" : material, collidable: false
+        )
+      end
+    end
+
+    FLOWER_PALETTE = %w[flower_red flower_orange flower_pink flower_yellow flower_purple flower_white].freeze
+
+    def flower(builder, object)
+      base, yaw, scale, params = unpack(object)
+      height = numeric(params, "height", 2.2) * scale[1]
+      radius = numeric(params, "radius", 0.55) * (scale[0] + scale[2]) / 2.0
+      bloom_material = params["material"] || "flower_mix"
+      bloom_material = FLOWER_PALETTE.sample(random: builder.rng) if bloom_material == "flower_mix"
+
+      builder.part(name: "Stem", shape: "cylinder", position: add(base, [0, height * 0.48, 0]), size: [0.12, height * 0.92, 0.12], rotation: [0, yaw, 0], material: "foliage", collidable: false)
+      builder.part(name: "Leaves", shape: "ball", position: add(base, [0, height * 0.38, 0]), size: [radius * 1.6, radius * 0.7, radius * 1.2], rotation: [0, yaw, 18], material: "foliage_light", collidable: false)
+      [[0, 1.0, 0], [-0.58, 0.87, 0.24], [0.54, 0.9, -0.2]].each_with_index do |offset, index|
+        bloom_size = radius * (index.zero? ? 1.45 : 1.05)
+        builder.part(
+          name: "Bloom #{index + 1}", shape: "ball",
+          position: add(base, [offset[0] * radius, height * offset[1], offset[2] * radius]),
+          size: [bloom_size, bloom_size * 0.72, bloom_size], material: bloom_material, collidable: false
+        )
+      end
+    end
+
+    def hedge(builder, object)
+      base, yaw, scale, params = unpack(object)
+      width = numeric(params, "width", numeric(params, "length", 4.0)) * scale[0]
+      depth = numeric(params, "depth", 1.4) * scale[2]
+      height = numeric(params, "height", 1.6) * scale[1]
+      material = params["material"] || "evergreen"
+      builder.part(name: "Clipped hedge", shape: "block", position: add(base, [0, height / 2.0, 0]), size: [width, height, depth], rotation: [0, yaw, 0], material: material, collidable: false)
+    end
+
+    def conifer(builder, object)
+      base, yaw, scale, params = unpack(object)
+      trunk_height = numeric(params, "trunk_height", 14.0) * scale[1]
+      trunk_diameter = numeric(params, "trunk_diameter", 1.2) * (scale[0] + scale[2]) / 2.0
+      canopy_radius = numeric(params, "canopy_radius", 5.0) * (scale[0] + scale[2]) / 2.0
+      builder.part(name: "Trunk", shape: "cylinder", position: add(base, [0, trunk_height / 2.0, 0]), size: [trunk_diameter, trunk_height, trunk_diameter], rotation: [0, yaw, 0], material: "bark")
+      4.times do |index|
+        fraction = index / 3.0
+        diameter = canopy_radius * (2.0 - fraction * 1.15)
+        builder.part(
+          name: "Evergreen tier #{index + 1}", shape: "ball",
+          position: add(base, [0, trunk_height * (0.34 + index * 0.18), 0]),
+          size: [diameter, trunk_height * 0.32, diameter], material: "evergreen", collidable: false
+        )
+      end
+    end
+
+    def arch(builder, object)
+      base, yaw, scale, params = unpack(object)
+      width = numeric(params, "width", 12.0) * scale[0]
+      depth = numeric(params, "depth", 5.0) * scale[2]
+      height = numeric(params, "height", 15.0) * scale[1]
+      material = params["material"] || "metal"
+      pedestal_material = params["roof_material"] || "stone"
+      radius = width / 2.0
+      spring_height = [height - radius, height * 0.42].max
+      rail = [[width, depth].min * 0.055, 0.28].max
+      segments = 7
+
+      [-depth / 2.0, depth / 2.0].each do |z|
+        [-1, 1].each do |side|
+          x = side * radius
+          builder.part(name: "Stone pedestal", shape: "block", position: builder.world(base, [x, 1.0, z], yaw), size: [rail * 2.4, 2.0, rail * 2.4], rotation: [0, yaw, 0], material: pedestal_material)
+          builder.part(name: "Arch post", shape: "block", position: builder.world(base, [x, 1.9 + spring_height / 2.0, z], yaw), size: [rail, spring_height, rail], rotation: [0, yaw, 0], material: material)
+        end
+        segment_length = Math::PI * radius / segments * 1.08
+        segments.times do |index|
+          angle = Math::PI * (index + 0.5) / segments
+          local = [Math.cos(angle) * radius, spring_height + Math.sin(angle) * radius + 1.9, z]
+          builder.part(
+            name: "Curved arch", shape: "block", position: builder.world(base, local, yaw),
+            size: [segment_length, rail, rail], rotation: [0, yaw, angle * 180.0 / Math::PI - 90.0], material: material
+          )
+        end
+      end
+      5.times do |index|
+        angle = Math::PI * index / 4.0
+        local = [Math.cos(angle) * radius, spring_height + Math.sin(angle) * radius + 1.9, 0]
+        builder.part(name: "Arch crossbar", shape: "block", position: builder.world(base, local, yaw), size: [rail, rail, depth], rotation: [0, yaw, 0], material: material)
+      end
+    end
+
+    def mountain(builder, object)
+      base, yaw, scale, params = unpack(object)
+      width = numeric(params, "width", numeric(params, "radius", 18.0) * 2.0) * scale[0]
+      depth = numeric(params, "depth", width * 0.55) * scale[2]
+      height = numeric(params, "height", width * 0.38) * scale[1]
+      material = params["material"] || "mountain"
+      [[0, 0, 0, 1.0], [-0.3, -0.12, 0.04, 0.7], [0.32, -0.17, -0.03, 0.62]].each_with_index do |(x, y, z, size), index|
+        builder.part(
+          name: "Mountain mass #{index + 1}", shape: "ball",
+          position: add(base, [x * width, height * (0.42 + y), z * depth]),
+          size: [width * size, height * size, depth * size], rotation: [0, yaw, 0], material: material, collidable: false
         )
       end
     end

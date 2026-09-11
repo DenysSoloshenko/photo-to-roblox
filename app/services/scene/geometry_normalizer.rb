@@ -6,6 +6,7 @@ module Scene
 
     def normalize
       original = Marshal.dump(@spec)
+      bounds_expanded = expand_bounds_to_references
       scale = required_scale
       apply_scale(scale) if scale < 1.0
       clamp_ranges
@@ -14,12 +15,32 @@ module Scene
         scene_spec: @spec,
         metrics: {
           "geometry_adjusted" => Marshal.dump(@spec) != original,
-          "geometry_scale" => scale.round(6)
+          "geometry_scale" => scale.round(6),
+          "bounds_expanded" => bounds_expanded
         }
       }
     end
 
     private
+
+    def expand_bounds_to_references
+      bounds = @spec.fetch("bounds", {})
+      positions = []
+      positions << @spec.dig("spawn", "position")
+      positions.concat(@spec.fetch("objects", []).filter_map { |object| object["position"] if object.is_a?(Hash) })
+      positions.concat(@spec.fetch("groups", []).filter_map { |group| group["area_center"] if group.is_a?(Hash) })
+      @spec.fetch("paths", []).each { |path| positions.concat(Array(path["points"])) if path.is_a?(Hash) }
+      positions.select! { |position| position.is_a?(Array) && position.length == 3 && position.all? { |value| value.is_a?(Numeric) } }
+      return false if positions.empty?
+
+      required_width = positions.map { |position| position[0].abs * 2.0 }.max
+      required_depth = positions.map { |position| position[2].abs * 2.0 }.max
+      original_width = bounds["width"]
+      original_depth = bounds["depth"]
+      bounds["width"] = required_width if original_width.is_a?(Numeric) && required_width > original_width
+      bounds["depth"] = required_depth if original_depth.is_a?(Numeric) && required_depth > original_depth
+      bounds["width"] != original_width || bounds["depth"] != original_depth
+    end
 
     def required_scale
       bounds = @spec.fetch("bounds", {})

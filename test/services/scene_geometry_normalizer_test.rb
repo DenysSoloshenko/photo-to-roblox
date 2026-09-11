@@ -32,4 +32,18 @@ class SceneGeometryNormalizerTest < ActiveSupport::TestCase
     assert_equal 1.0, result.dig(:metrics, "geometry_scale")
     assert_equal source, result.fetch(:scene_spec)
   end
+
+  test "expands scene bounds to contain vision object positions" do
+    source = JSON.parse(Rails.root.join("examples/park.json").read)
+    source.fetch("objects").first["position"] = [72, 0, -61]
+
+    result = Scene::GeometryNormalizer.new(source).normalize
+    normalized = result.fetch(:scene_spec)
+
+    assert result.dig(:metrics, "geometry_adjusted")
+    assert result.dig(:metrics, "bounds_expanded")
+    assert_equal 144.0, normalized.dig("bounds", "width")
+    assert_equal 122.0, normalized.dig("bounds", "depth")
+    assert_equal normalized, Scene::Validator.new(normalized).validate!
+  end
 end

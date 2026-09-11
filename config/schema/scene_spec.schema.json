@@ -86,7 +86,7 @@
     "nullableId": { "anyOf": [{ "$ref": "#/$defs/id" }, { "type": "null" }] },
     "material": {
       "type": "string",
-      "enum": ["grass", "earth", "sand", "water", "stone", "concrete", "path", "wood", "dark_wood", "metal", "foliage", "foliage_light", "bark", "roof", "white", "glass"]
+      "enum": ["grass", "earth", "sand", "water", "stone", "concrete", "path", "wood", "dark_wood", "metal", "foliage", "foliage_light", "evergreen", "flower_mix", "flower_red", "flower_orange", "flower_pink", "flower_yellow", "flower_purple", "flower_white", "mountain", "bark", "roof", "white", "glass"]
     },
     "nullableNumber": {
       "anyOf": [
@@ -123,7 +123,7 @@
       "required": ["id", "kind", "center", "size", "elevation", "thickness", "rotation_y", "material"],
       "properties": {
         "id": { "$ref": "#/$defs/id" },
-        "kind": { "type": "string", "enum": ["ground", "platform", "water"] },
+        "kind": { "type": "string", "enum": ["ground", "platform", "ellipse", "water"] },
         "center": { "$ref": "#/$defs/vector3" },
         "size": { "$ref": "#/$defs/vector2Positive" },
         "elevation": { "type": "number" },
@@ -150,7 +150,7 @@
       "required": ["id", "type", "position", "rotation_y", "scale", "surface_id", "params"],
       "properties": {
         "id": { "$ref": "#/$defs/id" },
-        "type": { "type": "string", "enum": ["tree", "bush", "rock", "bench", "fence", "building"] },
+        "type": { "type": "string", "enum": ["tree", "bush", "flower", "hedge", "conifer", "arch", "mountain", "rock", "bench", "fence", "building"] },
         "position": { "$ref": "#/$defs/vector3" },
         "rotation_y": { "type": "number" },
         "scale": {
@@ -167,8 +167,8 @@
       "required": ["id", "object_type", "distribution", "count", "area_center", "area_size", "scale_range", "surface_id", "path_id", "params"],
       "properties": {
         "id": { "$ref": "#/$defs/id" },
-        "object_type": { "type": "string", "enum": ["tree", "bush", "rock"] },
-        "distribution": { "type": "string", "enum": ["scatter", "grid", "along_path"] },
+        "object_type": { "type": "string", "enum": ["tree", "bush", "flower", "hedge", "conifer", "rock"] },
+        "distribution": { "type": "string", "enum": ["scatter", "grid", "along_path", "frame"] },
         "count": { "type": "integer" },
         "area_center": { "$ref": "#/$defs/vector3" },
         "area_size": { "$ref": "#/$defs/vector2Positive" },

@@ -49,6 +49,7 @@ export interface Metrics {
   removed_group_instances?: number;
   geometry_adjusted?: boolean;
   geometry_scale?: number;
+  bounds_expanded?: boolean;
 }
 
 export interface SceneResponse {

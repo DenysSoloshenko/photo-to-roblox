@@ -1,8 +1,8 @@
 module Scene
   class Validator
-    OBJECT_TYPES = %w[tree bush rock bench fence building].freeze
-    GROUP_OBJECT_TYPES = %w[tree bush rock].freeze
-    DISTRIBUTIONS = %w[scatter grid along_path].freeze
+    OBJECT_TYPES = %w[tree bush flower hedge conifer arch mountain rock bench fence building].freeze
+    GROUP_OBJECT_TYPES = %w[tree bush flower hedge conifer rock].freeze
+    DISTRIBUTIONS = %w[scatter grid along_path frame].freeze
     PARAM_KEYS = %w[
       width depth height roof_height wall_thickness door_width door_height
       trunk_height trunk_diameter canopy_radius radius length post_spacing
@@ -12,7 +12,8 @@ module Scene
     DEFAULT_BUDGETS = { "max_parts" => 1_500, "max_triangles" => 120_000 }.freeze
     TRIANGLES_PER_ESTIMATED_PART = 96
     PART_ESTIMATES = {
-      "tree" => 5, "bush" => 4, "rock" => 1,
+      "tree" => 5, "bush" => 4, "flower" => 5, "hedge" => 1, "conifer" => 5,
+      "arch" => 27, "mountain" => 3, "rock" => 1,
       "bench" => 7, "fence" => 32, "building" => 10
     }.freeze
 
@@ -21,7 +22,7 @@ module Scene
         collection = ->(key) { spec[key].is_a?(Array) ? spec[key] : [] }
         surface_parts = collection.call("surfaces").length
         path_parts = collection.call("paths").sum do |route|
-          route.is_a?(Hash) ? [Array(route["points"]).length - 1, 0].max : 0
+          route.is_a?(Hash) ? [Array(route["points"]).length * 2 - 1, 0].max : 0
         end
         object_parts = collection.call("objects").sum do |object|
           object.is_a?(Hash) ? PART_ESTIMATES.fetch(object["type"], 1) : 1
@@ -140,7 +141,7 @@ module Scene
         next error(path, "must be an object") unless surface.is_a?(Hash)
 
         id(surface, path)
-        enum(surface["kind"], %w[ground platform water], "#{path}.kind")
+        enum(surface["kind"], %w[ground platform ellipse water], "#{path}.kind")
         vector(surface["center"], 3, "#{path}.center")
         vector(surface["size"], 2, "#{path}.size", positive: true)
         number(surface["elevation"], "#{path}.elevation", min: -50, max: 150)

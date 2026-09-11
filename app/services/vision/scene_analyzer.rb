@@ -79,13 +79,19 @@ module Vision
         types and materials. Keep bounds width/depth between 20 and 500 studs, bounds max_height between 5 and 500,
         and every numeric component dimension between 0.01 and 200 studs. The camera must reproduce the photograph's
         main viewpoint. Keep the complete scene below
-        1,200 estimated parts. Estimate each surface and path segment as 1 part; each tree as 5, bush as 4, rock as 1,
-        bench as 7, fence as 32, and building as 10. A repeated group costs its count multiplied by its component estimate.
+        1,200 estimated parts. Estimate each surface as 1 part and a path with N points as 2N-1 parts; each tree as 5,
+        bush as 4, flower as 5, hedge as 1, conifer as 5, arch as 27, mountain as 3, rock as 1, bench as 7,
+        fence as 32, and building as 10. A repeated group costs its count multiplied by its component estimate.
         Prefer a few well-placed repeated objects over dense groups so the scene remains safely below the budget.
         Keep the JSON compact and complete: use at most 18 surfaces, 12 paths, 20 individual objects, and 12 groups.
-        Represent flowerbeds, hedges, and repeated trees with groups instead of individual objects. Do not spend output
-        on tiny flowers or people; preserve the garden's large-scale symmetry, terraces, central arch, paths, tree line,
-        water, and mountain silhouette. The response must end with a complete valid JSON object.
+        For gardens, use ellipse surfaces for circular or curved beds, flower groups with flower_mix or flower colors for
+        visible blooms, hedge objects or groups for clipped borders, arch for arbors, and conifer for pointed evergreens.
+        Use mountain objects only for large distant silhouette masses. Alternate flower_red, flower_orange, flower_pink,
+        flower_yellow, flower_purple, and flower_white across major beds. Do not represent flowers as ordinary bushes.
+        When water or mountains form the background, use distribution frame for tall tree and conifer groups so vegetation
+        clusters at the left and right edges and does not block the central vista. Keep distant water visibly wide.
+        Do not spend output on people or tiny details; preserve the large-scale symmetry, terraces, paths, tree line,
+        water, skyline, and other composition anchors. The response must end with a complete valid JSON object.
         Optional user context: #{hint.to_s.strip.empty? ? "none" : hint.to_s.strip[0, 500]}
       PROMPT
       payload = {
