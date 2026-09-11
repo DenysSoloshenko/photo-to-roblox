@@ -9,8 +9,10 @@
     "typecheck": "tsc -b --pretty false"
   },
   "dependencies": {
+    "i18next": "^26.4.2",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-i18next": "^17.0.13",
     "three": "^0.180.0"
   },
   "devDependencies": {

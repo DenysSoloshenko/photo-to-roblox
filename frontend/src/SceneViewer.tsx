@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import type { SceneIR, ScenePart } from "./types";
@@ -16,6 +17,7 @@ function geometryFor(part: ScenePart): THREE.BufferGeometry {
 }
 
 export default function SceneViewer({ sceneIr, resetToken, onSelect }: Props) {
+  const { t } = useTranslation();
   const hostRef = useRef<HTMLDivElement>(null);
   const resetRef = useRef<(() => void) | null>(null);
 
@@ -146,8 +148,8 @@ export default function SceneViewer({ sceneIr, resetToken, onSelect }: Props) {
   }, [sceneIr, onSelect]);
 
   return (
-    <div className="viewer" ref={hostRef} aria-label="Интерактивное 3D-превью">
-      {!sceneIr && <div className="viewer-empty"><span className="viewer-orbit">◎</span><strong>Пространство появится здесь</strong><p>Загрузите фотографию — основные формы, пути и высоты превратятся в редактируемую сцену.</p></div>}
+    <div className="viewer" ref={hostRef} aria-label={t("viewer.aria")}>
+      {!sceneIr && <div className="viewer-empty"><span className="viewer-orbit">◎</span><strong>{t("viewer.emptyTitle")}</strong><p>{t("viewer.emptyBody")}</p></div>}
     </div>
   );
 }
