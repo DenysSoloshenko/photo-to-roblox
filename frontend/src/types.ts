@@ -33,10 +33,13 @@ export interface SceneIR {
 export interface Metrics {
   order_id?: string;
   vision_model?: string;
+  reasoning_effort?: string | null;
   vision_ms?: number;
   compile_ms?: number;
   total_ms?: number;
   input_tokens?: number;
+  cached_input_tokens?: number;
+  cache_write_tokens?: number;
   output_tokens?: number;
   api_cost_usd?: number | null;
   pricing_basis?: string;

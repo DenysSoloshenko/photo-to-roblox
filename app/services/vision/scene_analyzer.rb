@@ -7,17 +7,30 @@ module Vision
     class ApiError < StandardError; end
 
     DEFAULT_MODEL = "gpt-5.6-terra"
+    SUPPORTED_REASONING_EFFORTS = %w[low medium high xhigh max].freeze
     PRICING_LAST_VERIFIED = "2026-09-10"
     PRICES_PER_MILLION = {
       "gpt-5.6-terra" => { input: 2.0, cached_input: 0.2, output: 12.0 },
       "gpt-5.6-luna" => { input: 0.2, cached_input: 0.02, output: 1.2 },
-      "gpt-4o-mini" => { input: 0.15, cached_input: 0.075, output: 0.6 }
+      "gpt-4o-mini" => { input: 0.15, cached_input: 0.075, output: 0.6 },
+      "gpt-6-astra" => { input: 10.0, cached_input: 1.0, cache_write: 12.5, output: 50.0 }
     }.freeze
 
-    def initialize(api_key: ENV["OPENAI_API_KEY"], model: ENV.fetch("VISION_MODEL", DEFAULT_MODEL), transport: HttpTransport.new)
+    def initialize(
+      api_key: ENV["OPENAI_API_KEY"],
+      model: ENV.fetch("VISION_MODEL", DEFAULT_MODEL),
+      reasoning_effort: ENV["VISION_REASONING_EFFORT"],
+      transport: HttpTransport.new
+    )
       @api_key = api_key
       @model = model
+      @reasoning_effort = reasoning_effort.to_s.strip
+      @reasoning_effort = nil if @reasoning_effort.empty?
       @transport = transport
+
+      if @reasoning_effort && !SUPPORTED_REASONING_EFFORTS.include?(@reasoning_effort)
+        raise ConfigurationError, "VISION_REASONING_EFFORT must be one of: #{SUPPORTED_REASONING_EFFORTS.join(', ')}"
+      end
     end
 
     def analyze(bytes:, mime_type:, filename:, hint: nil)
@@ -37,9 +50,11 @@ module Vision
         scene_spec: spec,
         metrics: {
           "vision_model" => @model,
+          "reasoning_effort" => @reasoning_effort,
           "vision_ms" => elapsed_ms,
           "input_tokens" => usage.fetch("input_tokens", 0),
           "cached_input_tokens" => usage.dig("input_tokens_details", "cached_tokens") || 0,
+          "cache_write_tokens" => usage.dig("input_tokens_details", "cache_write_tokens") || 0,
           "output_tokens" => usage.fetch("output_tokens", 0),
           "api_cost_usd" => calculate_cost(usage),
           "pricing_basis" => "OpenAI list pricing verified #{PRICING_LAST_VERIFIED}; image tokens are included in input_tokens",
@@ -67,9 +82,13 @@ module Vision
         1,200 estimated parts. Estimate each surface and path segment as 1 part; each tree as 5, bush as 4, rock as 1,
         bench as 7, fence as 32, and building as 10. A repeated group costs its count multiplied by its component estimate.
         Prefer a few well-placed repeated objects over dense groups so the scene remains safely below the budget.
+        Keep the JSON compact and complete: use at most 18 surfaces, 12 paths, 20 individual objects, and 12 groups.
+        Represent flowerbeds, hedges, and repeated trees with groups instead of individual objects. Do not spend output
+        on tiny flowers or people; preserve the garden's large-scale symmetry, terraces, central arch, paths, tree line,
+        water, and mountain silhouette. The response must end with a complete valid JSON object.
         Optional user context: #{hint.to_s.strip.empty? ? "none" : hint.to_s.strip[0, 500]}
       PROMPT
-      {
+      payload = {
         model: @model,
         store: false,
         instructions: "You are a spatial scene analyst. Return only the strict structured SceneSpec; never return code, scripts, asset IDs, or prose.",
@@ -81,8 +100,11 @@ module Vision
           ]
         }],
         text: { format: { type: "json_schema", name: "scene_spec", strict: true, schema: schema } },
-        max_output_tokens: 8_000
+        max_output_tokens: ENV.fetch("VISION_MAX_OUTPUT_TOKENS", @model == "gpt-6-astra" ? "24000" : "8000").to_i
       }
+
+      payload[:reasoning] = { effort: @reasoning_effort } if @reasoning_effort
+      payload
     end
 
     def extract_output_text(response)
@@ -103,8 +125,11 @@ module Vision
 
       input = usage.fetch("input_tokens", 0).to_i
       cached = (usage.dig("input_tokens_details", "cached_tokens") || 0).to_i
+      cache_write = (usage.dig("input_tokens_details", "cache_write_tokens") || 0).to_i
       output = usage.fetch("output_tokens", 0).to_i
-      cost = ((input - cached) * pricing[:input] + cached * pricing[:cached_input] + output * pricing[:output]) / 1_000_000.0
+      uncached = [input - cached - cache_write, 0].max
+      cache_write_price = pricing.fetch(:cache_write, pricing.fetch(:input))
+      cost = (uncached * pricing[:input] + cached * pricing[:cached_input] + cache_write * cache_write_price + output * pricing[:output]) / 1_000_000.0
       cost.round(6)
     end
 

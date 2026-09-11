@@ -9,6 +9,7 @@ module Api
           ok: true,
           vision_configured: ENV["OPENAI_API_KEY"].present?,
           vision_model: ENV.fetch("VISION_MODEL", Vision::SceneAnalyzer::DEFAULT_MODEL),
+          vision_reasoning_effort: ENV["VISION_REASONING_EFFORT"].presence,
           component_version: Scene::Compiler::COMPONENT_VERSION
         }
       end

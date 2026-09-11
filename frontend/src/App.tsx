@@ -45,12 +45,16 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [resetToken, setResetToken] = useState(0);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [visionStatus, setVisionStatus] = useState<{ configured: boolean; model: string } | null>(null);
+  const [visionStatus, setVisionStatus] = useState<{ configured: boolean; model: string; reasoningEffort?: string } | null>(null);
 
   useEffect(() => {
     fetch("/api/v1/status")
       .then((response) => response.json())
-      .then((body) => setVisionStatus({ configured: Boolean(body.vision_configured), model: String(body.vision_model) }))
+      .then((body) => setVisionStatus({
+        configured: Boolean(body.vision_configured),
+        model: String(body.vision_model),
+        reasoningEffort: body.vision_reasoning_effort ? String(body.vision_reasoning_effort) : undefined,
+      }))
       .catch(() => setVisionStatus(null));
   }, []);
 
@@ -146,7 +150,9 @@ export default function App() {
             <button type="button" className={activeLanguage === "fr" ? "active" : ""} aria-pressed={activeLanguage === "fr"} title={t("language.french")} onClick={() => changeLanguage("fr")}>FR</button>
           </nav>
           <div className={`api-badge ${visionStatus?.configured ? "online" : "offline"}`}>
-            <span /> {visionStatus?.configured ? t("api.connected", { model: visionStatus.model }) : t("api.notConfigured")}
+            <span /> {visionStatus?.configured
+              ? t("api.connected", { model: `${visionStatus.model}${visionStatus.reasoningEffort ? ` · ${visionStatus.reasoningEffort}` : ""}` })
+              : t("api.notConfigured")}
           </div>
         </div>
       </header>

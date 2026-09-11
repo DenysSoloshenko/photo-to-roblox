@@ -8,7 +8,8 @@ module Vision
       request = Net::HTTP::Post.new(uri)
       headers.each { |name, value| request[name] = value }
       request.body = body
-      response = Net::HTTP.start(uri.host, uri.port, use_ssl: true, open_timeout: 10, read_timeout: 120) { |http| http.request(request) }
+      read_timeout = ENV.fetch("VISION_READ_TIMEOUT_SECONDS", "300").to_i
+      response = Net::HTTP.start(uri.host, uri.port, use_ssl: true, open_timeout: 10, read_timeout: read_timeout) { |http| http.request(request) }
       parsed = JSON.parse(response.body)
       return parsed if response.is_a?(Net::HTTPSuccess)
 
