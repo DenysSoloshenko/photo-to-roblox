@@ -1,6 +1,21 @@
 #!/usr/bin/env ruby
 
 root = File.expand_path("..", __dir__)
+env_file = File.join(root, ".env")
+if File.file?(env_file)
+  File.foreach(env_file) do |line|
+    line = line.strip
+    next if line.empty? || line.start_with?("#")
+
+    key, value = line.split("=", 2)
+    next unless key&.match?(/\A[A-Z_][A-Z0-9_]*\z/) && value
+
+    value = value.strip
+    value = value[1...-1] if value.length >= 2 && [["\"", "\""], ["'", "'"]].include?([value[0], value[-1]])
+    ENV[key] = value unless ENV.key?(key)
+  end
+end
+
 children = [
   spawn({ "PORT" => ENV.fetch("PORT", "3000") }, "bin/rails", "server", chdir: root),
   spawn("npm", "run", "dev", "--", "--host", ENV.fetch("VITE_HOST", "127.0.0.1"), chdir: File.join(root, "frontend"))
