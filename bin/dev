@@ -1,2 +1,23 @@
 #!/usr/bin/env ruby
-exec "./bin/rails", "server", *ARGV
+
+root = File.expand_path("..", __dir__)
+children = [
+  spawn({ "PORT" => ENV.fetch("PORT", "3000") }, "bin/rails", "server", chdir: root),
+  spawn("npm", "run", "dev", "--", "--host", ENV.fetch("VITE_HOST", "127.0.0.1"), chdir: File.join(root, "frontend"))
+]
+
+stop = proc do
+  children.each do |pid|
+    Process.kill("TERM", pid)
+  rescue Errno::ESRCH
+    nil
+  end
+end
+
+Signal.trap("INT") { stop.call }
+Signal.trap("TERM") { stop.call }
+
+_pid, status = Process.wait2
+stop.call
+children.each { |pid| Process.wait(pid) rescue nil }
+exit(status.exitstatus || 1)

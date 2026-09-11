@@ -14,6 +14,15 @@ class ApiV1ScenesControllerTest < ActionDispatch::IntegrationTest
     assert body.dig("scene_ir", "stats", "part_count").positive?
   end
 
+  test "serves a compiled development example" do
+    get "/api/v1/scenes/examples/park"
+
+    assert_response :success
+    body = JSON.parse(response.body)
+    assert_equal @spec, body.fetch("scene_spec")
+    assert_equal "Riverside Park", body.dig("scene_ir", "name")
+  end
+
   test "downloads rbxlx" do
     post "/api/v1/scenes/export", params: { scene_spec: @spec }, as: :json
 

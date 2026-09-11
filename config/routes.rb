@@ -5,6 +5,7 @@ Rails.application.routes.draw do
     namespace :v1 do
       get "status", to: "scenes#status"
       get "scenes/schema", to: "scenes#schema"
+      get "scenes/examples/:name", to: "scenes#example"
       post "scenes/analyze", to: "scenes#analyze"
       post "scenes/compile", to: "scenes#compile"
       post "scenes/export", to: "scenes#export"

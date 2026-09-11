@@ -17,6 +17,17 @@ module Api
         render json: JSON.parse(Rails.root.join("config/schema/scene_spec.schema.json").read)
       end
 
+      def example
+        return head :not_found unless Rails.env.development? || Rails.env.test?
+
+        name = params[:name].to_s
+        return head :not_found unless %w[park courtyard coast].include?(name)
+
+        scene_spec = JSON.parse(Rails.root.join("examples/#{name}.json").read)
+        scene_ir = Scene::Compiler.new.compile_scene(scene_spec)
+        render json: { scene_spec: scene_spec, scene_ir: scene_ir, metrics: { "compile_ms" => scene_ir.dig("stats", "compile_ms") } }
+      end
+
       def analyze
         started_at = monotonic_time
         upload = params[:photo]
