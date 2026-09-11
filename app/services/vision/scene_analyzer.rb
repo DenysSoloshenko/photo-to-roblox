@@ -5,10 +5,13 @@ module Vision
   class SceneAnalyzer
     class ConfigurationError < StandardError; end
     class ApiError < StandardError; end
+    class TimeoutError < ApiError; end
 
     DEFAULT_MODEL = "gpt-5.6-terra"
     DEFAULT_REASONING_EFFORT = "high"
     DEFAULT_REFINEMENT_REASONING_EFFORT = "medium"
+    QUALITY_MODES = %w[terra astra_max].freeze
+    ASTRA_RUN_LOCK = Mutex.new
     SUPPORTED_REASONING_EFFORTS = %w[none low medium high xhigh max].freeze
     SYSTEM_INSTRUCTIONS = "You are a spatial scene planner and final composition reviewer. Return only the strict structured SceneSpec; never return code, asset IDs, or prose."
     PROMPT_CACHE_KEY = "scene-foundry-v1-2"
@@ -20,12 +23,47 @@ module Vision
       "gpt-6-astra" => { input: 10.0, cached_input: 1.0, cache_write: 12.5, output: 50.0 }
     }.freeze
 
+    def self.for_quality(
+      mode,
+      api_key: ENV["OPENAI_API_KEY"],
+      transport: nil,
+      astra_enabled: ENV.fetch("ASTRA_QUALITY_ENABLED", "false") == "true"
+    )
+      quality_mode = mode.to_s.presence || "terra"
+      raise ConfigurationError, "quality_mode must be one of: #{QUALITY_MODES.join(', ')}" unless QUALITY_MODES.include?(quality_mode)
+
+      if quality_mode == "astra_max"
+        raise ConfigurationError, "Astra Max is disabled; set ASTRA_QUALITY_ENABLED=true after configuring spend limits" unless astra_enabled
+
+        new(
+          api_key: api_key,
+          model: "gpt-6-astra",
+          reasoning_effort: "max",
+          refinement_enabled: true,
+          refinement_reasoning_effort: ENV.fetch("ASTRA_REFINEMENT_REASONING_EFFORT", "high"),
+          quality_mode: quality_mode,
+          transport: transport || HttpTransport.new(read_timeout: ENV.fetch("ASTRA_READ_TIMEOUT_SECONDS", "1200").to_i)
+        )
+      else
+        new(
+          api_key: api_key,
+          model: DEFAULT_MODEL,
+          reasoning_effort: DEFAULT_REASONING_EFFORT,
+          refinement_enabled: true,
+          refinement_reasoning_effort: DEFAULT_REFINEMENT_REASONING_EFFORT,
+          quality_mode: quality_mode,
+          transport: transport || HttpTransport.new
+        )
+      end
+    end
+
     def initialize(
       api_key: ENV["OPENAI_API_KEY"],
       model: ENV.fetch("VISION_MODEL", DEFAULT_MODEL),
       reasoning_effort: ENV.fetch("VISION_REASONING_EFFORT", DEFAULT_REASONING_EFFORT),
       refinement_enabled: ENV.fetch("VISION_REFINEMENT_ENABLED", "true") == "true",
       refinement_reasoning_effort: ENV.fetch("VISION_REFINEMENT_REASONING_EFFORT", DEFAULT_REFINEMENT_REASONING_EFFORT),
+      quality_mode: nil,
       transport: HttpTransport.new
     )
       @api_key = api_key
@@ -33,16 +71,24 @@ module Vision
       @reasoning_effort = reasoning_effort.to_s.strip
       @reasoning_effort = nil if @reasoning_effort.empty?
       @refinement_enabled = refinement_enabled
+      @quality_mode = quality_mode || (@model == "gpt-6-astra" ? "astra_max" : "terra")
       @refinement_reasoning_effort = refinement_reasoning_effort.to_s.strip
       @refinement_reasoning_effort = nil if @refinement_reasoning_effort.empty?
       @transport = transport
 
       validate_effort!(@reasoning_effort, "VISION_REASONING_EFFORT")
       validate_effort!(@refinement_reasoning_effort, "VISION_REFINEMENT_REASONING_EFFORT")
+      validate_model_effort!(@reasoning_effort, "VISION_REASONING_EFFORT")
+      validate_model_effort!(@refinement_reasoning_effort, "VISION_REFINEMENT_REASONING_EFFORT")
     end
 
     def analyze(bytes:, mime_type:, filename:, hint: nil)
       raise ConfigurationError, "OPENAI_API_KEY is not configured" if @api_key.to_s.empty?
+      astra_lock_acquired = false
+      if @quality_mode == "astra_max"
+        astra_lock_acquired = ASTRA_RUN_LOCK.try_lock
+        raise ApiError, "another Astra Max generation is already running" unless astra_lock_acquired
+      end
 
       draft = request_scene(request_payload(bytes: bytes, mime_type: mime_type, hint: hint))
       spec = draft.fetch(:scene_spec)
@@ -57,6 +103,7 @@ module Vision
         scene_spec: spec,
         metrics: {
           "vision_model" => @model,
+          "quality_mode" => @quality_mode,
           "reasoning_effort" => @reasoning_effort,
           "refinement_enabled" => !!refinement,
           "refinement_reasoning_effort" => refinement ? @refinement_reasoning_effort : nil,
@@ -70,12 +117,13 @@ module Vision
           "draft_api_cost_usd" => draft_cost,
           "refinement_api_cost_usd" => refinement ? refinement_cost : nil,
           "api_cost_usd" => (draft_cost.to_f + refinement_cost.to_f).round(6),
-          "pricing_basis" => "OpenAI list pricing verified #{PRICING_LAST_VERIFIED}; image tokens are included in input_tokens",
-          "source_filename" => filename
+          "pricing_basis" => "OpenAI list pricing verified #{PRICING_LAST_VERIFIED}; image tokens are included in input_tokens"
         }
       }
     rescue JSON::ParserError => error
       raise ApiError, "vision response was not valid SceneSpec JSON: #{error.message}"
+    ensure
+      ASTRA_RUN_LOCK.unlock if astra_lock_acquired
     end
 
     private
@@ -98,6 +146,11 @@ module Vision
         foreground/midground/background order, silhouettes, symmetry, open vistas, major paths, structures, water,
         vegetation masses, and elevation changes. Estimate scale in studs (1 stud is about 0.28 m). Approximate occluded
         areas conservatively and omit people and tiny objects.
+
+        Build a compact game-scale diorama, not a survey-scale world. Keep the complete scene within roughly 300 x 300
+        studs whenever possible and keep the recognizable foreground/midground composition large enough to play in.
+        Compress distant water, shorelines, skylines, and mountains into scenic layers inside those bounds; never encode
+        their real kilometre-scale distance or let a background layer force the foreground to be uniformly shrunk.
 
         First identify the scene family from visual evidence (for example yard, street, coast, park, garden, plaza,
         woodland, or mixed scene). Do not force a garden layout onto another scene. Use high-level patterns only when
@@ -143,7 +196,9 @@ module Vision
         relative size and placement of composition anchors, symmetry, curved paths, open vistas, terrain levels, and use of
         procedural patterns. Confirm the pattern choices fit the actual scene family; remove any forced formal-garden
         pattern from a non-garden scene. Use mass objects for important unfamiliar solids. Prefer one strong matching
-        pattern over many primitive objects. Stay below 1,200 estimated parts.
+        pattern over many primitive objects. Do not duplicate geometry already owned by a procedural pattern. Treat the
+        scene as a compact diorama: compress distant scenic layers instead of using real-world horizon distances, keep the
+        main playable composition visually substantial, stay near 300 x 300 studs, and stay below 1,200 estimated parts.
         Do not add people, text, asset IDs, or imagined landmarks.
         Optional user context: #{hint.to_s.strip.empty? ? "none" : hint.to_s.strip[0, 500]}
         Draft SceneSpec: #{JSON.generate(scene_spec)}
@@ -166,13 +221,21 @@ module Vision
         instructions: instructions,
         input: input,
         text: { format: { type: "json_schema", name: "scene_spec", strict: true, schema: schema } },
-        max_output_tokens: ENV.fetch("VISION_MAX_OUTPUT_TOKENS", @model == "gpt-6-astra" ? "24000" : "10000").to_i,
+        max_output_tokens: max_output_tokens,
         prompt_cache_key: PROMPT_CACHE_KEY,
         prompt_cache_options: { ttl: "30m" }
       }
 
       payload[:reasoning] = { effort: reasoning_effort } if reasoning_effort
       payload
+    end
+
+    def max_output_tokens
+      if @model == "gpt-6-astra"
+        ENV.fetch("ASTRA_MAX_OUTPUT_TOKENS", "48000").to_i
+      else
+        ENV.fetch("VISION_MAX_OUTPUT_TOKENS", "10000").to_i
+      end
     end
 
     def request_scene(payload)
@@ -207,7 +270,18 @@ module Vision
       raise ConfigurationError, "#{variable_name} must be one of: #{SUPPORTED_REASONING_EFFORTS.join(', ')}"
     end
 
+    def validate_model_effort!(value, variable_name)
+      return unless @model == "gpt-6-astra" && value == "none"
+
+      raise ConfigurationError, "#{variable_name}=none is not supported by gpt-6-astra"
+    end
+
     def extract_output_text(response)
+      unless response["status"] == "completed"
+        reason = response.dig("incomplete_details", "reason") || response.dig("error", "message") || response["status"] || "unknown"
+        raise ApiError, "vision response did not complete: #{reason}"
+      end
+
       response.fetch("output", []).each do |item|
         next unless item["type"] == "message"
 

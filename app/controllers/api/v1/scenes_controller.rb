@@ -4,6 +4,10 @@ module Api
       MAX_UPLOAD_BYTES = 10 * 1024 * 1024
       ALLOWED_TYPES = %w[image/jpeg image/png image/webp].freeze
 
+      rescue_from Roblox::MapArtifact::TooLarge do |error|
+        render json: { error: "map_too_large", message: error.message }, status: :payload_too_large
+      end
+
       def status
         render json: {
           ok: true,
@@ -12,6 +16,9 @@ module Api
           vision_reasoning_effort: ENV.fetch("VISION_REASONING_EFFORT", Vision::SceneAnalyzer::DEFAULT_REASONING_EFFORT).presence,
           vision_refinement_enabled: ENV.fetch("VISION_REFINEMENT_ENABLED", "true") == "true",
           vision_refinement_reasoning_effort: ENV.fetch("VISION_REFINEMENT_REASONING_EFFORT", Vision::SceneAnalyzer::DEFAULT_REFINEMENT_REASONING_EFFORT).presence,
+          quality_modes: Vision::SceneAnalyzer::QUALITY_MODES,
+          default_quality_mode: "terra",
+          astra_quality_enabled: ENV.fetch("ASTRA_QUALITY_ENABLED", "false") == "true",
           development_examples_enabled: Rails.env.development? || Rails.env.test?,
           component_version: Scene::Compiler::COMPONENT_VERSION
         }
@@ -29,7 +36,7 @@ module Api
 
         scene_spec = JSON.parse(Rails.root.join("examples/#{name}.json").read)
         scene_ir = Scene::Compiler.new.compile_scene(scene_spec)
-        render json: { scene_spec: scene_spec, scene_ir: scene_ir, metrics: { "compile_ms" => scene_ir.dig("stats", "compile_ms") } }
+        render json: scene_payload(scene_spec, scene_ir, { "compile_ms" => scene_ir.dig("stats", "compile_ms") }, include_map: include_map?)
       end
 
       def analyze
@@ -38,8 +45,12 @@ module Api
         return render_error("$.photo", "is required", :unprocessable_entity) unless upload.respond_to?(:read)
         return render_error("$.photo", "must be JPEG, PNG, or WebP", :unsupported_media_type) unless ALLOWED_TYPES.include?(upload.content_type)
         return render_error("$.photo", "must be 10 MB or smaller", :payload_too_large) if upload.size > MAX_UPLOAD_BYTES
+        quality_mode = params[:quality_mode].presence || "terra"
+        unless Vision::SceneAnalyzer::QUALITY_MODES.include?(quality_mode)
+          return render_error("$.quality_mode", "must be one of #{Vision::SceneAnalyzer::QUALITY_MODES.join(', ')}", :unprocessable_entity)
+        end
 
-        analysis = Vision::SceneAnalyzer.new.analyze(
+        analysis = Vision::SceneAnalyzer.for_quality(quality_mode).analyze(
           bytes: upload.read,
           mime_type: upload.content_type,
           filename: upload.original_filename,
@@ -51,13 +62,16 @@ module Api
         scene_ir = Scene::Compiler.new.compile_scene(scene_spec)
         metrics = analysis.fetch(:metrics).merge(geometry.fetch(:metrics)).merge(budget.fetch(:metrics)).merge(
           "compile_ms" => scene_ir.dig("stats", "compile_ms"),
-          "total_ms" => ((monotonic_time - started_at) * 1000).round(2),
           "order_id" => request.request_id
         )
-        Rails.logger.info({ event: "scene_order_completed", order_id: request.request_id, metrics: metrics }.to_json)
-        render json: { scene_spec: scene_spec, scene_ir: scene_ir, metrics: metrics }
+        payload = scene_payload(scene_spec, scene_ir, metrics, include_map: include_map?)
+        payload.fetch(:metrics)["total_ms"] = ((monotonic_time - started_at) * 1000).round(2)
+        Rails.logger.info({ event: "scene_order_completed", order_id: request.request_id, metrics: payload.fetch(:metrics) }.to_json)
+        render json: payload
       rescue Vision::SceneAnalyzer::ConfigurationError => error
         render json: { error: "vision_not_configured", message: error.message }, status: :service_unavailable
+      rescue Vision::SceneAnalyzer::TimeoutError => error
+        render json: { error: "vision_timeout", message: error.message }, status: :gateway_timeout
       rescue Vision::SceneAnalyzer::ApiError => error
         render json: { error: "vision_api_error", message: error.message }, status: :bad_gateway
       rescue Scene::ValidationError => error
@@ -67,7 +81,7 @@ module Api
       def compile
         scene_spec = scene_params
         scene_ir = Scene::Compiler.new.compile_scene(scene_spec)
-        render json: { scene_spec: scene_spec, scene_ir: scene_ir, metrics: { "compile_ms" => scene_ir.dig("stats", "compile_ms") } }
+        render json: scene_payload(scene_spec, scene_ir, { "compile_ms" => scene_ir.dig("stats", "compile_ms") }, include_map: include_map?)
       rescue JSON::ParserError => error
         render_error("$", "invalid JSON: #{error.message}", :bad_request)
       rescue Scene::ValidationError => error
@@ -86,6 +100,23 @@ module Api
       end
 
       private
+
+      def scene_payload(scene_spec, scene_ir, metrics, include_map:)
+        return { scene_spec: scene_spec, scene_ir: scene_ir, metrics: metrics.merge("map_ready" => false) } unless include_map
+
+        started_at = monotonic_time
+        roblox_file = Roblox::MapArtifact.build(scene_ir)
+        complete_metrics = metrics.merge(
+          "export_ms" => ((monotonic_time - started_at) * 1000).round(2),
+          "rbxlx_bytes" => roblox_file.fetch("byte_size"),
+          "map_ready" => true
+        )
+        { scene_spec: scene_spec, scene_ir: scene_ir, roblox_file: roblox_file, metrics: complete_metrics }
+      end
+
+      def include_map?
+        params[:include_map].to_s == "true"
+      end
 
       def scene_params
         raw = params[:scene_spec]
