@@ -52,4 +52,25 @@ class SceneCompilerTest < ActiveSupport::TestCase
     refute_equal baseline.fetch("parts").select { |part| part["source_id"] == "oak_west" }, rebuilt.fetch("parts").select { |part| part["source_id"] == "oak_west" }
     assert_equal baseline_other, rebuilt_other
   end
+
+  test "rejects unsupported repeated components before expansion" do
+    @park.fetch("groups").first["object_type"] = "building"
+    error = assert_raises(Scene::ValidationError) { @compiler.compile_scene(@park) }
+
+    assert_includes error.errors, {
+      path: "$.groups[0].object_type",
+      message: "must be one of tree, bush, rock",
+      id: "north_trees"
+    }
+  end
+
+  test "rejects invalid component parameters with a field-aware error" do
+    @park.fetch("objects").first.fetch("params")["material"] = "brick_texture"
+    error = assert_raises(Scene::ValidationError) { @compiler.compile_scene(@park) }
+
+    assert_includes error.errors, {
+      path: "$.objects[0].params.material",
+      message: "must be one of #{Scene::MaterialCatalog.names.join(", ")}"
+    }
+  end
 end

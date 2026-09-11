@@ -7,6 +7,7 @@ module Vision
     class ApiError < StandardError; end
 
     DEFAULT_MODEL = "gpt-5.6-terra"
+    PRICING_LAST_VERIFIED = "2026-09-10"
     PRICES_PER_MILLION = {
       "gpt-5.6-terra" => { input: 2.0, cached_input: 0.2, output: 12.0 },
       "gpt-5.6-luna" => { input: 0.2, cached_input: 0.02, output: 1.2 },
@@ -41,7 +42,7 @@ module Vision
           "cached_input_tokens" => usage.dig("input_tokens_details", "cached_tokens") || 0,
           "output_tokens" => usage.fetch("output_tokens", 0),
           "api_cost_usd" => calculate_cost(usage),
-          "pricing_basis" => "per-token estimate from model pricing; image tokens are included in input_tokens",
+          "pricing_basis" => "OpenAI list pricing verified #{PRICING_LAST_VERIFIED}; image tokens are included in input_tokens",
           "source_filename" => filename
         }
       }

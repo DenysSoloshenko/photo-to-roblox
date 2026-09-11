@@ -1,22 +1,20 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://scene-foundry.local/schema/scene-spec-1.0.json",
   "title": "SceneSpec 1.0",
   "type": "object",
   "additionalProperties": false,
   "required": ["schema_version", "name", "seed", "units", "axes", "bounds", "source", "surfaces", "paths", "objects", "groups", "spawn", "camera"],
   "properties": {
-    "schema_version": { "const": "1.0" },
-    "name": { "type": "string", "minLength": 1, "maxLength": 80 },
-    "seed": { "type": "integer", "minimum": 0, "maximum": 2147483646 },
-    "units": { "const": "studs" },
+    "schema_version": { "type": "string", "enum": ["1.0"] },
+    "name": { "type": "string" },
+    "seed": { "type": "integer" },
+    "units": { "type": "string", "enum": ["studs"] },
     "axes": {
       "type": "object",
       "additionalProperties": false,
       "required": ["up", "forward"],
       "properties": {
-        "up": { "const": "Y" },
-        "forward": { "const": "-Z" }
+        "up": { "type": "string", "enum": ["Y"] },
+        "forward": { "type": "string", "enum": ["-Z"] }
       }
     },
     "bounds": {
@@ -24,9 +22,9 @@
       "additionalProperties": false,
       "required": ["width", "depth", "max_height"],
       "properties": {
-        "width": { "type": "number", "minimum": 20, "maximum": 500 },
-        "depth": { "type": "number", "minimum": 20, "maximum": 500 },
-        "max_height": { "type": "number", "minimum": 5, "maximum": 150 }
+        "width": { "type": "number" },
+        "depth": { "type": "number" },
+        "max_height": { "type": "number" }
       }
     },
     "source": {
@@ -34,30 +32,25 @@
       "additionalProperties": false,
       "required": ["summary", "scale_confidence", "assumptions"],
       "properties": {
-        "summary": { "type": "string", "maxLength": 500 },
-        "scale_confidence": { "type": "number", "minimum": 0, "maximum": 1 },
-        "assumptions": { "type": "array", "maxItems": 10, "items": { "type": "string", "maxLength": 180 } }
+        "summary": { "type": "string" },
+        "scale_confidence": { "type": "number" },
+        "assumptions": { "type": "array", "items": { "type": "string" } }
       }
     },
     "surfaces": {
       "type": "array",
-      "minItems": 1,
-      "maxItems": 30,
       "items": { "$ref": "#/$defs/surface" }
     },
     "paths": {
       "type": "array",
-      "maxItems": 20,
       "items": { "$ref": "#/$defs/path" }
     },
     "objects": {
       "type": "array",
-      "maxItems": 100,
       "items": { "$ref": "#/$defs/object" }
     },
     "groups": {
       "type": "array",
-      "maxItems": 30,
       "items": { "$ref": "#/$defs/group" }
     },
     "spawn": {
@@ -66,7 +59,7 @@
       "required": ["position", "rotation_y"],
       "properties": {
         "position": { "$ref": "#/$defs/vector3" },
-        "rotation_y": { "type": "number", "minimum": -360, "maximum": 360 }
+        "rotation_y": { "type": "number" }
       }
     },
     "camera": {
@@ -76,23 +69,19 @@
       "properties": {
         "position": { "$ref": "#/$defs/vector3" },
         "target": { "$ref": "#/$defs/vector3" },
-        "fov": { "type": "number", "minimum": 25, "maximum": 90 }
+        "fov": { "type": "number" }
       }
     }
   },
   "$defs": {
-    "id": { "type": "string", "pattern": "^[a-z][a-z0-9_-]*$", "maxLength": 64 },
+    "id": { "type": "string" },
     "vector3": {
       "type": "array",
-      "minItems": 3,
-      "maxItems": 3,
-      "items": { "type": "number", "minimum": -500, "maximum": 500 }
+      "items": { "type": "number" }
     },
     "vector2Positive": {
       "type": "array",
-      "minItems": 2,
-      "maxItems": 2,
-      "items": { "type": "number", "exclusiveMinimum": 0, "maximum": 500 }
+      "items": { "type": "number" }
     },
     "nullableId": { "anyOf": [{ "$ref": "#/$defs/id" }, { "type": "null" }] },
     "material": {
@@ -101,7 +90,7 @@
     },
     "nullableNumber": {
       "anyOf": [
-        { "type": "number", "exclusiveMinimum": 0, "maximum": 200 },
+        { "type": "number" },
         { "type": "null" }
       ]
     },
@@ -125,7 +114,7 @@
         "post_spacing": { "$ref": "#/$defs/nullableNumber" },
         "material": { "anyOf": [{ "$ref": "#/$defs/material" }, { "type": "null" }] },
         "roof_material": { "anyOf": [{ "$ref": "#/$defs/material" }, { "type": "null" }] },
-        "roof_style": { "enum": ["gable", "flat", null] }
+        "roof_style": { "anyOf": [{ "type": "string", "enum": ["gable", "flat"] }, { "type": "null" }] }
       }
     },
     "surface": {
@@ -134,12 +123,12 @@
       "required": ["id", "kind", "center", "size", "elevation", "thickness", "rotation_y", "material"],
       "properties": {
         "id": { "$ref": "#/$defs/id" },
-        "kind": { "enum": ["ground", "platform", "water"] },
+        "kind": { "type": "string", "enum": ["ground", "platform", "water"] },
         "center": { "$ref": "#/$defs/vector3" },
         "size": { "$ref": "#/$defs/vector2Positive" },
-        "elevation": { "type": "number", "minimum": -50, "maximum": 150 },
-        "thickness": { "type": "number", "minimum": 0.05, "maximum": 20 },
-        "rotation_y": { "type": "number", "minimum": -360, "maximum": 360 },
+        "elevation": { "type": "number" },
+        "thickness": { "type": "number" },
+        "rotation_y": { "type": "number" },
         "material": { "$ref": "#/$defs/material" }
       }
     },
@@ -149,8 +138,8 @@
       "required": ["id", "points", "width", "material", "surface_id"],
       "properties": {
         "id": { "$ref": "#/$defs/id" },
-        "points": { "type": "array", "minItems": 2, "maxItems": 30, "items": { "$ref": "#/$defs/vector3" } },
-        "width": { "type": "number", "minimum": 2, "maximum": 30 },
+        "points": { "type": "array", "items": { "$ref": "#/$defs/vector3" } },
+        "width": { "type": "number" },
         "material": { "$ref": "#/$defs/material" },
         "surface_id": { "$ref": "#/$defs/nullableId" }
       }
@@ -161,14 +150,12 @@
       "required": ["id", "type", "position", "rotation_y", "scale", "surface_id", "params"],
       "properties": {
         "id": { "$ref": "#/$defs/id" },
-        "type": { "enum": ["tree", "bush", "rock", "bench", "fence", "building"] },
+        "type": { "type": "string", "enum": ["tree", "bush", "rock", "bench", "fence", "building"] },
         "position": { "$ref": "#/$defs/vector3" },
-        "rotation_y": { "type": "number", "minimum": -360, "maximum": 360 },
+        "rotation_y": { "type": "number" },
         "scale": {
           "type": "array",
-          "minItems": 3,
-          "maxItems": 3,
-          "items": { "type": "number", "exclusiveMinimum": 0, "maximum": 10 }
+          "items": { "type": "number" }
         },
         "surface_id": { "$ref": "#/$defs/nullableId" },
         "params": { "$ref": "#/$defs/params" }
@@ -180,16 +167,14 @@
       "required": ["id", "object_type", "distribution", "count", "area_center", "area_size", "scale_range", "surface_id", "path_id", "params"],
       "properties": {
         "id": { "$ref": "#/$defs/id" },
-        "object_type": { "enum": ["tree", "bush", "rock"] },
-        "distribution": { "enum": ["scatter", "grid", "along_path"] },
-        "count": { "type": "integer", "minimum": 1, "maximum": 200 },
+        "object_type": { "type": "string", "enum": ["tree", "bush", "rock"] },
+        "distribution": { "type": "string", "enum": ["scatter", "grid", "along_path"] },
+        "count": { "type": "integer" },
         "area_center": { "$ref": "#/$defs/vector3" },
         "area_size": { "$ref": "#/$defs/vector2Positive" },
         "scale_range": {
           "type": "array",
-          "minItems": 2,
-          "maxItems": 2,
-          "items": { "type": "number", "exclusiveMinimum": 0.2, "maximum": 3 }
+          "items": { "type": "number" }
         },
         "surface_id": { "$ref": "#/$defs/nullableId" },
         "path_id": { "$ref": "#/$defs/nullableId" },

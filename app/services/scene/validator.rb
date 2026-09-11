@@ -1,7 +1,14 @@
 module Scene
   class Validator
     OBJECT_TYPES = %w[tree bush rock bench fence building].freeze
+    GROUP_OBJECT_TYPES = %w[tree bush rock].freeze
     DISTRIBUTIONS = %w[scatter grid along_path].freeze
+    PARAM_KEYS = %w[
+      width depth height roof_height wall_thickness door_width door_height
+      trunk_height trunk_diameter canopy_radius radius length post_spacing
+      material roof_material roof_style
+    ].freeze
+    NUMERIC_PARAM_KEYS = PARAM_KEYS - %w[material roof_material roof_style]
     DEFAULT_BUDGETS = { "max_parts" => 1_500, "max_triangles" => 120_000 }.freeze
     PART_ESTIMATES = {
       "tree" => 5, "bush" => 4, "rock" => 1,
@@ -25,9 +32,11 @@ module Scene
       exact("units", "studs")
       error("$.axes.up", "must equal \"Y\"") unless spec.dig("axes", "up") == "Y"
       error("$.axes.forward", "must equal \"-Z\"") unless spec.dig("axes", "forward") == "-Z"
-      require_string("name")
-      require_integer("seed")
+      require_string("name", max: 80)
+      require_integer("seed", min: 0, max: 2_147_483_646)
       validate_bounds
+      validate_source
+      validate_collection_sizes
       validate_surfaces
       validate_paths
       validate_objects
@@ -50,13 +59,17 @@ module Scene
       error("$.#{key}", "must equal #{expected.inspect}") unless spec[key] == expected
     end
 
-    def require_string(key)
+    def require_string(key, max: nil)
       value = spec[key]
       error("$.#{key}", "must be a non-empty string") unless value.is_a?(String) && value.strip.length.positive?
+      error("$.#{key}", "must be at most #{max} characters") if max && value.is_a?(String) && value.length > max
     end
 
-    def require_integer(key)
-      error("$.#{key}", "must be an integer") unless spec[key].is_a?(Integer)
+    def require_integer(key, min:, max:)
+      value = spec[key]
+      return error("$.#{key}", "must be an integer") unless value.is_a?(Integer)
+
+      error("$.#{key}", "must be between #{min} and #{max}") unless value.between?(min, max)
     end
 
     def validate_bounds
@@ -68,6 +81,31 @@ module Scene
 
       %w[width depth max_height].each do |key|
         number(bounds[key], "$.bounds.#{key}", min: key == "max_height" ? 5 : 20, max: 500)
+      end
+    end
+
+    def validate_source
+      source = spec["source"]
+      return error("$.source", "must be an object") unless source.is_a?(Hash)
+
+      summary = source["summary"]
+      error("$.source.summary", "must be a string of at most 500 characters") unless summary.is_a?(String) && summary.length <= 500
+      number(source["scale_confidence"], "$.source.scale_confidence", min: 0, max: 1)
+      assumptions = source["assumptions"]
+      unless assumptions.is_a?(Array)
+        error("$.source.assumptions", "must be an array")
+        return
+      end
+      error("$.source.assumptions", "must contain at most 10 items") if assumptions.length > 10
+      assumptions.each_with_index do |assumption, index|
+        error("$.source.assumptions[#{index}]", "must be a string of at most 180 characters") unless assumption.is_a?(String) && assumption.length <= 180
+      end
+    end
+
+    def validate_collection_sizes
+      { "surfaces" => 30, "paths" => 20, "objects" => 100, "groups" => 30 }.each do |key, max|
+        values = collection(key)
+        error("$.#{key}", "must contain at most #{max} items") if values.length > max
       end
     end
 
@@ -117,7 +155,7 @@ module Scene
         number(object["rotation_y"], "#{path}.rotation_y", min: -360, max: 360)
         vector(object["scale"], 3, "#{path}.scale", positive: true)
         optional_string(object["surface_id"], "#{path}.surface_id")
-        error("#{path}.params", "must be an object", id: object["id"]) unless object["params"].is_a?(Hash)
+        validate_params(object["params"], "#{path}.params", object["id"])
       end
     end
 
@@ -127,7 +165,7 @@ module Scene
         next error(path, "must be an object") unless group.is_a?(Hash)
 
         id(group, path)
-        enum(group["object_type"], OBJECT_TYPES, "#{path}.object_type", id: group["id"])
+        enum(group["object_type"], GROUP_OBJECT_TYPES, "#{path}.object_type", id: group["id"])
         enum(group["distribution"], DISTRIBUTIONS, "#{path}.distribution", id: group["id"])
         integer(group["count"], "#{path}.count", min: 1, max: 200)
         vector(group["area_center"], 3, "#{path}.area_center")
@@ -135,7 +173,7 @@ module Scene
         vector(group["scale_range"], 2, "#{path}.scale_range", positive: true)
         optional_string(group["surface_id"], "#{path}.surface_id")
         optional_string(group["path_id"], "#{path}.path_id")
-        error("#{path}.params", "must be an object", id: group["id"]) unless group["params"].is_a?(Hash)
+        validate_params(group["params"], "#{path}.params", group["id"])
       end
     end
 
@@ -245,10 +283,26 @@ module Scene
     def collection(key)
       value = spec[key]
       unless value.is_a?(Array)
-        error("$.#{key}", "must be an array")
+        error("$.#{key}", "must be an array") unless errors.any? { |item| item[:path] == "$.#{key}" && item[:message] == "must be an array" }
         return []
       end
       value
+    end
+
+    def validate_params(params, path, semantic_id)
+      return error(path, "must be an object", id: semantic_id) unless params.is_a?(Hash)
+
+      (PARAM_KEYS - params.keys).each { |key| error("#{path}.#{key}", "is required", id: semantic_id) }
+      (params.keys - PARAM_KEYS).each { |key| error("#{path}.#{key}", "is not supported", id: semantic_id) }
+      NUMERIC_PARAM_KEYS.each do |key|
+        value = params[key]
+        number(value, "#{path}.#{key}", min: 0.01, max: 200) unless value.nil?
+      end
+      %w[material roof_material].each do |key|
+        value = params[key]
+        material(value, "#{path}.#{key}") unless value.nil?
+      end
+      enum(params["roof_style"], ["gable", "flat", nil], "#{path}.roof_style", id: semantic_id)
     end
 
     def id(value, path)

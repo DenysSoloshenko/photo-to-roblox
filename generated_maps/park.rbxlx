@@ -420,8 +420,8 @@
               <R22>0.99026807</R22>
             </CoordinateFrame>
             <Vector3 name='size'>
-              <X>1.75</X>
-              <Y>9.375</Y>
+              <X>9.375</X>
+              <Y>1.75</Y>
               <Z>1.75</Z>
             </Vector3>
             <Color3uint8 name='Color3uint8'>4284827447</Color3uint8>
@@ -605,8 +605,8 @@
               <R22>0.89100652</R22>
             </CoordinateFrame>
             <Vector3 name='size'>
-              <X>1.43</X>
-              <Y>7.7</Y>
+              <X>7.7</X>
+              <Y>1.43</Y>
               <Z>1.43</Z>
             </Vector3>
             <Color3uint8 name='Color3uint8'>4284827447</Color3uint8>
@@ -1304,8 +1304,8 @@
               <R22>0.22031321</R22>
             </CoordinateFrame>
             <Vector3 name='size'>
-              <X>0.87485</X>
-              <Y>4.93095</Y>
+              <X>4.93095</X>
+              <Y>0.87485</Y>
               <Z>0.87485</Z>
             </Vector3>
             <Color3uint8 name='Color3uint8'>4284827447</Color3uint8>
@@ -1489,8 +1489,8 @@
               <R22>0.5561848</R22>
             </CoordinateFrame>
             <Vector3 name='size'>
-              <X>1.10117</X>
-              <Y>6.20658</Y>
+              <X>6.20658</X>
+              <Y>1.10117</Y>
               <Z>1.10117</Z>
             </Vector3>
             <Color3uint8 name='Color3uint8'>4284827447</Color3uint8>
@@ -1674,8 +1674,8 @@
               <R22>0.89353664</R22>
             </CoordinateFrame>
             <Vector3 name='size'>
-              <X>0.96309</X>
-              <Y>5.42834</Y>
+              <X>5.42834</X>
+              <Y>0.96309</Y>
               <Z>0.96309</Z>
             </Vector3>
             <Color3uint8 name='Color3uint8'>4284827447</Color3uint8>
@@ -1859,8 +1859,8 @@
               <R22>-0.092010148</R22>
             </CoordinateFrame>
             <Vector3 name='size'>
-              <X>0.85939</X>
-              <Y>4.84385</Y>
+              <X>4.84385</X>
+              <Y>0.85939</Y>
               <Z>0.85939</Z>
             </Vector3>
             <Color3uint8 name='Color3uint8'>4284827447</Color3uint8>
@@ -2044,8 +2044,8 @@
               <R22>0.96305407</R22>
             </CoordinateFrame>
             <Vector3 name='size'>
-              <X>0.85655</X>
-              <Y>4.82785</Y>
+              <X>4.82785</X>
+              <Y>0.85655</Y>
               <Z>0.85655</Z>
             </Vector3>
             <Color3uint8 name='Color3uint8'>4284827447</Color3uint8>
@@ -2229,8 +2229,8 @@
               <R22>0.92238587</R22>
             </CoordinateFrame>
             <Vector3 name='size'>
-              <X>1.11207</X>
-              <Y>6.26803</Y>
+              <X>6.26803</X>
+              <Y>1.11207</Y>
               <Z>1.11207</Z>
             </Vector3>
             <Color3uint8 name='Color3uint8'>4284827447</Color3uint8>

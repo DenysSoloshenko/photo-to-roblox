@@ -23,6 +23,33 @@ class ApiV1ScenesControllerTest < ActionDispatch::IntegrationTest
     assert_equal "Riverside Park", body.dig("scene_ir", "name")
   end
 
+  test "takes a new upload through analysis and compilation without photo-specific code" do
+    fake_analyzer = Object.new
+    spec = @spec
+    fake_analyzer.define_singleton_method(:analyze) do |bytes:, mime_type:, filename:, hint:|
+      raise "upload was not forwarded" unless bytes == "new-photo-bytes" && mime_type == "image/jpeg"
+      raise "metadata was not forwarded" unless filename == "new-yard.jpg" && hint == "keep the large tree"
+
+      {
+        scene_spec: spec,
+        metrics: { "vision_model" => "fake-vision", "vision_ms" => 123.4, "api_cost_usd" => 0.0042 }
+      }
+    end
+    upload = Rack::Test::UploadedFile.new(StringIO.new("new-photo-bytes"), "image/jpeg", original_filename: "new-yard.jpg")
+
+    Vision::SceneAnalyzer.stub(:new, fake_analyzer) do
+      post "/api/v1/scenes/analyze", params: { photo: upload, hint: "keep the large tree" }
+    end
+
+    assert_response :success
+    body = JSON.parse(response.body)
+    assert_equal "Riverside Park", body.dig("scene_ir", "name")
+    assert_equal "fake-vision", body.dig("metrics", "vision_model")
+    assert_equal 0.0042, body.dig("metrics", "api_cost_usd")
+    assert body.dig("metrics", "total_ms").positive?
+    assert body.dig("metrics", "order_id").present?
+  end
+
   test "downloads rbxlx" do
     post "/api/v1/scenes/export", params: { scene_spec: @spec }, as: :json
 

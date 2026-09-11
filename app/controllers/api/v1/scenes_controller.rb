@@ -44,8 +44,10 @@ module Api
         scene_ir = Scene::Compiler.new.compile_scene(analysis.fetch(:scene_spec))
         metrics = analysis.fetch(:metrics).merge(
           "compile_ms" => scene_ir.dig("stats", "compile_ms"),
-          "total_ms" => ((monotonic_time - started_at) * 1000).round(2)
+          "total_ms" => ((monotonic_time - started_at) * 1000).round(2),
+          "order_id" => request.request_id
         )
+        Rails.logger.info({ event: "scene_order_completed", order_id: request.request_id, metrics: metrics }.to_json)
         render json: { scene_spec: analysis.fetch(:scene_spec), scene_ir: scene_ir, metrics: metrics }
       rescue Vision::SceneAnalyzer::ConfigurationError => error
         render json: { error: "vision_not_configured", message: error.message }, status: :service_unavailable

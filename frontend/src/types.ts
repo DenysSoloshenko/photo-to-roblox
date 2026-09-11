@@ -31,6 +31,7 @@ export interface SceneIR {
 }
 
 export interface Metrics {
+  order_id?: string;
   vision_model?: string;
   vision_ms?: number;
   compile_ms?: number;

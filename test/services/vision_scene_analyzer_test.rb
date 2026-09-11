@@ -29,6 +29,7 @@ class VisionSceneAnalyzerTest < ActiveSupport::TestCase
     assert_equal false, payload.fetch("store")
     assert_equal "json_schema", payload.dig("text", "format", "type")
     assert_equal true, payload.dig("text", "format", "strict")
+    refute_match(/(?:minimum|maximum|minLength|maxLength|minItems|maxItems|pattern)/, JSON.generate(payload.dig("text", "format", "schema")))
     assert_match(%r{\Adata:image/jpeg;base64,}, payload.dig("input", 0, "content", 1, "image_url"))
     assert_equal spec, result.fetch(:scene_spec)
     assert_equal 0.00782, result.dig(:metrics, "api_cost_usd")

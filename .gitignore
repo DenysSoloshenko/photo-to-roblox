@@ -8,6 +8,7 @@
 /tmp/*
 !/tmp/.keep
 !/tmp/pids/
+/tmp/pids/*
 !/tmp/pids/.keep
 /frontend/node_modules/
 /frontend/*.tsbuildinfo

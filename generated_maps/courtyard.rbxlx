@@ -2091,8 +2091,8 @@
               <R22>0.93969262</R22>
             </CoordinateFrame>
             <Vector3 name='size'>
-              <X>1.56</X>
-              <Y>8.4</Y>
+              <X>8.4</X>
+              <Y>1.56</Y>
               <Z>1.56</Z>
             </Vector3>
             <Color3uint8 name='Color3uint8'>4284827447</Color3uint8>

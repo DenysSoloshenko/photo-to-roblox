@@ -56,7 +56,11 @@ module Roblox
       node, properties = item(parent, class_name, safe_name(part.fetch("name")))
       matrix = rotation_matrix(part.fetch("rotation"), cylinder: part.fetch("shape") == "cylinder")
       coordinate_frame(properties, "CFrame", part.fetch("position"), matrix)
-      vector(properties, "size", part.fetch("size"))
+      size = part.fetch("size")
+      # Three.js cylinders use Y as their long axis; Roblox cylinders use local X.
+      # Swap X/Y before the 90-degree rotation so preview and exported geometry agree.
+      size = [size[1], size[0], size[2]] if part.fetch("shape") == "cylinder"
+      vector(properties, "size", size)
       color_uint8(properties, part.fetch("color"))
       property(properties, "token", "Material", Scene::MaterialCatalog.fetch(part.fetch("material")).fetch(:roblox))
       property(properties, "token", "shape", SHAPES.fetch(part.fetch("shape"))) if class_name == "Part"
