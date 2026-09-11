@@ -8,6 +8,16 @@ class AccountsAndOrdersTest < ActionDispatch::IntegrationTest
     @csrf_token = response.parsed_body.fetch("csrf_token")
   end
 
+  test "session exposes supported oauth providers and a usable csrf token" do
+    get "/api/v1/auth/session"
+
+    assert_response :success
+    assert response.parsed_body.fetch("csrf_token").present?
+    providers = response.parsed_body.fetch("oauth_providers").index_by { |provider| provider.fetch("name") }
+    assert_equal %w[discord github google], providers.keys.sort
+    assert_includes [true, false], providers.fetch("google").fetch("configured")
+  end
+
   test "registers, persists a free order, and lists it for its owner" do
     register
 
@@ -28,7 +38,7 @@ class AccountsAndOrdersTest < ActionDispatch::IntegrationTest
     created = response.parsed_body.fetch("order")
     assert_equal "submitted", created.fetch("status")
     assert_equal "unpaid", created.fetch("payment_status")
-    assert_equal 900, created.fetch("price_cents")
+    assert_equal 1_900, created.fetch("price_cents")
     assert_nil created.fetch("result_url")
     assert Order.find_by!(public_id: created.fetch("public_id")).source_photos.attached?
 
@@ -61,7 +71,9 @@ class AccountsAndOrdersTest < ActionDispatch::IntegrationTest
     )
     order.source_photos.attach(io: StringIO.new("image"), filename: "park.jpg", content_type: "image/jpeg")
     order.preview_image.attach(io: StringIO.new("preview"), filename: "preview.png", content_type: "image/png")
-    order.result_file.attach(io: StringIO.new("<roblox />"), filename: "park.rbxlx", content_type: "application/xml")
+    xml = file_fixture("result.rbxlx").read
+    order.result_file.attach(io: StringIO.new(xml), filename: "park.rbxlx", content_type: "application/xml")
+    order.preview_scene_ir = Roblox::PreviewExtractor.new.extract(xml)
 
     assert_difference -> { Notification.count }, 1 do
       assert_difference -> { ActionMailer::Base.deliveries.size }, 1 do
@@ -69,10 +81,20 @@ class AccountsAndOrdersTest < ActionDispatch::IntegrationTest
       end
     end
 
-    post "/api/v1/orders/#{order.public_id}/purchase", headers: csrf_headers
-    assert_response :success
-    assert_equal "requested", response.parsed_body.dig("order", "payment_status")
-    assert_nil response.parsed_body.dig("order", "result_url")
+    original_key = ENV["STRIPE_SECRET_KEY"]
+    begin
+      ENV["STRIPE_SECRET_KEY"] = "sk_test_local"
+      checkout = Struct.new(:id, :url).new("cs_test_order", "https://checkout.stripe.test/session")
+      Stripe::Checkout::Session.stub(:create, checkout) do
+        post "/api/v1/orders/#{order.public_id}/purchase", headers: csrf_headers
+        assert_response :success
+        assert_equal "requested", response.parsed_body.dig("order", "payment_status")
+        assert_equal checkout.url, response.parsed_body.fetch("checkout_url")
+        assert_nil response.parsed_body.dig("order", "result_url")
+      end
+    ensure
+      ENV["STRIPE_SECRET_KEY"] = original_key
+    end
 
     order.update!(payment_status: "paid", paid_at: Time.current, status: "ready")
     get "/api/v1/orders/#{order.public_id}"

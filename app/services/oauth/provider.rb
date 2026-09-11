@@ -45,6 +45,10 @@ module OAuth
       SETTINGS.keys.select { |name| new(name).configured? }
     end
 
+    def self.statuses
+      SETTINGS.keys.map { |name| { name: name, configured: new(name).configured? } }
+    end
+
     def initialize(name)
       @name = name
       @settings = SETTINGS.fetch(name)

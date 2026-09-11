@@ -10,7 +10,7 @@ module Api
           render json: {
             user: current_user && user_json(current_user),
             csrf_token: csrf_token,
-            oauth_providers: OAuth::Provider.configured_names
+            oauth_providers: OAuth::Provider.statuses
           }
         end
 

@@ -1,1 +1,28 @@
-<roblox version="4"></roblox>
+<?xml version="1.0" encoding="UTF-8"?>
+<roblox version="4">
+  <Item class="Workspace" referent="RBX1">
+    <Properties><string name="Name">Workspace</string></Properties>
+    <Item class="Model" referent="RBX2">
+      <Properties><string name="Name">Customer garden</string></Properties>
+      <Item class="Model" referent="RBX3">
+        <Properties><string name="Name">central-path</string></Properties>
+        <Item class="Part" referent="RBX4">
+          <Properties>
+            <string name="Name">Path</string>
+            <CoordinateFrame name="CFrame"><X>0</X><Y>0</Y><Z>0</Z><R00>1</R00><R01>0</R01><R02>0</R02><R10>0</R10><R11>1</R11><R12>0</R12><R20>0</R20><R21>0</R21><R22>1</R22></CoordinateFrame>
+            <Vector3 name="size"><X>8</X><Y>0.5</Y><Z>20</Z></Vector3>
+            <Color3uint8 name="Color3uint8">4290820539</Color3uint8>
+            <token name="Material">880</token><token name="shape">1</token>
+            <bool name="CanCollide">true</bool><bool name="CastShadow">true</bool><float name="Transparency">0</float>
+          </Properties>
+        </Item>
+      </Item>
+    </Item>
+    <Item class="Camera" referent="RBX5"><Properties>
+      <string name="Name">Camera</string>
+      <CoordinateFrame name="CFrame"><X>24</X><Y>18</Y><Z>30</Z><R00>1</R00><R01>0</R01><R02>0</R02><R10>0</R10><R11>1</R11><R12>0</R12><R20>0</R20><R21>0</R21><R22>1</R22></CoordinateFrame>
+      <CoordinateFrame name="Focus"><X>0</X><Y>0</Y><Z>0</Z><R00>1</R00><R01>0</R01><R02>0</R02><R10>0</R10><R11>1</R11><R12>0</R12><R20>0</R20><R21>0</R21><R22>1</R22></CoordinateFrame>
+      <float name="FieldOfView">50</float>
+    </Properties></Item>
+  </Item>
+</roblox>

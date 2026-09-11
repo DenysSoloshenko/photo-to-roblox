@@ -43,15 +43,13 @@ class AdminOrdersTest < ActionDispatch::IntegrationTest
     }, headers: csrf_headers
     assert_response :success
     assert response.parsed_body.dig("order", "preview_url").present?
+    assert_equal 1, response.parsed_body.dig("order", "preview_scene_ir", "stats", "part_count")
     assert_nil response.parsed_body.dig("order", "result_url")
 
-    patch "/api/v1/admin/orders/#{@order.public_id}", params: {
-      status: "ready",
-      payment_status: "paid"
-    }, headers: csrf_headers
+    @order.reload.update!(payment_status: "paid", paid_at: Time.current, status: "ready")
+    get "/api/v1/admin/orders/#{@order.public_id}"
     assert_response :success
     assert response.parsed_body.dig("order", "result_url").present?
-    assert_equal "paid", response.parsed_body.dig("order", "payment_status")
   end
 
   private

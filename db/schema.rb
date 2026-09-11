@@ -10,7 +10,10 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_09_11_000600) do
+ActiveRecord::Schema[8.0].define(version: 2026_09_11_000700) do
+  # These are extensions that must be enabled in order to support this database
+  enable_extension "pg_catalog.plpgsql"
+
   create_table "active_storage_attachments", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -77,7 +80,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_09_11_000600) do
     t.string "style", default: "roblox_stylized", null: false
     t.text "must_preserve"
     t.text "instructions"
-    t.integer "price_cents", default: 900, null: false
+    t.integer "price_cents", default: 1900, null: false
     t.string "currency", default: "USD", null: false
     t.datetime "submitted_at", null: false
     t.datetime "delivery_due_at", null: false
@@ -88,9 +91,15 @@ ActiveRecord::Schema[8.0].define(version: 2026_09_11_000600) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.datetime "rights_confirmed_at", null: false
+    t.jsonb "preview_scene_ir"
+    t.string "stripe_checkout_session_id"
+    t.string "stripe_payment_intent_id"
+    t.datetime "checkout_started_at"
     t.index ["payment_status", "created_at"], name: "index_orders_on_payment_status_and_created_at"
     t.index ["public_id"], name: "index_orders_on_public_id", unique: true
     t.index ["status", "delivery_due_at"], name: "index_orders_on_status_and_delivery_due_at"
+    t.index ["stripe_checkout_session_id"], name: "index_orders_on_stripe_checkout_session_id", unique: true
+    t.index ["stripe_payment_intent_id"], name: "index_orders_on_stripe_payment_intent_id", unique: true
     t.index ["user_id", "created_at"], name: "index_orders_on_user_id_and_created_at"
     t.index ["user_id"], name: "index_orders_on_user_id"
   end
@@ -103,7 +112,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_09_11_000600) do
     t.datetime "terms_accepted_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index "lower(email)", name: "index_users_on_lower_email", unique: true
+    t.index "lower((email)::text)", name: "index_users_on_lower_email", unique: true
   end
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"

@@ -23,6 +23,7 @@ Rails.application.routes.draw do
       resources :notifications, only: %i[index] do
         member { patch :read }
       end
+      post "payments/stripe/webhook", to: "payments/stripe#webhook"
 
       namespace :admin do
         resources :orders, param: :public_id, only: %i[index show update] do

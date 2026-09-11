@@ -22,7 +22,7 @@ module Api
         errors << "Confirm that you may use the uploaded photos" unless ActiveModel::Type::Boolean.new.cast(params[:rights_confirmed])
         return render json: { errors: errors }, status: :unprocessable_entity if errors.any?
 
-        order = current_user.orders.new(order_params.merge(price_cents: 900, currency: "USD", rights_confirmed_at: Time.current))
+        order = current_user.orders.new(order_params.merge(price_cents: Order::PRICE_CENTS, currency: "USD", rights_confirmed_at: Time.current))
         Order.transaction do
           order.save!
           order.source_photos.attach(photos)
@@ -52,8 +52,14 @@ module Api
           return render json: { error: "preview_not_ready" }, status: :unprocessable_entity
         end
 
-        order.update!(payment_status: "requested", purchase_requested_at: Time.current) if order.payment_status == "unpaid"
-        render json: { order: order_json(order) }
+        if order.payment_status == "paid"
+          return render json: { order: order_json(order), checkout_url: nil }
+        end
+
+        checkout = ::Payments::StripeCheckout.new(order).create
+        render json: { order: order_json(order.reload), checkout_url: checkout.url }
+      rescue ::Payments::StripeCheckout::NotConfigured => error
+        render json: { error: "stripe_not_configured", message: error.message }, status: :service_unavailable
       end
 
       private

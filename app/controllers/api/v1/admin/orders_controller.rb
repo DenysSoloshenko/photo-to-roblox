@@ -3,7 +3,7 @@ module Api
     module Admin
       class OrdersController < ApplicationController
         IMAGE_TYPES = Api::V1::OrdersController::IMAGE_TYPES
-        RESULT_EXTENSIONS = %w[.rbxlx .rbxl].freeze
+        RESULT_EXTENSIONS = %w[.rbxlx].freeze
 
         before_action :authenticate_user!
         before_action :require_admin!
@@ -23,9 +23,11 @@ module Api
         def update
           order = find_order
           validate_uploads!
+          preview_scene_ir = extract_preview(params[:result_file], order.title) if params[:result_file].present?
           Order.transaction do
             order.preview_image.attach(params[:preview_image]) if params[:preview_image].present?
             order.result_file.attach(params[:result_file]) if params[:result_file].present?
+            order.preview_scene_ir = preview_scene_ir if preview_scene_ir
             order.update!(update_params)
           end
           render json: { order: order_json(order.reload) }
@@ -51,9 +53,7 @@ module Api
         end
 
         def update_params
-          permitted = params.permit(:status, :payment_status, :admin_notes)
-          permitted[:paid_at] = Time.current if permitted[:payment_status] == "paid"
-          permitted
+          params.permit(:status, :admin_notes)
         end
 
         def validate_uploads!
@@ -65,8 +65,14 @@ module Api
 
           result = params[:result_file]
           return unless result.present?
-          raise ArgumentError, "Result must be an .rbxlx or .rbxl file" unless RESULT_EXTENSIONS.include?(File.extname(result.original_filename).downcase)
-          raise ArgumentError, "Result is larger than 100 MB" if result.size > 100.megabytes
+          raise ArgumentError, "Result must be an .rbxlx file" unless RESULT_EXTENSIONS.include?(File.extname(result.original_filename).downcase)
+          raise ArgumentError, "Result is larger than 50 MB" if result.size > 50.megabytes
+        end
+
+        def extract_preview(result, fallback_name)
+          xml = result.read
+          result.rewind
+          Roblox::PreviewExtractor.new.extract(xml, fallback_name: fallback_name)
         end
 
         def order_json(order)

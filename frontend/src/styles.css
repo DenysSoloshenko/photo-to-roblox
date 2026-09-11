@@ -287,7 +287,9 @@ button:disabled { cursor: not-allowed; opacity: .45; }
 .auth-dialog > p { color: #6a7c77; font-size: 11px; line-height: 1.55; }
 .modal-close { position: absolute; top: 16px; right: 17px; border: 0; background: transparent; color: #687a74; cursor: pointer; font-size: 24px; }
 .social-grid { display: grid; gap: 8px; margin-top: 22px; }
-.social-grid button { min-height: 43px; border: 1px solid rgba(16,39,33,.16); border-radius: 10px; background: white; color: #25463c; cursor: pointer; font-size: 11px; font-weight: 750; }
+.social-grid button { display: flex; min-height: 43px; border: 1px solid rgba(16,39,33,.16); border-radius: 10px; padding: 0 13px; align-items: center; justify-content: space-between; background: white; color: #25463c; cursor: pointer; font-size: 11px; font-weight: 750; }
+.social-grid button small { color: #8b7770; font-size: 8px; font-weight: 650; }
+.social-grid button:disabled { background: #eef2ef; }
 .or-line { display: flex; margin: 18px 0 4px; align-items: center; gap: 10px; color: #84918d; font-size: 9px; }
 .or-line::before, .or-line::after { height: 1px; flex: 1; content: ""; background: #d5ded9; }
 .auth-switch { margin-top: 18px !important; text-align: center; }
@@ -323,6 +325,17 @@ button:disabled { cursor: not-allowed; opacity: .45; }
 .unlock-button { background: #b96543; color: white; }
 .request-sent { color: #287158; font-size: 10px; font-weight: 700; }
 .order-id { display: block; margin-top: 22px; color: #95a09c; font: 8px ui-monospace, monospace; }
+.preview-backdrop { padding: 32px; }
+.map-preview-dialog { width: min(1120px, 100%); overflow: hidden; border-radius: 24px; background: #f7faf7; box-shadow: 0 34px 100px rgba(0,0,0,.34); }
+.map-preview-dialog header, .map-preview-dialog footer { display: flex; padding: 22px 26px; align-items: center; justify-content: space-between; gap: 20px; }
+.map-preview-dialog header { border-bottom: 1px solid rgba(16,39,33,.12); }
+.map-preview-dialog header h2 { margin-top: 5px; font-size: 27px; }
+.map-preview-dialog header > div:last-child { position: relative; display: flex; padding-right: 42px; align-items: center; gap: 10px; }
+.map-preview-dialog header .modal-close { top: 50%; right: 0; transform: translateY(-50%); }
+.customer-scene-viewer { height: min(68vh, 670px); background: #c8dddf; }
+.customer-scene-viewer .viewer { width: 100%; height: 100%; }
+.map-preview-dialog footer { border-top: 1px solid rgba(16,39,33,.12); }
+.map-preview-dialog footer p { max-width: 720px; margin: 0; color: #687a74; font-size: 10px; line-height: 1.55; }
 
 .admin-order { padding: 26px; }
 .admin-order-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 15px; }
@@ -332,6 +345,11 @@ button:disabled { cursor: not-allowed; opacity: .45; }
 .source-links { display: flex; margin-top: 14px; flex-wrap: wrap; gap: 7px; }
 .source-links a { border-radius: 999px; padding: 6px 9px; background: #e7efeb; color: #315d50; font-size: 9px; text-decoration: none; }
 .admin-grid input[type="file"] { padding: 10px; font-size: 9px; }
+.admin-payment-state { margin-top: 16px; border: 1px solid rgba(16,39,33,.12); border-radius: 11px; padding: 9px 12px; background: rgba(255,255,255,.6); }
+.admin-payment-state > span, .admin-payment-state strong, .admin-payment-state small { display: block; }
+.admin-payment-state > span { color: #6c7e78; font-size: 9px; font-weight: 750; }
+.admin-payment-state strong { margin-top: 4px; color: #2b5045; font-size: 11px; }
+.admin-payment-state small { margin-top: 3px; color: #87948f; font-size: 8px; }
 .admin-footer { display: flex; margin-top: 18px; align-items: center; justify-content: space-between; gap: 20px; }
 .admin-footer small { max-width: 600px; overflow: hidden; color: #7b8984; font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
 .admin-footer .primary-button { width: 150px; margin: 0; }
@@ -375,4 +393,7 @@ button:disabled { cursor: not-allowed; opacity: .45; }
   .order-actions { align-items: stretch; flex-direction: column; }
   .page-heading h1 { font-size: 44px; }
   .admin-order-heading, .admin-footer { flex-direction: column; }
+  .preview-backdrop { padding: 10px; }
+  .customer-scene-viewer { height: 62vh; }
+  .map-preview-dialog header, .map-preview-dialog footer { align-items: flex-start; flex-direction: column; }
 }

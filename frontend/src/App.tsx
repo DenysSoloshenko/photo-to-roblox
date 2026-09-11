@@ -4,7 +4,7 @@ import { analyzePhoto, compileScene, createManualOrder, downloadReadyRoblox, get
 import type { QualityMode } from "./api";
 import i18n from "./i18n";
 import SceneViewer from "./SceneViewer";
-import type { AccountUser, ManualOrder, Metrics, OrderStatus, PaymentStatus, RobloxFile, SceneIR, SceneResponse } from "./types";
+import type { AccountUser, ManualOrder, Metrics, OAuthProviderStatus, OrderStatus, RobloxFile, SceneIR, SceneResponse } from "./types";
 
 type Status = "idle" | "analyzing" | "building" | "ready";
 type Language = "en" | "fr";
@@ -38,7 +38,7 @@ export default function App() {
   const [view, setView] = useState<PortalView>(() => new URLSearchParams(window.location.search).has("order") ? "orders" : "create");
   const [user, setUser] = useState<AccountUser | null>(null);
   const [csrfToken, setCsrfToken] = useState("");
-  const [oauthProviders, setOauthProviders] = useState<string[]>([]);
+  const [oauthProviders, setOauthProviders] = useState<OAuthProviderStatus[]>([]);
   const [authOpen, setAuthOpen] = useState(false);
   const [sessionLoading, setSessionLoading] = useState(true);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -101,7 +101,7 @@ export default function App() {
           {user && <button className="notification-bell" onClick={() => setView("orders")} aria-label={t("portal.notifications")}>♢{unreadCount > 0 && <span>{unreadCount}</span>}</button>}
           {!sessionLoading && (user ? (
             <div className="account-menu"><span>{user.display_name}</span><button onClick={logOut}>{t("auth.logout")}</button></div>
-          ) : <button className="header-signin" onClick={() => setAuthOpen(true)}>{t("auth.signIn")}</button>)}
+          ) : <button className="header-signin" onClick={() => setAuthOpen(true)}>{t("auth.signUp")}</button>)}
         </div>
       </header>
 
@@ -163,7 +163,7 @@ function CreateOrderPage({ user, csrfToken, onAuth, onCreated }: { user: Account
           <div className="promise-grid">
             <div><strong>{t("manual.free")}</strong><span>{t("manual.freeBody")}</span></div>
             <div><strong>{t("manual.hours")}</strong><span>{t("manual.hoursBody")}</span></div>
-            <div><strong>$9</strong><span>{t("manual.priceBody")}</span></div>
+            <div><strong>$19</strong><span>{t("manual.priceBody")}</span></div>
           </div>
         </div>
         <div className="hero-art" aria-hidden="true"><span>photo</span><b>→</b><span>world</span></div>
@@ -188,7 +188,7 @@ function CreateOrderPage({ user, csrfToken, onAuth, onCreated }: { user: Account
           <label className="form-field"><span>{t("manual.notes")}</span><textarea rows={3} maxLength={2000} value={instructions} onChange={(event) => setInstructions(event.target.value)} placeholder={t("manual.notesPlaceholder")} /></label>
           <label className="consent-row"><input type="checkbox" checked={rights} onChange={(event) => setRights(event.target.checked)} /><span>{t("manual.rights")}</span></label>
           {error && <pre className="error-box" role="alert">{error}</pre>}
-          <button className="primary-button order-submit" disabled={busy || photos.length === 0 || !title || !rights}>{busy ? t("manual.sending") : user ? t("manual.request") : t("manual.signInRequest")}</button>
+          <button className="primary-button order-submit" disabled={busy || photos.length === 0 || !title || !rights}>{busy ? t("manual.sending") : user ? t("manual.request") : t("manual.signUpRequest")}</button>
           <p className="no-card">{t("manual.noCard")}</p>
         </form>
 
@@ -202,7 +202,7 @@ function CreateOrderPage({ user, csrfToken, onAuth, onCreated }: { user: Account
   );
 }
 
-function AuthDialog({ csrfToken, providers, onClose, onAuthenticated }: { csrfToken: string; providers: string[]; onClose: () => void; onAuthenticated: (response: { user: AccountUser; csrf_token: string }) => void }) {
+function AuthDialog({ csrfToken, providers, onClose, onAuthenticated }: { csrfToken: string; providers: OAuthProviderStatus[]; onClose: () => void; onAuthenticated: (response: { user: AccountUser; csrf_token: string }) => void }) {
   const { t } = useTranslation();
   const [mode, setMode] = useState<"login" | "register">("register");
   const [displayName, setDisplayName] = useState("");
@@ -220,8 +220,11 @@ function AuthDialog({ csrfToken, providers, onClose, onAuthenticated }: { csrfTo
   };
 
   return <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}><section className="auth-dialog" role="dialog" aria-modal="true" aria-labelledby="auth-title"><button className="modal-close" onClick={onClose} aria-label={t("auth.close")}>×</button><span className="eyebrow">SceneFoundry account</span><h2 id="auth-title">{mode === "register" ? t("auth.createTitle") : t("auth.loginTitle")}</h2><p>{t("auth.accountBody")}</p>
-    {providers.length > 0 && <div className="social-grid">{providers.map((provider) => <button key={provider} onClick={() => void startOAuth(csrfToken, provider)}>{t("auth.continueWith", { provider: provider[0].toUpperCase() + provider.slice(1) })}</button>)}</div>}
-    {providers.length > 0 && <div className="or-line"><span>{t("auth.or")}</span></div>}
+    <div className="social-grid">{providers.map((provider) => {
+      const label = provider.name[0].toUpperCase() + provider.name.slice(1);
+      return <button type="button" key={provider.name} disabled={!provider.configured} onClick={() => void startOAuth(csrfToken, provider.name)}><span>{t("auth.continueWith", { provider: label })}</span>{!provider.configured && <small>{t("auth.oauthSetupRequired")}</small>}</button>;
+    })}</div>
+    <div className="or-line"><span>{t("auth.or")}</span></div>
     <form onSubmit={submit}>{mode === "register" && <label className="form-field"><span>{t("auth.name")}</span><input required value={displayName} onChange={(event) => setDisplayName(event.target.value)} /></label>}<label className="form-field"><span>{t("auth.email")}</span><input type="email" required value={email} onChange={(event) => setEmail(event.target.value)} /></label><label className="form-field"><span>{t("auth.password")}</span><input type="password" minLength={10} required value={password} onChange={(event) => setPassword(event.target.value)} /><small>{t("auth.passwordHint")}</small></label>{error && <pre className="error-box">{error}</pre>}<button className="primary-button" disabled={busy}>{busy ? t("auth.working") : mode === "register" ? t("auth.create") : t("auth.signIn")}</button></form>
     <p className="auth-switch">{mode === "register" ? t("auth.haveAccount") : t("auth.newAccount")} <button onClick={() => { setMode(mode === "register" ? "login" : "register"); setError(null); }}>{mode === "register" ? t("auth.signIn") : t("auth.create")}</button></p><small className="terms-copy">{t("auth.terms")}</small>
   </section></div>;
@@ -234,15 +237,24 @@ function OrdersPage({ csrfToken }: { csrfToken: string }) {
   const [error, setError] = useState<string | null>(null);
   const load = useCallback(async () => { try { setOrders((await listOrders()).orders); } catch (reason) { setError(errorText(reason, t("errors.unknown"))); } finally { setLoading(false); } }, [t]);
   useEffect(() => { void load(); }, [load]);
-  const purchase = async (order: ManualOrder) => { try { const response = await requestPurchase(csrfToken, order.public_id); setOrders((all) => all.map((item) => item.public_id === order.public_id ? response.order : item)); } catch (reason) { setError(errorText(reason, t("errors.unknown"))); } };
+  const purchase = async (order: ManualOrder) => { try { const response = await requestPurchase(csrfToken, order.public_id); setOrders((all) => all.map((item) => item.public_id === order.public_id ? response.order : item)); if (response.checkout_url) window.location.assign(response.checkout_url); } catch (reason) { setError(errorText(reason, t("errors.unknown"))); } };
   return <main className="portal-main narrow"><div className="page-heading"><div><span className="eyebrow">{t("orders.eyebrow")}</span><h1>{t("orders.title")}</h1><p>{t("orders.lede")}</p></div></div>{error && <pre className="error-box">{error}</pre>}{loading ? <p>{t("orders.loading")}</p> : orders.length === 0 ? <div className="empty-orders surface"><h2>{t("orders.empty")}</h2><p>{t("orders.emptyBody")}</p></div> : <div className="order-list">{orders.map((order) => <OrderCard key={order.public_id} order={order} onPurchase={() => void purchase(order)} />)}</div>}</main>;
 }
 
 function OrderCard({ order, onPurchase }: { order: ManualOrder; onPurchase: () => void }) {
   const { t, i18n: i18next } = useTranslation();
+  const [previewOpen, setPreviewOpen] = useState(false);
   const locale = i18next.language.startsWith("fr") ? "fr-FR" : "en-US";
   const status = t(`orders.status.${order.status}`);
-  return <article className="customer-order surface"><div className="order-preview">{order.preview_url ? <img src={order.preview_url} alt={t("orders.previewAlt", { title: order.title })} /> : <div><span>◌</span><strong>{t("orders.previewPending")}</strong></div>}</div><div className="order-content"><div className="order-title-row"><div><span className={`status-pill status-${order.status}`}>{status}</span><h2>{order.title}</h2></div><strong className="order-price">${(order.price_cents / 100).toFixed(0)}</strong></div><dl><div><dt>{t("orders.submitted")}</dt><dd>{new Date(order.submitted_at).toLocaleString(locale)}</dd></div><div><dt>{t("orders.due")}</dt><dd>{new Date(order.delivery_due_at).toLocaleString(locale)}</dd></div><div><dt>{t("orders.payment")}</dt><dd>{t(`orders.paymentStatus.${order.payment_status}`)}</dd></div></dl>{order.preview_url && <div className="order-actions"><a className="secondary-link" href={order.preview_url} target="_blank" rel="noreferrer">{t("orders.openPreview")}</a>{order.result_url ? <a className="unlock-button" href={order.result_url}>{t("orders.download")}</a> : order.payment_status === "requested" ? <span className="request-sent">✓ {t("orders.purchaseRequested")}</span> : order.status === "preview_ready" && <button className="unlock-button" onClick={onPurchase}>{t("orders.unlock", { price: `$${(order.price_cents / 100).toFixed(0)}` })}</button>}</div>}<small className="order-id">{order.public_id}</small></div></article>;
+  const hasPreview = Boolean(order.preview_scene_ir || order.preview_url);
+  return <><article className="customer-order surface"><div className="order-preview">{order.preview_url ? <img src={order.preview_url} alt={t("orders.previewAlt", { title: order.title })} /> : order.preview_scene_ir ? <div><span>◎</span><strong>{t("orders.interactiveReady")}</strong></div> : <div><span>◌</span><strong>{t("orders.previewPending")}</strong></div>}</div><div className="order-content"><div className="order-title-row"><div><span className={`status-pill status-${order.status}`}>{status}</span><h2>{order.title}</h2></div><strong className="order-price">${(order.price_cents / 100).toFixed(0)}</strong></div><dl><div><dt>{t("orders.submitted")}</dt><dd>{new Date(order.submitted_at).toLocaleString(locale)}</dd></div><div><dt>{t("orders.due")}</dt><dd>{new Date(order.delivery_due_at).toLocaleString(locale)}</dd></div><div><dt>{t("orders.payment")}</dt><dd>{t(`orders.paymentStatus.${order.payment_status}`)}</dd></div></dl>{hasPreview && <div className="order-actions">{order.preview_scene_ir ? <button className="secondary-link" onClick={() => setPreviewOpen(true)}>{t("orders.explorePreview")}</button> : order.preview_url && <a className="secondary-link" href={order.preview_url} target="_blank" rel="noreferrer">{t("orders.openPreview")}</a>}{order.result_url ? <a className="unlock-button" href={order.result_url}>{t("orders.download")}</a> : order.status === "preview_ready" && <button className="unlock-button" onClick={onPurchase}>{t("orders.unlock", { price: `$${(order.price_cents / 100).toFixed(0)}` })}</button>}</div>}<small className="order-id">{order.public_id}</small></div></article>{previewOpen && order.preview_scene_ir && <OrderPreviewModal order={order} onClose={() => setPreviewOpen(false)} />}</>;
+}
+
+function OrderPreviewModal({ order, onClose }: { order: ManualOrder; onClose: () => void }) {
+  const { t } = useTranslation();
+  const [resetToken, setResetToken] = useState(0);
+  const ignoreSelection = useCallback(() => undefined, []);
+  return <div className="modal-backdrop preview-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}><section className="map-preview-dialog" role="dialog" aria-modal="true" aria-label={t("orders.explorePreview")}><header><div><span className="eyebrow">{t("orders.freeInteractivePreview")}</span><h2>{order.title}</h2></div><div><button className="secondary-link" onClick={() => setResetToken((value) => value + 1)}>{t("orders.resetCamera")}</button><button className="modal-close" onClick={onClose} aria-label={t("auth.close")}>×</button></div></header><div className="customer-scene-viewer"><SceneViewer sceneIr={order.preview_scene_ir} resetToken={resetToken} onSelect={ignoreSelection} /></div><footer><p>{t("orders.previewOnly")}</p>{order.result_url ? <a className="unlock-button" href={order.result_url}>{t("orders.download")}</a> : <button className="unlock-button" onClick={() => { onClose(); }}>{t("orders.closePreview")}</button>}</footer></section></div>;
 }
 
 function AdminQueue({ csrfToken }: { csrfToken: string }) {
@@ -257,13 +269,12 @@ function AdminQueue({ csrfToken }: { csrfToken: string }) {
 function AdminOrderCard({ order, csrfToken, onSaved }: { order: ManualOrder; csrfToken: string; onSaved: () => Promise<void> }) {
   const { t } = useTranslation();
   const [status, setStatus] = useState<OrderStatus>(order.status);
-  const [payment, setPayment] = useState<PaymentStatus>(order.payment_status);
   const [preview, setPreview] = useState<File | null>(null);
   const [result, setResult] = useState<File | null>(null);
   const [notes, setNotes] = useState(order.admin_notes || "");
   const [busy, setBusy] = useState(false);
-  const save = async () => { setBusy(true); try { const form = new FormData(); form.append("status", status); form.append("payment_status", payment); form.append("admin_notes", notes); if (preview) form.append("preview_image", preview); if (result) form.append("result_file", result); await updateAdminOrder(csrfToken, order.public_id, form); await onSaved(); } finally { setBusy(false); } };
-  return <article className="admin-order surface"><div className="admin-order-heading"><div><span className={`status-pill status-${order.status}`}>{order.status}</span><h2>{order.title}</h2><p>{order.user?.display_name} · {order.user?.email}</p></div><span>{new Date(order.delivery_due_at).toLocaleString()}</span></div><div className="source-links">{order.source_photos.map((photo, index) => <a key={photo.id || photo.filename} href={photo.download_url}>{t("admin.source", { number: index + 1 })}: {photo.filename}</a>)}</div><div className="admin-grid"><label className="form-field"><span>{t("admin.status")}</span><select value={status} onChange={(event) => setStatus(event.target.value as OrderStatus)}>{["submitted", "reviewing", "building", "preview_ready", "ready", "delivered", "cancelled"].map((value) => <option key={value}>{value}</option>)}</select></label><label className="form-field"><span>{t("admin.payment")}</span><select value={payment} onChange={(event) => setPayment(event.target.value as PaymentStatus)}>{["unpaid", "requested", "paid", "refunded"].map((value) => <option key={value}>{value}</option>)}</select></label><label className="form-field"><span>{t("admin.preview")}</span><input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => setPreview(event.target.files?.[0] || null)} /></label><label className="form-field"><span>{t("admin.result")}</span><input type="file" accept=".rbxlx,.rbxl" onChange={(event) => setResult(event.target.files?.[0] || null)} /></label></div><label className="form-field"><span>{t("admin.notes")}</span><textarea rows={2} value={notes} onChange={(event) => setNotes(event.target.value)} /></label><div className="admin-footer"><small>{order.public_id}</small><button className="primary-button" onClick={() => void save()} disabled={busy}>{busy ? t("admin.saving") : t("admin.save")}</button></div></article>;
+  const save = async () => { setBusy(true); try { const form = new FormData(); form.append("status", status); form.append("admin_notes", notes); if (preview) form.append("preview_image", preview); if (result) form.append("result_file", result); await updateAdminOrder(csrfToken, order.public_id, form); await onSaved(); } finally { setBusy(false); } };
+  return <article className="admin-order surface"><div className="admin-order-heading"><div><span className={`status-pill status-${order.status}`}>{order.status}</span><h2>{order.title}</h2><p>{order.user?.display_name} · {order.user?.email}</p></div><span>{new Date(order.delivery_due_at).toLocaleString()}</span></div><div className="source-links">{order.source_photos.map((photo, index) => <a key={photo.id || photo.filename} href={photo.download_url}>{t("admin.source", { number: index + 1 })}: {photo.filename}</a>)}</div><div className="admin-grid"><label className="form-field"><span>{t("admin.status")}</span><select value={status} onChange={(event) => setStatus(event.target.value as OrderStatus)}>{["submitted", "reviewing", "building", "preview_ready", "ready", "delivered", "cancelled"].map((value) => <option key={value}>{value}</option>)}</select></label><div className="admin-payment-state"><span>{t("admin.payment")}</span><strong>{t(`orders.paymentStatus.${order.payment_status}`)}</strong><small>{t("admin.stripeManaged")}</small></div><label className="form-field"><span>{t("admin.preview")}</span><input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => setPreview(event.target.files?.[0] || null)} /></label><label className="form-field"><span>{t("admin.result")}</span><input type="file" accept=".rbxlx" onChange={(event) => setResult(event.target.files?.[0] || null)} /></label></div><label className="form-field"><span>{t("admin.notes")}</span><textarea rows={2} value={notes} onChange={(event) => setNotes(event.target.value)} /></label><div className="admin-footer"><small>{order.public_id}</small><button className="primary-button" onClick={() => void save()} disabled={busy}>{busy ? t("admin.saving") : t("admin.save")}</button></div></article>;
 }
 
 function GeneratorLab({ onExit }: { onExit: () => void }) {

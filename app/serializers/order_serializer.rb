@@ -24,6 +24,7 @@ class OrderSerializer
       rights_confirmed: order.rights_confirmed_at.present?,
       source_photos: order.source_photos.map { |photo| attachment_json(photo) },
       preview_url: order.preview_image.attached? ? file_url("preview") : nil,
+      preview_scene_ir: preview_available? ? order.preview_scene_ir : nil,
       result_url: order.ready_for_download? ? file_url("result") : nil
     }
     data.merge!(user: { email: order.user.email, display_name: order.user.display_name }, admin_notes: order.admin_notes) if admin
@@ -42,5 +43,9 @@ class OrderSerializer
 
   def file_url(kind)
     "/api/v1/orders/#{order.public_id}/files/#{kind}"
+  end
+
+  def preview_available?
+    admin || (order.preview_scene_ir.present? && order.status.in?(%w[preview_ready ready delivered]))
   end
 end

@@ -72,6 +72,25 @@ GEM
       securerandom (>= 0.3)
       tzinfo (~> 2.0, >= 2.0.5)
       uri (>= 0.13.1)
+    aws-eventstream (1.4.0)
+    aws-partitions (1.1285.0)
+    aws-sdk-core (3.254.1)
+      aws-eventstream (~> 1, >= 1.3.0)
+      aws-partitions (~> 1, >= 1.992.0)
+      aws-sigv4 (~> 1.9)
+      base64
+      bigdecimal
+      jmespath (~> 1, >= 1.6.1)
+      logger
+    aws-sdk-kms (1.130.0)
+      aws-sdk-core (~> 3, >= 3.254.0)
+      aws-sigv4 (~> 1.5)
+    aws-sdk-s3 (1.230.0)
+      aws-sdk-core (~> 3, >= 3.254.1)
+      aws-sdk-kms (~> 1)
+      aws-sigv4 (~> 1.5)
+    aws-sigv4 (1.12.1)
+      aws-eventstream (~> 1, >= 1.0.2)
     base64 (0.3.0)
     bcrypt (3.1.22)
     benchmark (0.4.1)
@@ -96,6 +115,7 @@ GEM
       pp (>= 0.6.0)
       rdoc (>= 4.0.0)
       reline (>= 0.4.2)
+    jmespath (1.6.2)
     logger (1.7.0)
     loofah (2.24.1)
       crass (~> 1.0.2)
@@ -120,6 +140,7 @@ GEM
     nio4r (2.7.4)
     nokogiri (1.18.10-x86_64-darwin)
       racc (~> 1.4)
+    pg (1.6.3-x86_64-darwin)
     pp (0.6.2)
       prettyprint
     prettyprint (0.2.0)
@@ -174,8 +195,8 @@ GEM
       io-console (~> 0.5)
     rexml (3.3.9)
     securerandom (0.4.1)
-    sqlite3 (2.9.6-x86_64-darwin)
     stringio (3.1.7)
+    stripe (15.5.0)
     thor (1.4.0)
     timeout (0.4.3)
     tzinfo (2.0.6)
@@ -192,12 +213,14 @@ PLATFORMS
   x86_64-darwin
 
 DEPENDENCIES
+  aws-sdk-s3 (~> 1.0)
   bcrypt (~> 3.1)
   debug
+  pg (~> 1.5)
   puma (>= 5.0)
   rails (~> 8.0.0)
   rexml (>= 3.3)
-  sqlite3 (~> 2.1)
+  stripe (~> 15.0)
   tzinfo-data
 
 BUNDLED WITH

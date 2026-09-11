@@ -26,7 +26,7 @@ Rails.application.configure do
   # Change to :null_store to avoid any caching.
   config.cache_store = :memory_store
 
-  config.active_storage.service = :local
+  config.active_storage.service = ENV.fetch("ACTIVE_STORAGE_SERVICE", "local").to_sym
 
   if ENV["SMTP_ADDRESS"].present?
     config.action_mailer.delivery_method = :smtp

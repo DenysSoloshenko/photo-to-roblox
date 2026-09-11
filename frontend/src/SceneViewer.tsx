@@ -13,6 +13,21 @@ interface Props {
 function geometryFor(part: ScenePart): THREE.BufferGeometry {
   if (part.shape === "ball") return new THREE.SphereGeometry(0.5, 16, 12);
   if (part.shape === "cylinder") return new THREE.CylinderGeometry(0.5, 0.5, 1, 14);
+  if (part.shape === "wedge") {
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute("position", new THREE.Float32BufferAttribute([
+      -0.5,-0.5,-0.5, 0.5,-0.5,-0.5, 0.5,-0.5,0.5, -0.5,-0.5,0.5,
+      -0.5,0.5,0.5, 0.5,0.5,0.5,
+    ], 3));
+    geometry.setIndex([
+      0,2,1, 0,3,2,
+      3,5,2, 3,4,5,
+      0,4,3, 0,1,4,
+      1,5,4, 1,2,5,
+    ]);
+    geometry.computeVertexNormals();
+    return geometry;
+  }
   return new THREE.BoxGeometry(1, 1, 1);
 }
 

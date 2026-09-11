@@ -1,4 +1,5 @@
 class Order < ApplicationRecord
+  PRICE_CENTS = 1_900
   STATUSES = %w[submitted reviewing building preview_ready ready delivered cancelled].freeze
   PAYMENT_STATUSES = %w[unpaid requested paid refunded].freeze
   SCENE_TYPES = %w[home garden park landscape venue other].freeze
@@ -49,7 +50,10 @@ class Order < ApplicationRecord
   end
 
   def preview_required_when_preview_ready
-    errors.add(:preview_image, "must be attached before the preview is ready") if status.in?(%w[preview_ready ready delivered]) && !preview_image.attached?
+    return unless status.in?(%w[preview_ready ready delivered])
+
+    errors.add(:preview_scene_ir, "must be generated before the preview is ready") if preview_scene_ir.blank?
+    errors.add(:result_file, "must be attached before the preview is ready") unless result_file.attached?
   end
 
   def result_and_payment_required_when_ready

@@ -1,16 +1,26 @@
 default: &default
-  adapter: sqlite3
+  adapter: postgresql
+  encoding: unicode
   pool: <%= ENV.fetch("RAILS_MAX_THREADS", 5) %>
-  timeout: 5000
+  <% if ENV["POSTGRES_HOST"].present? %>
+  host: <%= ENV.fetch("POSTGRES_HOST") %>
+  port: <%= ENV.fetch("POSTGRES_PORT", 5432) %>
+  <% end %>
+  <% if ENV["POSTGRES_USER"].present? %>
+  username: <%= ENV.fetch("POSTGRES_USER") %>
+  <% end %>
+  <% if ENV["POSTGRES_PASSWORD"].present? %>
+  password: <%= ENV.fetch("POSTGRES_PASSWORD") %>
+  <% end %>
 
 development:
   <<: *default
-  database: storage/development.sqlite3
+  database: <%= ENV.fetch("POSTGRES_DB", "photo_to_roblox_development") %>
 
 test:
   <<: *default
-  database: storage/test.sqlite3
+  database: <%= ENV.fetch("POSTGRES_TEST_DB", "photo_to_roblox_test") %>
 
 production:
   <<: *default
-  database: <%= ENV.fetch("DATABASE_PATH", Rails.root.join("storage/production.sqlite3")) %>
+  url: <%= ENV["DATABASE_URL"] %>

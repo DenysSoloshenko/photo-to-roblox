@@ -28,14 +28,37 @@ async function parseJson<T>(response: Response): Promise<T> {
   return body;
 }
 
+let activeCsrfToken = "";
+
 async function secureFetch<T>(url: string, csrfToken: string, init: RequestInit = {}): Promise<T> {
-  const headers = new Headers(init.headers);
-  headers.set("X-CSRF-Token", csrfToken);
-  return parseJson<T>(await fetch(url, { ...init, headers }));
+  const request = async (token: string) => {
+    const headers = new Headers(init.headers);
+    headers.set("X-CSRF-Token", token);
+    return fetch(url, { ...init, headers, credentials: "same-origin" });
+  };
+
+  let token = csrfToken || activeCsrfToken;
+  if (!token) token = (await getSession()).csrf_token;
+  let response = await request(token);
+  if (response.status === 422) {
+    const body = (await response.clone().json()) as ApiErrorPayload;
+    if (body.error === "invalid_csrf_token") {
+      token = (await getSession()).csrf_token;
+      response = await request(token);
+    }
+  }
+  const parsed = await parseJson<T>(response);
+  if (typeof parsed === "object" && parsed && "csrf_token" in parsed) {
+    activeCsrfToken = String((parsed as { csrf_token: string }).csrf_token);
+  }
+  return parsed;
 }
 
-export function getSession(): Promise<SessionResponse> {
-  return fetch("/api/v1/auth/session").then((response) => parseJson<SessionResponse>(response));
+export async function getSession(): Promise<SessionResponse> {
+  const session = await fetch("/api/v1/auth/session", { credentials: "same-origin", cache: "no-store" })
+    .then((response) => parseJson<SessionResponse>(response));
+  activeCsrfToken = session.csrf_token;
+  return session;
 }
 
 export function registerAccount(csrfToken: string, payload: { displayName: string; email: string; password: string }): Promise<{ user: AccountUser; csrf_token: string }> {
@@ -71,7 +94,7 @@ export function listOrders(): Promise<{ orders: ManualOrder[] }> {
   return fetch("/api/v1/orders").then((response) => parseJson<{ orders: ManualOrder[] }>(response));
 }
 
-export function requestPurchase(csrfToken: string, publicId: string): Promise<{ order: ManualOrder }> {
+export function requestPurchase(csrfToken: string, publicId: string): Promise<{ order: ManualOrder; checkout_url: string | null }> {
   return secureFetch(`/api/v1/orders/${publicId}/purchase`, csrfToken, { method: "POST" });
 }
 

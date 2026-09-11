@@ -5,7 +5,7 @@ export interface ScenePart {
   source_id: string;
   group: string;
   name: string;
-  shape: "block" | "ball" | "cylinder";
+  shape: "block" | "ball" | "cylinder" | "wedge";
   position: Vector3;
   size: Vector3;
   rotation: Vector3;
@@ -93,10 +93,17 @@ export interface AccountUser {
   oauth_only: boolean;
 }
 
+export type OAuthProviderName = "google" | "github" | "discord";
+
+export interface OAuthProviderStatus {
+  name: OAuthProviderName;
+  configured: boolean;
+}
+
 export interface SessionResponse {
   user: AccountUser | null;
   csrf_token: string;
-  oauth_providers: Array<"google" | "github" | "discord">;
+  oauth_providers: OAuthProviderStatus[];
 }
 
 export type OrderStatus = "submitted" | "reviewing" | "building" | "preview_ready" | "ready" | "delivered" | "cancelled";
@@ -121,6 +128,7 @@ export interface ManualOrder {
   rights_confirmed: boolean;
   source_photos: Array<{ id?: number; filename: string; byte_size: number; content_type: string; download_url?: string }>;
   preview_url: string | null;
+  preview_scene_ir: SceneIR | null;
   result_url: string | null;
   user?: { email: string; display_name: string };
   admin_notes?: string | null;
