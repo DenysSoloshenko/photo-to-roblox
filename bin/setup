@@ -17,6 +17,9 @@ FileUtils.chdir APP_ROOT do
   npm_env = { "npm_config_cache" => File.join(APP_ROOT, "tmp/npm-cache") }
   system!(npm_env, "npm", "install", chdir: File.join(APP_ROOT, "frontend"))
 
+  puts "\n== Preparing database and private file storage =="
+  system! "bin/rails db:prepare"
+
   puts "\n== Removing old logs and tempfiles =="
   system! "bin/rails log:clear tmp:clear"
 

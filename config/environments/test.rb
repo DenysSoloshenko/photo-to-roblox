@@ -21,6 +21,9 @@ Rails.application.configure do
   # Show full error reports.
   config.consider_all_requests_local = true
   config.cache_store = :null_store
+  config.active_storage.service = :test
+  config.action_mailer.delivery_method = :test
+  config.action_mailer.default_url_options = { host: "example.test" }
 
   # Render exception templates for rescuable exceptions and raise for other exceptions.
   config.action_dispatch.show_exceptions = :rescuable

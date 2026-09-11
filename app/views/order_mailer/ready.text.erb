@@ -1,0 +1,9 @@
+<%= @stage == "preview" ? "Your free Roblox preview is ready" : "Your Roblox map is ready" %>
+
+Hi <%= @order.user.display_name %>,
+
+<% if @stage == "preview" %>We finished the first version of <%= @order.title %>. Review the preview for free. If you love it, unlock the editable Roblox file for $9.<% else %>Payment is confirmed. Your editable Roblox map is ready to download.<% end %>
+
+<%= @order_url %>
+
+Order <%= @order.public_id %>

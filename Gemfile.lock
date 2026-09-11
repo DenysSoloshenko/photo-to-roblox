@@ -73,6 +73,7 @@ GEM
       tzinfo (~> 2.0, >= 2.0.5)
       uri (>= 0.13.1)
     base64 (0.3.0)
+    bcrypt (3.1.22)
     benchmark (0.4.1)
     bigdecimal (3.2.3)
     builder (3.3.0)
@@ -173,6 +174,7 @@ GEM
       io-console (~> 0.5)
     rexml (3.3.9)
     securerandom (0.4.1)
+    sqlite3 (2.9.6-x86_64-darwin)
     stringio (3.1.7)
     thor (1.4.0)
     timeout (0.4.3)
@@ -190,10 +192,12 @@ PLATFORMS
   x86_64-darwin
 
 DEPENDENCIES
+  bcrypt (~> 3.1)
   debug
   puma (>= 5.0)
   rails (~> 8.0.0)
   rexml (>= 3.3)
+  sqlite3 (~> 2.1)
   tzinfo-data
 
 BUNDLED WITH

@@ -1,0 +1,11 @@
+<h1 style="font-family:Georgia,serif;font-size:30px;font-weight:500">
+  <%= @stage == "preview" ? "Your free preview is ready" : "Your map is ready" %>
+</h1>
+<p style="font-size:16px;line-height:1.6">Hi <%= @order.user.display_name %>,</p>
+<% if @stage == "preview" %>
+  <p style="font-size:16px;line-height:1.6">We finished the first version of <strong><%= @order.title %></strong>. Review the preview for free. If you love it, unlock the editable Roblox file for $9.</p>
+<% else %>
+  <p style="font-size:16px;line-height:1.6">Payment is confirmed. Your editable Roblox map is ready to download.</p>
+<% end %>
+<p style="margin:28px 0"><a href="<%= @order_url %>" style="display:inline-block;padding:14px 20px;border-radius:10px;background:#173d34;color:white;text-decoration:none;font-weight:700">View your order</a></p>
+<p style="font-size:13px;color:#6a7c77">Order <%= @order.public_id %></p>

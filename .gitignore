@@ -16,3 +16,5 @@
 /frontend/vite.config.d.ts
 /public/assets/
 /public/index.html
+/storage/*
+!/storage/.keep

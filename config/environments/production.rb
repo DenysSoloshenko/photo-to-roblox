@@ -46,6 +46,17 @@ Rails.application.configure do
   # Enable locale fallbacks for I18n (makes lookups for any locale fall back to
   # the I18n.default_locale when a translation cannot be found).
   config.i18n.fallbacks = true
+  config.active_storage.service = :local
+  config.action_mailer.delivery_method = :smtp
+  config.action_mailer.smtp_settings = {
+    address: ENV.fetch("SMTP_ADDRESS"),
+    port: ENV.fetch("SMTP_PORT", 587).to_i,
+    user_name: ENV.fetch("SMTP_USERNAME"),
+    password: ENV.fetch("SMTP_PASSWORD"),
+    authentication: :plain,
+    enable_starttls_auto: true
+  }
+  config.action_mailer.default_url_options = { host: ENV.fetch("APP_HOST"), protocol: "https" }
 
   # Enable DNS rebinding protection and other `Host` header attacks.
   # config.hosts = [

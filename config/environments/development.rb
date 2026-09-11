@@ -26,6 +26,24 @@ Rails.application.configure do
   # Change to :null_store to avoid any caching.
   config.cache_store = :memory_store
 
+  config.active_storage.service = :local
+
+  if ENV["SMTP_ADDRESS"].present?
+    config.action_mailer.delivery_method = :smtp
+    config.action_mailer.smtp_settings = {
+      address: ENV.fetch("SMTP_ADDRESS"),
+      port: ENV.fetch("SMTP_PORT", 587).to_i,
+      user_name: ENV["SMTP_USERNAME"],
+      password: ENV["SMTP_PASSWORD"],
+      authentication: :plain,
+      enable_starttls_auto: true
+    }
+  else
+    config.action_mailer.delivery_method = :file
+    config.action_mailer.file_settings = { location: Rails.root.join("tmp/mails") }
+  end
+  config.action_mailer.default_url_options = { host: ENV.fetch("APP_HOST", "127.0.0.1"), port: ENV.fetch("APP_PORT", 5173) }
+
   # Print deprecation notices to the Rails logger.
   config.active_support.deprecation = :log
 
