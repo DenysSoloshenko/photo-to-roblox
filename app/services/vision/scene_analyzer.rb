@@ -61,7 +61,12 @@ module Vision
         Approximate unseen areas conservatively; do not invent landmarks. Use explicit objects for composition-defining
         features and compact groups only for repeated vegetation or rocks. Keep paths walkable, put object bases on their
         referenced surfaces, and place the spawn on dry open ground outside buildings. Use only schema-listed component
-        types and materials. The camera must reproduce the photograph's main viewpoint.
+        types and materials. Keep bounds width/depth between 20 and 500 studs, bounds max_height between 5 and 500,
+        and every numeric component dimension between 0.01 and 200 studs. The camera must reproduce the photograph's
+        main viewpoint. Keep the complete scene below
+        1,200 estimated parts. Estimate each surface and path segment as 1 part; each tree as 5, bush as 4, rock as 1,
+        bench as 7, fence as 32, and building as 10. A repeated group costs its count multiplied by its component estimate.
+        Prefer a few well-placed repeated objects over dense groups so the scene remains safely below the budget.
         Optional user context: #{hint.to_s.strip.empty? ? "none" : hint.to_s.strip[0, 500]}
       PROMPT
       {

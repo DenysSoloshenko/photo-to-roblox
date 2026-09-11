@@ -28,6 +28,7 @@ The park is the checked-in development fixture rendered by the running applicati
 - Strict structured output using the versioned `SceneSpec 1.0` schema.
 - Surfaces, polyline paths, objects, repeated object groups, spawn position, camera, and source assumptions.
 - Server-side validation of numeric ranges, semantic IDs, references, spawn safety, and scene budgets with precise JSON error paths.
+- Automatic proportional normalization of oversized vision geometry and repeated groups before validation, preserving the scene layout while keeping exports within safe limits.
 - Deterministic compilation: the same `SceneSpec + seed + component_version` produces the same geometry.
 - A shared `SceneIR` consumed by both the interactive Three.js preview and the Roblox exporter.
 - A genuine `.rbxlx` XML place containing editable `Model`, `Part`, and `SpawnLocation` instances, plus camera and lighting configuration.
@@ -42,6 +43,7 @@ The park is the checked-in development fixture rendered by the running applicati
 | React + TypeScript | Upload workflow, SceneSpec editor, metrics, Three.js preview, and `.rbxlx` download |
 | Rails API | File validation, orchestration, compilation, export, and error handling |
 | OpenAI Vision | Converts a new photograph into strict `SceneSpec 1.0` structured output |
+| Geometry and budget normalizers | Scale oversized scenes uniformly and reduce only repeated groups when required |
 | `Scene::Validator` | Enforces semantic, geometric, reference, spawn, and budget constraints |
 | `Scene::Compiler` | Expands registered components into deterministic, portable `SceneIR` |
 | `Roblox::Exporter` | Serializes the same `SceneIR` into an editable Roblox XML place |
@@ -52,11 +54,12 @@ The coordinate system is fixed to `Y up` and `-Z forward`, with dimensions expre
 
 1. `POST /api/v1/scenes/analyze` validates the uploaded image and sends it to the vision model.
 2. The model must return data matching `config/schema/scene_spec.schema.json`.
-3. `Scene::Validator` applies the constraints that are intentionally kept outside the Structured Outputs-compatible schema.
-4. `Scene::Compiler` expands only registered components: `tree`, `bush`, `rock`, `bench`, `fence`, and `building`.
-5. A semantic object's seed is derived from the global seed, semantic ID, and component-library version, so editing one object does not reshuffle unrelated geometry.
-6. React/Three.js renders the resulting `SceneIR`.
-7. `Roblox::Exporter` converts that same `SceneIR` into `.rbxlx`, grouping parts by semantic ID.
+3. Geometry and budget normalizers uniformly scale unsupported real-world dimensions and proportionally reduce repeated groups when required.
+4. `Scene::Validator` applies the constraints that are intentionally kept outside the Structured Outputs-compatible schema.
+5. `Scene::Compiler` expands only registered components: `tree`, `bush`, `rock`, `bench`, `fence`, and `building`.
+6. A semantic object's seed is derived from the global seed, semantic ID, and component-library version, so editing one object does not reshuffle unrelated geometry.
+7. React/Three.js renders the resulting `SceneIR`.
+8. `Roblox::Exporter` converts that same `SceneIR` into `.rbxlx`, grouping parts by semantic ID.
 
 ## Quick Start
 
@@ -131,13 +134,13 @@ bundle exec rails scenes:generate
 
 Latest verified baseline:
 
-- Rails: 15 tests, 68 assertions, 0 failures.
+- Rails: 20 tests, 96 assertions, 0 failures.
 - Frontend: TypeScript type check and Vite production build pass.
-- Browser workflow: the scene renders in WebGL; changing repeat count reduces the map from 105 to 77 parts; the export endpoint returns `.rbxlx`.
+- Live browser workflow: a new waterfront photograph produced a 625-part scene in 32.7 seconds for an estimated $0.044751; changing a repeated bush count from 20 to 10 rebuilt it to 585 parts.
 - Roblox export: XML parses successfully, the part count matches SceneIR, exactly one `SpawnLocation` exists, and no scripts are present.
 - Fixture generation: coast — 70 parts / 108.52 ms; courtyard — 110 parts / 121.55 ms; park — 105 parts / 129.51 ms.
 
-A live vision request was not run in the committed environment because `OPENAI_API_KEY` is intentionally absent. The Responses API contract is covered by a fake-transport test, while the multipart upload → analyzer → validator → compiler path is covered by an integration test.
+The live verification used a local ignored `OPENAI_API_KEY`; no secret is committed. The Responses API contract is also covered by a fake-transport test, while the multipart upload → analyzer → normalization → validator → compiler path is covered by integration tests.
 
 ## Current Limitations
 
@@ -150,6 +153,8 @@ A live vision request was not run in the committed environment because `OPENAI_A
 - `config/schema/scene_spec.schema.json` — structured-output contract.
 - `app/services/vision/scene_analyzer.rb` — vision request and usage metrics.
 - `app/services/scene/validator.rb` — semantic and budget validation.
+- `app/services/scene/geometry_normalizer.rb` — proportional scaling and numeric range normalization.
+- `app/services/scene/budget_normalizer.rb` — deterministic reduction of repeated groups when needed.
 - `app/services/scene/compiler.rb` — deterministic scene compilation.
 - `app/services/scene/component_registry.rb` — trusted component library.
 - `app/services/roblox/exporter.rb` — `.rbxlx` export.

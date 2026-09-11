@@ -10,10 +10,35 @@ module Scene
     ].freeze
     NUMERIC_PARAM_KEYS = PARAM_KEYS - %w[material roof_material roof_style]
     DEFAULT_BUDGETS = { "max_parts" => 1_500, "max_triangles" => 120_000 }.freeze
+    TRIANGLES_PER_ESTIMATED_PART = 96
     PART_ESTIMATES = {
       "tree" => 5, "bush" => 4, "rock" => 1,
       "bench" => 7, "fence" => 32, "building" => 10
     }.freeze
+
+    class << self
+      def estimated_parts(spec)
+        collection = ->(key) { spec[key].is_a?(Array) ? spec[key] : [] }
+        surface_parts = collection.call("surfaces").length
+        path_parts = collection.call("paths").sum do |route|
+          route.is_a?(Hash) ? [Array(route["points"]).length - 1, 0].max : 0
+        end
+        object_parts = collection.call("objects").sum do |object|
+          object.is_a?(Hash) ? PART_ESTIMATES.fetch(object["type"], 1) : 1
+        end
+        group_parts = collection.call("groups").sum do |group|
+          next 0 unless group.is_a?(Hash)
+
+          group.fetch("count", 0).to_i * PART_ESTIMATES.fetch(group["object_type"], 1)
+        end
+        surface_parts + path_parts + object_parts + group_parts + 1
+      end
+
+      def effective_part_budget(budgets = DEFAULT_BUDGETS)
+        limits = DEFAULT_BUDGETS.merge(budgets || {})
+        [limits.fetch("max_parts").to_i, limits.fetch("max_triangles").to_i / TRIANGLES_PER_ESTIMATED_PART].min
+      end
+    end
 
     attr_reader :spec, :errors
 
@@ -266,12 +291,8 @@ module Scene
     end
 
     def validate_budget
-      surface_parts = collection("surfaces").length
-      path_parts = collection("paths").sum { |route| [Array(route["points"]).length - 1, 0].max }
-      object_parts = collection("objects").sum { |object| PART_ESTIMATES.fetch(object["type"], 1) }
-      group_parts = collection("groups").sum { |group| group.fetch("count", 0).to_i * PART_ESTIMATES.fetch(group["object_type"], 1) }
-      estimated_parts = surface_parts + path_parts + object_parts + group_parts + 1
-      estimated_triangles = estimated_parts * 96
+      estimated_parts = self.class.estimated_parts(spec)
+      estimated_triangles = estimated_parts * TRIANGLES_PER_ESTIMATED_PART
       if estimated_parts > @budgets["max_parts"].to_i
         raise BudgetError.new([{ path: "$.groups", message: "estimated #{estimated_parts} parts exceeds budget #{@budgets["max_parts"]}" }])
       end

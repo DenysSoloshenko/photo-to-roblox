@@ -40,6 +40,12 @@ export interface Metrics {
   output_tokens?: number;
   api_cost_usd?: number | null;
   pricing_basis?: string;
+  budget_adjusted?: boolean;
+  original_estimated_parts?: number;
+  estimated_parts?: number;
+  removed_group_instances?: number;
+  geometry_adjusted?: boolean;
+  geometry_scale?: number;
 }
 
 export interface SceneResponse {

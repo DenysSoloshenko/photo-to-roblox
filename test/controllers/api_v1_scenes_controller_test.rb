@@ -50,6 +50,26 @@ class ApiV1ScenesControllerTest < ActionDispatch::IntegrationTest
     assert body.dig("metrics", "order_id").present?
   end
 
+  test "normalizes an over-budget vision scene before compilation" do
+    oversized = Marshal.load(Marshal.dump(@spec))
+    oversized.fetch("groups").each { |group| group["count"] = 200 }
+    fake_analyzer = Object.new
+    fake_analyzer.define_singleton_method(:analyze) do |**|
+      { scene_spec: oversized, metrics: { "vision_model" => "fake-vision", "vision_ms" => 50.0 } }
+    end
+    upload = Rack::Test::UploadedFile.new(StringIO.new("new-photo-bytes"), "image/jpeg", original_filename: "large-scene.jpg")
+
+    Vision::SceneAnalyzer.stub(:new, fake_analyzer) do
+      post "/api/v1/scenes/analyze", params: { photo: upload }
+    end
+
+    assert_response :success
+    body = JSON.parse(response.body)
+    assert body.dig("metrics", "budget_adjusted")
+    assert_operator body.dig("metrics", "removed_group_instances"), :>, 0
+    assert_operator body.dig("scene_ir", "stats", "part_count"), :<=, 1_500
+  end
+
   test "downloads rbxlx" do
     post "/api/v1/scenes/export", params: { scene_spec: @spec }, as: :json
 
