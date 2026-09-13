@@ -2,7 +2,7 @@
 
 SceneFoundry is a manual-first service and an end-to-end AI prototype for turning photographs of real locations into editable Roblox places.
 
-The customer-facing beta uses a low-risk offer: uploading is free, a human-reviewed interactive preview is delivered with a 24-hour target, and the customer pays $19 through Stripe only if they choose to unlock the editable `.rbxlx`.
+The customer-facing beta uses a reservation-first offer: creating the request is free, Stripe places a $19 authorization hold, and an operator either accepts the order and captures it or declines it and releases the hold. Only a captured order can enter the premium Astra pipeline, and generated output remains private until a human approves it.
 
 The separate AI Lab keeps the automated pipeline available for internal experiments:
 
@@ -29,10 +29,13 @@ The park is the checked-in development fixture rendered by the running applicati
 - Email/password registration with bcrypt password hashing and encrypted, HttpOnly cookie sessions.
 - Google, GitHub, and Discord OAuth login controls with clear setup state until provider credentials are configured.
 - Private customer accounts with a persistent order history.
-- Free requests containing one to three private source photos, a scene/style brief, and a recorded image-rights confirmation.
-- A manual operator queue with source downloads, status changes, private notes, optional preview-image upload, and `.rbxlx` delivery upload.
+- Requests containing one to three private source photos, a scene/style brief, and a recorded image-rights confirmation.
+- A manual operator queue with source downloads, private notes, replacement artifacts, an interactive QA preview, and explicit accept/capture, decline/release, and approve/deliver actions.
 - Automatic extraction of safe browser-preview geometry from the operator's `.rbxlx`; no second JSON upload is required.
-- Free authenticated interactive 3D preview access followed by a $19 Stripe Checkout. The real map stays unavailable until a verified Stripe webhook marks the order paid.
+- A $19 Stripe Checkout authorization using manual capture: placing a hold does not charge the customer, acceptance captures once, and decline/cancel releases an uncaptured authorization.
+- Persisted Stripe-event deduplication, row-locked transitions, amount/currency/customer validation, and idempotency keys protect against duplicate capture and replayed webhooks.
+- A guarded background job runs Astra Max only after verified capture, enforces concurrency and daily-spend ceilings, records cost/latency, and leaves the result in private operator review.
+- Customer progress for every order and payment state; interactive preview and `.rbxlx` download become visible only after approval.
 - In-app notifications and email when the preview or paid download becomes ready.
 - JPEG, PNG, and WebP uploads up to 10 MB.
 - A fully localized interface in English and French, with English as the default and the selected language saved in the browser.
@@ -56,10 +59,11 @@ The park is the checked-in development fixture rendered by the running applicati
 
 | Layer | Responsibility |
 | --- | --- |
-| React + TypeScript | Customer accounts, free order/preview workflow, operator queue, AI Lab, Three.js preview, and `.rbxlx` download |
-| Rails API + PostgreSQL | Authentication, private orders, payment state, notifications, preview geometry, validation, orchestration, compilation, and export |
+| React + TypeScript | Customer accounts, authorization/progress workflow, operator controls, AI Lab, Three.js preview, and `.rbxlx` download |
+| Rails API + PostgreSQL | Authentication, private orders, guarded state transitions, Stripe event ledger, generation metrics, notifications, validation, orchestration, compilation, and export |
 | Active Storage + Action Mailer | Private local order artifacts (S3-ready) and preview/download-ready email delivery |
-| Stripe Checkout + signed webhook | Hosted card collection and authoritative payment/unlock state |
+| Stripe Checkout + signed webhook | Hosted manual-capture authorization, authoritative capture/release/refund state, and replay-safe reconciliation |
+| Active Job | Post-capture Astra generation with PostgreSQL advisory locking, concurrency limits, and a daily spend ceiling |
 | OpenAI Vision | Creates a strict `SceneSpec 1.1` draft and reviews its visual composition using the request-selected Terra or Astra Max profile |
 | Geometry and budget normalizers | Scale oversized scenes uniformly and reduce only repeated groups when required |
 | `Scene::Validator` | Enforces semantic, geometric, reference, spawn, and budget constraints |
@@ -102,6 +106,8 @@ cp .env.example .env
 # Defaults: Terra high draft + Terra medium refinement
 # Optional premium profile, after configuring authentication, quotas, and spend limits:
 # ASTRA_QUALITY_ENABLED=true
+# Enable paid-order generation only after Stripe test webhooks are verified:
+# ASTRA_ORDER_AUTOMATION_ENABLED=true
 bin/setup --skip-server
 bin/dev
 ```
@@ -110,7 +116,7 @@ Open [http://127.0.0.1:5173](http://127.0.0.1:5173). `bin/dev` starts Rails on p
 
 Without an API key, the UI blocks photograph analysis and explains why. The development example remains available only in `development` and `test`; it is never reported as a vision result.
 
-The manual order workflow does not require an OpenAI key. It does require PostgreSQL. In development, notification emails are written to `tmp/mails` unless SMTP variables are supplied. Register using an address listed in `ADMIN_EMAILS` to reveal the operator queue.
+An order can be created without an OpenAI key, but automatic fulfillment stays disabled until both Astra flags and `OPENAI_API_KEY` are configured. PostgreSQL is required. In development, notification emails are written to `tmp/mails` unless SMTP variables are supplied. Register using an address listed in `ADMIN_EMAILS` to reveal the operator queue.
 
 ### Social login
 
@@ -130,7 +136,13 @@ Set `STRIPE_SECRET_KEY` to a Stripe test-mode secret. For local webhook testing,
 stripe listen --forward-to 127.0.0.1:3000/api/v1/payments/stripe/webhook
 ```
 
-Copy the emitted `whsec_…` value to `STRIPE_WEBHOOK_SECRET`, then restart `bin/dev`. The browser is redirected to Stripe Checkout; only a signed, paid event with the matching order ID, amount, and currency unlocks the file.
+Copy the emitted `whsec_…` value to `STRIPE_WEBHOOK_SECRET`, then restart `bin/dev`. Checkout creates an uncaptured PaymentIntent. A matching signed webhook confirms the authorization; only an operator acceptance can capture it and queue generation. Decline or customer cancellation releases the hold. Use Stripe test mode until the complete flow has been exercised.
+
+The production order path is:
+
+`upload → authorize $19 hold → operator accepts/captures → guarded Astra job → operator QA → approved preview + .rbxlx`
+
+`ASTRA_ORDER_AUTOMATION_ENABLED` defaults to `false`. `ASTRA_ORDER_MAX_CONCURRENT`, `ASTRA_ORDER_DAILY_SPEND_LIMIT_USD`, and `ASTRA_ORDER_COST_RESERVATION_USD` provide conservative server-side spend controls. See [`docs/order_workflow_contract.md`](docs/order_workflow_contract.md) for the complete state and endpoint contract.
 
 PostgreSQL stores relational data and the compact preview SceneIR. Active Storage stores source photos, optional preview images, and `.rbxlx` files under private local `storage/` during development. Set `ACTIVE_STORAGE_SERVICE=amazon` plus the AWS/S3 variables in `.env` to move binaries to private S3 later without changing the order model.
 
@@ -145,9 +157,13 @@ The interface opens in English. Use the `EN` / `FR` control in the header to swi
 | `POST` | `/api/v1/auth/register` | Create an email/password account |
 | `POST` | `/api/v1/auth/login` | Start an encrypted browser session |
 | `POST` | `/api/v1/auth/oauth/:provider` | Start Google, GitHub, or Discord OAuth |
-| `GET, POST` | `/api/v1/orders` | List private orders or submit a free preview request |
-| `POST` | `/api/v1/orders/:public_id/purchase` | Create a hosted $19 Stripe Checkout session |
-| `POST` | `/api/v1/payments/stripe/webhook` | Verify Stripe events and unlock paid maps |
+| `GET, POST` | `/api/v1/orders` | List private orders or create a request awaiting payment authorization |
+| `POST` | `/api/v1/orders/:public_id/authorize_payment` | Create or reuse a hosted $19 manual-capture Stripe Checkout session |
+| `POST` | `/api/v1/orders/:public_id/cancel` | Cancel before capture and release/expire the authorization |
+| `POST` | `/api/v1/admin/orders/:public_id/accept` | Capture an authorized order exactly once and queue generation |
+| `POST` | `/api/v1/admin/orders/:public_id/decline` | Decline before capture and release the hold |
+| `POST` | `/api/v1/admin/orders/:public_id/approve` | Publish a reviewed paid result to the customer |
+| `POST` | `/api/v1/payments/stripe/webhook` | Verify and deduplicate authorization, capture, release, failure, and refund events |
 | `GET` | `/api/v1/notifications` | List in-app order notifications |
 | `GET, PATCH` | `/api/v1/admin/orders` | Operate the manual fulfillment queue |
 | `GET` | `/api/v1/scenes/schema` | Structured-generation JSON Schema |
@@ -215,7 +231,9 @@ Estimated cost is calculated from the response's actual token usage. Pricing ent
 
 - Customer and operator mutations require a per-session CSRF token; login sessions are encrypted and HttpOnly.
 - Source photos, previews, and result files are served only after owner/admin authorization.
-- A customer cannot download the `.rbxlx` until a matching signed Stripe event marks both the order and payment ready.
+- A customer cannot download the `.rbxlx` until Stripe confirms capture, generation produces a result, and an operator approves it.
+- Stripe webhooks are deduplicated in PostgreSQL and every payment transition validates the order ID, amount, currency, and PaymentIntent identity.
+- Astra order generation starts only for a paid order in `building`, runs once by default, and is disabled unless explicit automation and spend-limit configuration is present.
 - Social accounts are linked by email only when the provider confirms that email is verified.
 - Default limits are 1,500 parts and 120,000 estimated triangles.
 - Repeated-group expansion is checked before geometry is produced.
@@ -237,7 +255,7 @@ bundle exec rails scenes:generate
 
 Latest verified AI-pipeline baseline (the account/order suite is also run by `bin/verify`):
 
-- Rails: 45 tests, 256 assertions, 0 failures. The suite covers accounts, CSRF, OAuth identity linking, private manual orders, `.rbxlx` preview extraction, Stripe payment gating, operator fulfillment, notifications, four unrelated scene families, exact quality profiles, incomplete API responses, and ready-map integrity.
+- Rails: 57 tests, 319 assertions, 0 failures. The suite covers accounts, CSRF, OAuth identity linking, private orders and result files, state-transition guards, manual-capture Stripe authorization, event deduplication, capture/release, Astra job gating and reserved spend, operator approval, `.rbxlx` preview extraction, notifications, four unrelated scene families, exact quality profiles, incomplete API responses, and ready-map integrity.
 - Frontend: TypeScript type check and Vite production build pass.
 - Live two-pass Terra workflow: a new garden image completed in 75.73 seconds for an estimated $0.116264 (45.86-second high-reasoning draft plus 29.57-second medium review), normalized an over-budget draft from 1,720 to 1,244 estimated parts, and compiled without photo-specific code.
 - Live Astra Max workflow on a new 5.14 MB garden photograph: 830.44 seconds of vision work (634.56-second `max` draft plus 195.88-second `high` review), estimated API cost $2.999685 from 15,444 input and 56,133 output tokens, then a 1.40 MB ready `.rbxlx` response with 1,040 compiled parts. End-to-end server time was 832.27 seconds.
@@ -248,7 +266,9 @@ The live verification used a local ignored `OPENAI_API_KEY`; no secret is commit
 
 ## Current Limitations
 
-- Stripe Checkout code is complete, but checkout is disabled until test/live Stripe keys and a webhook secret are supplied in the deployment environment.
+- Stripe manual-capture code is complete, but checkout is disabled until test/live Stripe keys and a webhook secret are supplied in the deployment environment. Exercise authorization, capture, release, expiry, and refund webhooks in test mode before accepting real orders.
+- The development queue adapter is in-process. Production should use a durable Active Job backend before enabling automatic Astra fulfillment.
+- Generation failure remains a private operator state; refunds are reconciled from Stripe events but an operator must initiate a refund in Stripe Dashboard in this milestone.
 - PostgreSQL is production-ready for relational data, while local Active Storage is suitable only for a single persistent instance. Set the existing S3 environment variables before horizontally scaling or deploying to ephemeral storage.
 - OAuth controls remain disabled until provider credentials and matching callback URLs are configured.
 - A single photograph cannot reveal true depth or hidden geometry. SceneFoundry preserves the recognizable composition and records assumptions, but it does not claim photogrammetric accuracy.
@@ -269,8 +289,13 @@ The live verification used a local ignored `OPENAI_API_KEY`; no secret is commit
 - `app/services/roblox/exporter.rb` — `.rbxlx` export.
 - `app/services/roblox/map_artifact.rb` — checksummed Base64 ready-map response envelope.
 - `app/services/roblox/preview_extractor.rb` — safe interactive preview extraction from an operator-delivered `.rbxlx`.
-- `app/services/payments/stripe_checkout.rb` — hosted checkout creation.
-- `app/services/payments/stripe_event_handler.rb` — verified payment-to-download unlock transition.
-- `frontend/src/App.tsx` — upload, editing, metrics, and export workflow.
+- `app/services/payments/stripe_checkout.rb` — hosted manual-capture authorization.
+- `app/services/payments/order_actions.rb` — idempotent capture, decline/release, and customer cancellation actions.
+- `app/services/payments/stripe_event_handler.rb` — deduplicated verified payment-state reconciliation.
+- `app/jobs/generate_order_job.rb` — sole automatic paid-order generation entry point.
+- `app/services/orders/generation_gate.rb` — automation, concurrency, and daily-spend guardrails.
+- `app/services/orders/premium_generator.rb` — Astra-to-SceneIR-to-`.rbxlx` fulfillment pipeline.
+- `frontend/src/App.tsx` — account shell and AI Lab.
+- `frontend/src/OrderWorkflow.tsx` — customer and operator reserved-payment workflow.
 - `frontend/src/i18n.ts` — English and French interface resources and language persistence.
 - `frontend/src/SceneViewer.tsx` — interactive Three.js scene preview.

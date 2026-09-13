@@ -1,6 +1,23 @@
 #!/usr/bin/env ruby
 
+require "rbconfig"
+
 root = File.expand_path("..", __dir__)
+expected_ruby = File.read(File.join(root, ".ruby-version")).strip.sub(/\Aruby-/, "")
+unless RUBY_VERSION == expected_ruby
+  abort <<~MESSAGE
+    photo-to-roblox requires Ruby #{expected_ruby}, but bin/dev is running with Ruby #{RUBY_VERSION}.
+    Activate the project Ruby first (for example: rvm use #{expected_ruby}) and run bin/dev again.
+  MESSAGE
+end
+
+begin
+  require "bundler/setup"
+  require "bcrypt"
+rescue LoadError, Bundler::BundlerError => error
+  abort "The Rails bundle is incomplete (#{error.message}). Run bundle install with Ruby #{expected_ruby}, then retry bin/dev."
+end
+
 env_file = File.join(root, ".env")
 if File.file?(env_file)
   File.foreach(env_file) do |line|
@@ -17,7 +34,7 @@ if File.file?(env_file)
 end
 
 children = [
-  spawn({ "PORT" => ENV.fetch("PORT", "3000") }, "bin/rails", "server", chdir: root),
+  spawn({ "PORT" => ENV.fetch("PORT", "3000") }, RbConfig.ruby, "bin/rails", "server", chdir: root),
   spawn("npm", "run", "dev", "--", "--host", ENV.fetch("VITE_HOST", "127.0.0.1"), chdir: File.join(root, "frontend"))
 ]
 
