@@ -106,8 +106,38 @@ export interface SessionResponse {
   oauth_providers: OAuthProviderStatus[];
 }
 
-export type OrderStatus = "submitted" | "reviewing" | "building" | "preview_ready" | "ready" | "delivered" | "cancelled";
-export type PaymentStatus = "unpaid" | "requested" | "paid" | "refunded";
+export type OrderStatus =
+  | "payment_pending"
+  | "submitted"
+  | "accepted"
+  | "building"
+  | "reviewing"
+  | "preview_ready"
+  | "ready"
+  | "delivered"
+  | "declined"
+  | "cancelled"
+  | "failed";
+
+export type PaymentStatus =
+  | "unpaid"
+  | "authorization_pending"
+  | "authorized"
+  | "capture_pending"
+  | "paid"
+  | "released"
+  | "refund_pending"
+  | "refunded"
+  | "failed";
+
+export interface GenerationMetrics extends Metrics {
+  model?: string;
+  provider?: string;
+  elapsed_ms?: number;
+  latency_ms?: number;
+  cost_usd?: number | null;
+  [key: string]: string | number | boolean | null | undefined;
+}
 
 export interface ManualOrder {
   public_id: string;
@@ -120,11 +150,23 @@ export interface ManualOrder {
   instructions: string | null;
   price_cents: number;
   currency: string;
-  submitted_at: string;
-  delivery_due_at: string;
+  submitted_at: string | null;
+  delivery_due_at: string | null;
   completed_at: string | null;
-  purchase_requested_at: string | null;
+  purchase_requested_at?: string | null;
   paid_at: string | null;
+  authorization_expires_at: string | null;
+  authorized_at: string | null;
+  capture_requested_at: string | null;
+  captured_at?: string | null;
+  released_at: string | null;
+  refunded_at?: string | null;
+  generation_started_at: string | null;
+  generation_finished_at: string | null;
+  generation_attempts: number;
+  generation_metrics?: GenerationMetrics | null;
+  generation_error?: string | null;
+  payment_error?: string | null;
   rights_confirmed: boolean;
   source_photos: Array<{ id?: number; filename: string; byte_size: number; content_type: string; download_url?: string }>;
   preview_url: string | null;
@@ -132,6 +174,12 @@ export interface ManualOrder {
   result_url: string | null;
   user?: { email: string; display_name: string };
   admin_notes?: string | null;
+  can_authorize: boolean;
+  can_cancel: boolean;
+  can_accept: boolean;
+  can_decline: boolean;
+  can_approve: boolean;
+  can_download: boolean;
 }
 
 export interface InboxNotification {

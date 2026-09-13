@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Trans, useTranslation } from "react-i18next";
-import { analyzePhoto, compileScene, createManualOrder, downloadReadyRoblox, getSession, listAdminOrders, listNotifications, listOrders, loginAccount, logoutAccount, registerAccount, requestPurchase, startOAuth, updateAdminOrder } from "./api";
+import { analyzePhoto, compileScene, downloadReadyRoblox, getSession, listNotifications, loginAccount, logoutAccount, registerAccount, startOAuth } from "./api";
 import type { QualityMode } from "./api";
 import i18n from "./i18n";
+import { AdminQueue, CreateOrderPage, OrdersPage } from "./OrderWorkflow";
 import SceneViewer from "./SceneViewer";
-import type { AccountUser, ManualOrder, Metrics, OAuthProviderStatus, OrderStatus, RobloxFile, SceneIR, SceneResponse } from "./types";
+import type { AccountUser, Metrics, OAuthProviderStatus, RobloxFile, SceneIR, SceneResponse } from "./types";
 
 type Status = "idle" | "analyzing" | "building" | "ready";
 type Language = "en" | "fr";
@@ -118,90 +119,6 @@ export default function App() {
   );
 }
 
-function CreateOrderPage({ user, csrfToken, onAuth, onCreated }: { user: AccountUser | null; csrfToken: string; onAuth: () => void; onCreated: () => void }) {
-  const { t } = useTranslation();
-  const [photos, setPhotos] = useState<File[]>([]);
-  const [title, setTitle] = useState("");
-  const [sceneType, setSceneType] = useState("other");
-  const [style, setStyle] = useState("roblox_stylized");
-  const [mustPreserve, setMustPreserve] = useState("");
-  const [instructions, setInstructions] = useState("");
-  const [rights, setRights] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const submit = async (event: React.FormEvent) => {
-    event.preventDefault();
-    if (!user) return onAuth();
-    setBusy(true);
-    setError(null);
-    try {
-      const form = new FormData();
-      photos.forEach((photo) => form.append("source_photos[]", photo));
-      form.append("title", title);
-      form.append("scene_type", sceneType);
-      form.append("style", style);
-      form.append("must_preserve", mustPreserve);
-      form.append("instructions", instructions);
-      form.append("rights_confirmed", String(rights));
-      await createManualOrder(csrfToken, form);
-      onCreated();
-    } catch (reason) {
-      setError(errorText(reason, t("errors.unknown")));
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  return (
-    <main className="portal-main">
-      <section className="hero-card">
-        <div>
-          <span className="eyebrow">{t("manual.eyebrow")}</span>
-          <h1>{t("manual.title")}</h1>
-          <p>{t("manual.lede")}</p>
-          <div className="promise-grid">
-            <div><strong>{t("manual.free")}</strong><span>{t("manual.freeBody")}</span></div>
-            <div><strong>{t("manual.hours")}</strong><span>{t("manual.hoursBody")}</span></div>
-            <div><strong>$19</strong><span>{t("manual.priceBody")}</span></div>
-          </div>
-        </div>
-        <div className="hero-art" aria-hidden="true"><span>photo</span><b>→</b><span>world</span></div>
-      </section>
-
-      <section className="order-layout">
-        <form className="order-form surface" onSubmit={submit}>
-          <div className="section-heading"><span>01</span><div><h2>{t("manual.uploadTitle")}</h2><p>{t("manual.uploadBody")}</p></div></div>
-          <label className="multi-dropzone">
-            <input type="file" multiple accept="image/jpeg,image/png,image/webp" onChange={(event) => setPhotos(Array.from(event.target.files || []).slice(0, 3))} />
-            <span className="drop-icon">↥</span><strong>{photos.length ? t("manual.filesSelected", { count: photos.length }) : t("manual.choosePhotos")}</strong><small>{t("manual.formats")}</small>
-          </label>
-          {photos.length > 0 && <div className="file-chips">{photos.map((photo) => <span key={`${photo.name}-${photo.size}`}>{photo.name}</span>)}</div>}
-
-          <div className="section-heading"><span>02</span><div><h2>{t("manual.briefTitle")}</h2><p>{t("manual.briefBody")}</p></div></div>
-          <label className="form-field"><span>{t("manual.projectName")}</span><input required maxLength={120} value={title} onChange={(event) => setTitle(event.target.value)} placeholder={t("manual.projectPlaceholder")} /></label>
-          <div className="field-row">
-            <label className="form-field"><span>{t("manual.sceneType")}</span><select value={sceneType} onChange={(event) => setSceneType(event.target.value)}><option value="home">{t("manual.types.home")}</option><option value="garden">{t("manual.types.garden")}</option><option value="park">{t("manual.types.park")}</option><option value="landscape">{t("manual.types.landscape")}</option><option value="venue">{t("manual.types.venue")}</option><option value="other">{t("manual.types.other")}</option></select></label>
-            <label className="form-field"><span>{t("manual.style")}</span><select value={style} onChange={(event) => setStyle(event.target.value)}><option value="roblox_stylized">{t("manual.styles.roblox")}</option><option value="faithful">{t("manual.styles.faithful")}</option><option value="low_poly">{t("manual.styles.lowPoly")}</option><option value="colorful">{t("manual.styles.colorful")}</option></select></label>
-          </div>
-          <label className="form-field"><span>{t("manual.preserve")}</span><textarea rows={3} maxLength={2000} value={mustPreserve} onChange={(event) => setMustPreserve(event.target.value)} placeholder={t("manual.preservePlaceholder")} /></label>
-          <label className="form-field"><span>{t("manual.notes")}</span><textarea rows={3} maxLength={2000} value={instructions} onChange={(event) => setInstructions(event.target.value)} placeholder={t("manual.notesPlaceholder")} /></label>
-          <label className="consent-row"><input type="checkbox" checked={rights} onChange={(event) => setRights(event.target.checked)} /><span>{t("manual.rights")}</span></label>
-          {error && <pre className="error-box" role="alert">{error}</pre>}
-          <button className="primary-button order-submit" disabled={busy || photos.length === 0 || !title || !rights}>{busy ? t("manual.sending") : user ? t("manual.request") : t("manual.signUpRequest")}</button>
-          <p className="no-card">{t("manual.noCard")}</p>
-        </form>
-
-        <aside className="process-card surface">
-          <span className="eyebrow">{t("manual.process")}</span>
-          <ol><li><b>1</b><div><strong>{t("manual.processUpload")}</strong><span>{t("manual.processUploadBody")}</span></div></li><li><b>2</b><div><strong>{t("manual.processBuild")}</strong><span>{t("manual.processBuildBody")}</span></div></li><li><b>3</b><div><strong>{t("manual.processPreview")}</strong><span>{t("manual.processPreviewBody")}</span></div></li><li><b>4</b><div><strong>{t("manual.processUnlock")}</strong><span>{t("manual.processUnlockBody")}</span></div></li></ol>
-          <div className="beta-note">{t("manual.betaNote")}</div>
-        </aside>
-      </section>
-    </main>
-  );
-}
-
 function AuthDialog({ csrfToken, providers, onClose, onAuthenticated }: { csrfToken: string; providers: OAuthProviderStatus[]; onClose: () => void; onAuthenticated: (response: { user: AccountUser; csrf_token: string }) => void }) {
   const { t } = useTranslation();
   const [mode, setMode] = useState<"login" | "register">("register");
@@ -228,53 +145,6 @@ function AuthDialog({ csrfToken, providers, onClose, onAuthenticated }: { csrfTo
     <form onSubmit={submit}>{mode === "register" && <label className="form-field"><span>{t("auth.name")}</span><input required value={displayName} onChange={(event) => setDisplayName(event.target.value)} /></label>}<label className="form-field"><span>{t("auth.email")}</span><input type="email" required value={email} onChange={(event) => setEmail(event.target.value)} /></label><label className="form-field"><span>{t("auth.password")}</span><input type="password" minLength={10} required value={password} onChange={(event) => setPassword(event.target.value)} /><small>{t("auth.passwordHint")}</small></label>{error && <pre className="error-box">{error}</pre>}<button className="primary-button" disabled={busy}>{busy ? t("auth.working") : mode === "register" ? t("auth.create") : t("auth.signIn")}</button></form>
     <p className="auth-switch">{mode === "register" ? t("auth.haveAccount") : t("auth.newAccount")} <button onClick={() => { setMode(mode === "register" ? "login" : "register"); setError(null); }}>{mode === "register" ? t("auth.signIn") : t("auth.create")}</button></p><small className="terms-copy">{t("auth.terms")}</small>
   </section></div>;
-}
-
-function OrdersPage({ csrfToken }: { csrfToken: string }) {
-  const { t } = useTranslation();
-  const [orders, setOrders] = useState<ManualOrder[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const load = useCallback(async () => { try { setOrders((await listOrders()).orders); } catch (reason) { setError(errorText(reason, t("errors.unknown"))); } finally { setLoading(false); } }, [t]);
-  useEffect(() => { void load(); }, [load]);
-  const purchase = async (order: ManualOrder) => { try { const response = await requestPurchase(csrfToken, order.public_id); setOrders((all) => all.map((item) => item.public_id === order.public_id ? response.order : item)); if (response.checkout_url) window.location.assign(response.checkout_url); } catch (reason) { setError(errorText(reason, t("errors.unknown"))); } };
-  return <main className="portal-main narrow"><div className="page-heading"><div><span className="eyebrow">{t("orders.eyebrow")}</span><h1>{t("orders.title")}</h1><p>{t("orders.lede")}</p></div></div>{error && <pre className="error-box">{error}</pre>}{loading ? <p>{t("orders.loading")}</p> : orders.length === 0 ? <div className="empty-orders surface"><h2>{t("orders.empty")}</h2><p>{t("orders.emptyBody")}</p></div> : <div className="order-list">{orders.map((order) => <OrderCard key={order.public_id} order={order} onPurchase={() => void purchase(order)} />)}</div>}</main>;
-}
-
-function OrderCard({ order, onPurchase }: { order: ManualOrder; onPurchase: () => void }) {
-  const { t, i18n: i18next } = useTranslation();
-  const [previewOpen, setPreviewOpen] = useState(false);
-  const locale = i18next.language.startsWith("fr") ? "fr-FR" : "en-US";
-  const status = t(`orders.status.${order.status}`);
-  const hasPreview = Boolean(order.preview_scene_ir || order.preview_url);
-  return <><article className="customer-order surface"><div className="order-preview">{order.preview_url ? <img src={order.preview_url} alt={t("orders.previewAlt", { title: order.title })} /> : order.preview_scene_ir ? <div><span>◎</span><strong>{t("orders.interactiveReady")}</strong></div> : <div><span>◌</span><strong>{t("orders.previewPending")}</strong></div>}</div><div className="order-content"><div className="order-title-row"><div><span className={`status-pill status-${order.status}`}>{status}</span><h2>{order.title}</h2></div><strong className="order-price">${(order.price_cents / 100).toFixed(0)}</strong></div><dl><div><dt>{t("orders.submitted")}</dt><dd>{new Date(order.submitted_at).toLocaleString(locale)}</dd></div><div><dt>{t("orders.due")}</dt><dd>{new Date(order.delivery_due_at).toLocaleString(locale)}</dd></div><div><dt>{t("orders.payment")}</dt><dd>{t(`orders.paymentStatus.${order.payment_status}`)}</dd></div></dl>{hasPreview && <div className="order-actions">{order.preview_scene_ir ? <button className="secondary-link" onClick={() => setPreviewOpen(true)}>{t("orders.explorePreview")}</button> : order.preview_url && <a className="secondary-link" href={order.preview_url} target="_blank" rel="noreferrer">{t("orders.openPreview")}</a>}{order.result_url ? <a className="unlock-button" href={order.result_url}>{t("orders.download")}</a> : order.status === "preview_ready" && <button className="unlock-button" onClick={onPurchase}>{t("orders.unlock", { price: `$${(order.price_cents / 100).toFixed(0)}` })}</button>}</div>}<small className="order-id">{order.public_id}</small></div></article>{previewOpen && order.preview_scene_ir && <OrderPreviewModal order={order} onClose={() => setPreviewOpen(false)} />}</>;
-}
-
-function OrderPreviewModal({ order, onClose }: { order: ManualOrder; onClose: () => void }) {
-  const { t } = useTranslation();
-  const [resetToken, setResetToken] = useState(0);
-  const ignoreSelection = useCallback(() => undefined, []);
-  return <div className="modal-backdrop preview-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}><section className="map-preview-dialog" role="dialog" aria-modal="true" aria-label={t("orders.explorePreview")}><header><div><span className="eyebrow">{t("orders.freeInteractivePreview")}</span><h2>{order.title}</h2></div><div><button className="secondary-link" onClick={() => setResetToken((value) => value + 1)}>{t("orders.resetCamera")}</button><button className="modal-close" onClick={onClose} aria-label={t("auth.close")}>×</button></div></header><div className="customer-scene-viewer"><SceneViewer sceneIr={order.preview_scene_ir} resetToken={resetToken} onSelect={ignoreSelection} /></div><footer><p>{t("orders.previewOnly")}</p>{order.result_url ? <a className="unlock-button" href={order.result_url}>{t("orders.download")}</a> : <button className="unlock-button" onClick={() => { onClose(); }}>{t("orders.closePreview")}</button>}</footer></section></div>;
-}
-
-function AdminQueue({ csrfToken }: { csrfToken: string }) {
-  const { t } = useTranslation();
-  const [orders, setOrders] = useState<ManualOrder[]>([]);
-  const [error, setError] = useState<string | null>(null);
-  const load = useCallback(async () => { try { setOrders((await listAdminOrders()).orders); } catch (reason) { setError(errorText(reason, t("errors.unknown"))); } }, [t]);
-  useEffect(() => { void load(); }, [load]);
-  return <main className="portal-main narrow"><div className="page-heading"><div><span className="eyebrow">{t("admin.eyebrow")}</span><h1>{t("admin.title")}</h1><p>{t("admin.lede")}</p></div></div>{error && <pre className="error-box">{error}</pre>}<div className="admin-list">{orders.map((order) => <AdminOrderCard key={order.public_id} order={order} csrfToken={csrfToken} onSaved={load} />)}</div></main>;
-}
-
-function AdminOrderCard({ order, csrfToken, onSaved }: { order: ManualOrder; csrfToken: string; onSaved: () => Promise<void> }) {
-  const { t } = useTranslation();
-  const [status, setStatus] = useState<OrderStatus>(order.status);
-  const [preview, setPreview] = useState<File | null>(null);
-  const [result, setResult] = useState<File | null>(null);
-  const [notes, setNotes] = useState(order.admin_notes || "");
-  const [busy, setBusy] = useState(false);
-  const save = async () => { setBusy(true); try { const form = new FormData(); form.append("status", status); form.append("admin_notes", notes); if (preview) form.append("preview_image", preview); if (result) form.append("result_file", result); await updateAdminOrder(csrfToken, order.public_id, form); await onSaved(); } finally { setBusy(false); } };
-  return <article className="admin-order surface"><div className="admin-order-heading"><div><span className={`status-pill status-${order.status}`}>{order.status}</span><h2>{order.title}</h2><p>{order.user?.display_name} · {order.user?.email}</p></div><span>{new Date(order.delivery_due_at).toLocaleString()}</span></div><div className="source-links">{order.source_photos.map((photo, index) => <a key={photo.id || photo.filename} href={photo.download_url}>{t("admin.source", { number: index + 1 })}: {photo.filename}</a>)}</div><div className="admin-grid"><label className="form-field"><span>{t("admin.status")}</span><select value={status} onChange={(event) => setStatus(event.target.value as OrderStatus)}>{["submitted", "reviewing", "building", "preview_ready", "ready", "delivered", "cancelled"].map((value) => <option key={value}>{value}</option>)}</select></label><div className="admin-payment-state"><span>{t("admin.payment")}</span><strong>{t(`orders.paymentStatus.${order.payment_status}`)}</strong><small>{t("admin.stripeManaged")}</small></div><label className="form-field"><span>{t("admin.preview")}</span><input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => setPreview(event.target.files?.[0] || null)} /></label><label className="form-field"><span>{t("admin.result")}</span><input type="file" accept=".rbxlx" onChange={(event) => setResult(event.target.files?.[0] || null)} /></label></div><label className="form-field"><span>{t("admin.notes")}</span><textarea rows={2} value={notes} onChange={(event) => setNotes(event.target.value)} /></label><div className="admin-footer"><small>{order.public_id}</small><button className="primary-button" onClick={() => void save()} disabled={busy}>{busy ? t("admin.saving") : t("admin.save")}</button></div></article>;
 }
 
 function GeneratorLab({ onExit }: { onExit: () => void }) {

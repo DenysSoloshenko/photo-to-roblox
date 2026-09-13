@@ -91,11 +91,20 @@ export function createManualOrder(csrfToken: string, form: FormData): Promise<{ 
 }
 
 export function listOrders(): Promise<{ orders: ManualOrder[] }> {
-  return fetch("/api/v1/orders").then((response) => parseJson<{ orders: ManualOrder[] }>(response));
+  return fetch("/api/v1/orders", { credentials: "same-origin", cache: "no-store" }).then((response) => parseJson<{ orders: ManualOrder[] }>(response));
 }
 
-export function requestPurchase(csrfToken: string, publicId: string): Promise<{ order: ManualOrder; checkout_url: string | null }> {
-  return secureFetch(`/api/v1/orders/${publicId}/purchase`, csrfToken, { method: "POST" });
+export function getOrder(publicId: string): Promise<{ order: ManualOrder }> {
+  return fetch(`/api/v1/orders/${publicId}`, { credentials: "same-origin", cache: "no-store" })
+    .then((response) => parseJson<{ order: ManualOrder }>(response));
+}
+
+export function authorizeOrderPayment(csrfToken: string, publicId: string): Promise<{ order: ManualOrder; checkout_url: string }> {
+  return secureFetch(`/api/v1/orders/${publicId}/authorize_payment`, csrfToken, { method: "POST" });
+}
+
+export function cancelOrder(csrfToken: string, publicId: string): Promise<{ order: ManualOrder }> {
+  return secureFetch(`/api/v1/orders/${publicId}/cancel`, csrfToken, { method: "POST" });
 }
 
 export function listNotifications(): Promise<{ notifications: InboxNotification[] }> {
@@ -103,11 +112,23 @@ export function listNotifications(): Promise<{ notifications: InboxNotification[
 }
 
 export function listAdminOrders(): Promise<{ orders: ManualOrder[] }> {
-  return fetch("/api/v1/admin/orders").then((response) => parseJson<{ orders: ManualOrder[] }>(response));
+  return fetch("/api/v1/admin/orders", { credentials: "same-origin", cache: "no-store" }).then((response) => parseJson<{ orders: ManualOrder[] }>(response));
 }
 
 export function updateAdminOrder(csrfToken: string, publicId: string, form: FormData): Promise<{ order: ManualOrder }> {
   return secureFetch(`/api/v1/admin/orders/${publicId}`, csrfToken, { method: "PATCH", body: form });
+}
+
+export function acceptAdminOrder(csrfToken: string, publicId: string): Promise<{ order: ManualOrder }> {
+  return secureFetch(`/api/v1/admin/orders/${publicId}/accept`, csrfToken, { method: "POST" });
+}
+
+export function declineAdminOrder(csrfToken: string, publicId: string): Promise<{ order: ManualOrder }> {
+  return secureFetch(`/api/v1/admin/orders/${publicId}/decline`, csrfToken, { method: "POST" });
+}
+
+export function approveAdminOrder(csrfToken: string, publicId: string): Promise<{ order: ManualOrder }> {
+  return secureFetch(`/api/v1/admin/orders/${publicId}/approve`, csrfToken, { method: "POST" });
 }
 
 export async function analyzePhoto(photo: File, hint: string, qualityMode: QualityMode): Promise<SceneResponse> {
