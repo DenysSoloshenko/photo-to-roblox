@@ -11,9 +11,11 @@ module Api
           head :ok
         rescue JSON::ParserError, Stripe::SignatureVerificationError
           render json: { error: "invalid_stripe_webhook" }, status: :bad_request
+        rescue ::Payments::StripeEventHandler::InvalidEvent, ::Payments::PaymentIntentValidator::InvalidPayment => error
+          Rails.logger.warn({ event: "stripe_webhook_rejected", message: error.message }.to_json)
+          render json: { error: "stripe_event_rejected" }, status: :unprocessable_entity
         end
       end
     end
   end
 end
-

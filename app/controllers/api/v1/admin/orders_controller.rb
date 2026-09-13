@@ -7,7 +7,7 @@ module Api
 
         before_action :authenticate_user!
         before_action :require_admin!
-        before_action :protect_api!, only: :update
+        before_action :protect_api!, only: %i[update accept decline approve]
 
         def index
           orders = Order.includes(:user).with_attached_source_photos.with_attached_preview_image.with_attached_result_file
@@ -35,6 +35,42 @@ module Api
           render json: { errors: error.record.errors.to_hash }, status: :unprocessable_entity
         rescue ArgumentError => error
           render json: { errors: [error.message] }, status: :unprocessable_entity
+        end
+
+        def accept
+          order = find_order
+          ::Payments::OrderActions.new(order).accept!
+          render json: { order: order_json(order.reload) }
+        rescue ::Payments::OrderActions::InvalidState => error
+          render json: { error: "order_acceptance_not_allowed", message: error.message }, status: :unprocessable_entity
+        rescue ::Payments::OrderActions::NotConfigured
+          render json: { error: "stripe_not_configured" }, status: :service_unavailable
+        rescue Stripe::StripeError
+          render json: { error: "payment_service_unavailable" }, status: :bad_gateway
+        end
+
+        def decline
+          order = find_order
+          ::Payments::OrderActions.new(order).decline!
+          render json: { order: order_json(order.reload) }
+        rescue ::Payments::OrderActions::InvalidState => error
+          render json: { error: "order_decline_not_allowed", message: error.message }, status: :unprocessable_entity
+        rescue ::Payments::OrderActions::NotConfigured
+          render json: { error: "stripe_not_configured" }, status: :service_unavailable
+        rescue Stripe::StripeError
+          render json: { error: "payment_service_unavailable" }, status: :bad_gateway
+        end
+
+        def approve
+          order = find_order
+          order.with_lock do
+            unless order.can_approve?
+              return render json: { error: "order_approval_not_allowed" }, status: :unprocessable_entity
+            end
+
+            order.update!(status: "ready", approved_at: Time.current)
+          end
+          render json: { order: order_json(order.reload) }
         end
 
         def download_source

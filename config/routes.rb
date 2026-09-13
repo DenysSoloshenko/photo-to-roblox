@@ -17,6 +17,8 @@ Rails.application.routes.draw do
       resources :orders, param: :public_id, only: %i[index show create] do
         member do
           get "files/:kind", to: "orders#download", as: :file
+          post "authorize_payment", to: "orders#authorize_payment"
+          post "cancel", to: "orders#cancel"
           post "purchase", to: "orders#purchase"
         end
       end
@@ -27,7 +29,12 @@ Rails.application.routes.draw do
 
       namespace :admin do
         resources :orders, param: :public_id, only: %i[index show update] do
-          member { get "files/source/:attachment_id", to: "orders#download_source", as: :source_file }
+          member do
+            get "files/source/:attachment_id", to: "orders#download_source", as: :source_file
+            post "accept"
+            post "decline"
+            post "approve"
+          end
         end
       end
 

@@ -22,6 +22,7 @@ Rails.application.configure do
   config.consider_all_requests_local = true
   config.cache_store = :null_store
   config.active_storage.service = :test
+  config.active_job.queue_adapter = :test
   config.action_mailer.delivery_method = :test
   config.action_mailer.default_url_options = { host: "example.test" }
 

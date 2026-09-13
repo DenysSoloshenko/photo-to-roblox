@@ -36,8 +36,9 @@ class AccountsAndOrdersTest < ActionDispatch::IntegrationTest
 
     assert_response :created
     created = response.parsed_body.fetch("order")
-    assert_equal "submitted", created.fetch("status")
+    assert_equal "payment_pending", created.fetch("status")
     assert_equal "unpaid", created.fetch("payment_status")
+    assert created.fetch("can_authorize")
     assert_equal 1_900, created.fetch("price_cents")
     assert_nil created.fetch("result_url")
     assert Order.find_by!(public_id: created.fetch("public_id")).source_photos.attached?
@@ -60,7 +61,7 @@ class AccountsAndOrdersTest < ActionDispatch::IntegrationTest
     assert_equal "invalid_csrf_token", response.parsed_body.fetch("error")
   end
 
-  test "notifies the customer when a free preview is ready and gates the map until paid" do
+  test "creates a manual-capture checkout authorization and reuses it" do
     register
     user = User.find_by!(email: "denys@example.com")
     order = user.orders.create!(
@@ -70,36 +71,52 @@ class AccountsAndOrdersTest < ActionDispatch::IntegrationTest
       rights_confirmed_at: Time.current
     )
     order.source_photos.attach(io: StringIO.new("image"), filename: "park.jpg", content_type: "image/jpeg")
-    order.preview_image.attach(io: StringIO.new("preview"), filename: "preview.png", content_type: "image/png")
-    xml = file_fixture("result.rbxlx").read
-    order.result_file.attach(io: StringIO.new(xml), filename: "park.rbxlx", content_type: "application/xml")
-    order.preview_scene_ir = Roblox::PreviewExtractor.new.extract(xml)
-
-    assert_difference -> { Notification.count }, 1 do
-      assert_difference -> { ActionMailer::Base.deliveries.size }, 1 do
-        order.update!(status: "preview_ready")
-      end
-    end
-
     original_key = ENV["STRIPE_SECRET_KEY"]
     begin
       ENV["STRIPE_SECRET_KEY"] = "sk_test_local"
       checkout = Struct.new(:id, :url).new("cs_test_order", "https://checkout.stripe.test/session")
-      Stripe::Checkout::Session.stub(:create, checkout) do
-        post "/api/v1/orders/#{order.public_id}/purchase", headers: csrf_headers
+      create_calls = 0
+      create_checkout = lambda do |params, _options|
+        create_calls += 1
+        assert_equal "manual", params.dig(:payment_intent_data, :capture_method)
+        assert_equal 1_900, params.dig(:line_items, 0, :price_data, :unit_amount)
+        checkout
+      end
+      Stripe::Checkout::Session.stub(:create, create_checkout) do
+        2.times { post "/api/v1/orders/#{order.public_id}/authorize_payment", headers: csrf_headers }
         assert_response :success
-        assert_equal "requested", response.parsed_body.dig("order", "payment_status")
+        assert_equal "authorization_pending", response.parsed_body.dig("order", "payment_status")
         assert_equal checkout.url, response.parsed_body.fetch("checkout_url")
         assert_nil response.parsed_body.dig("order", "result_url")
+        assert_equal 1, create_calls
       end
     ensure
       ENV["STRIPE_SECRET_KEY"] = original_key
     end
 
-    order.update!(payment_status: "paid", paid_at: Time.current, status: "ready")
-    get "/api/v1/orders/#{order.public_id}"
+  end
+
+  test "keeps a paid generated result private until operator approval" do
+    register
+    order = User.find_by!(email: "denys@example.com").orders.create!(
+      title: "Private result",
+      scene_type: "garden",
+      style: "roblox_stylized",
+      rights_confirmed_at: Time.current
+    )
+    order.result_file.attach(io: StringIO.new("<roblox />"), filename: "private-result.rbxlx", content_type: "application/xml")
+    order.update!(status: "submitted", payment_status: "authorized", authorized_at: Time.current, authorization_expires_at: 5.days.from_now)
+    order.update!(status: "accepted", payment_status: "capture_pending", capture_requested_at: Time.current)
+    order.update!(status: "building", payment_status: "paid", paid_at: Time.current, captured_at: Time.current)
+    order.update!(status: "reviewing", preview_scene_ir: { "name" => "Private result", "parts" => [] })
+
+    get "/api/v1/orders/#{order.public_id}/files/result"
+    assert_response :not_found
+
+    order.update!(status: "ready", approved_at: Time.current)
+    get "/api/v1/orders/#{order.public_id}/files/result"
     assert_response :success
-    assert_equal "/api/v1/orders/#{order.public_id}/files/result", response.parsed_body.dig("order", "result_url")
+    assert_equal "<roblox />", response.body
   end
 
   test "logs in an existing password account and rotates the csrf token" do

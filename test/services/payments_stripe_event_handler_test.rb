@@ -1,29 +1,94 @@
 require "test_helper"
+require "ostruct"
 
 class PaymentsStripeEventHandlerTest < ActiveSupport::TestCase
-  test "unlocks the stored map only for a matching paid checkout" do
-    user = User.create!(email: "buyer@example.com", display_name: "Buyer", password: "secure-password")
-    order = user.orders.create!(title: "Paid garden", rights_confirmed_at: Time.current)
-    xml = file_fixture("result.rbxlx").read
-    order.result_file.attach(io: StringIO.new(xml), filename: "garden.rbxlx", content_type: "application/xml")
-    order.update!(
-      preview_scene_ir: Roblox::PreviewExtractor.new.extract(xml),
-      status: "preview_ready",
-      payment_status: "requested",
-      stripe_checkout_session_id: "cs_test_paid"
+  include ActiveJob::TestHelper
+
+  setup do
+    @user = User.create!(email: "buyer@example.com", display_name: "Buyer", password: "secure-password")
+    @order = @user.orders.create!(title: "Paid garden", rights_confirmed_at: Time.current)
+    @order.update!(
+      payment_status: "authorization_pending",
+      stripe_checkout_session_id: "cs_test_authorize",
+      stripe_checkout_url: "https://checkout.stripe.test/session",
+      checkout_started_at: Time.current
     )
-    session = Struct.new(:id, :metadata, :client_reference_id, :payment_status, :currency, :amount_total, :payment_intent)
-      .new("cs_test_paid", { "order_public_id" => order.public_id }, order.public_id, "paid", "usd", 1_900, "pi_test_paid")
-    event = Struct.new(:type, :data).new("checkout.session.completed", Struct.new(:object).new(session))
+  end
 
-    assert_difference -> { Notification.count }, 1 do
-      Payments::StripeEventHandler.call(event)
+  test "deduplicates events and authorizes only matching amount currency identity and customer" do
+    completed = stripe_event("evt_checkout", "checkout.session.completed", OpenStruct.new(
+      id: "cs_test_authorize",
+      metadata: { "order_public_id" => @order.public_id },
+      client_reference_id: @order.public_id,
+      amount_total: 1_900,
+      currency: "usd",
+      customer_details: OpenStruct.new(email: @user.email),
+      payment_intent: "pi_test_authorize"
+    ))
+    assert_equal :processed, Payments::StripeEventHandler.call(completed)
+
+    capturable = stripe_event("evt_capturable", "payment_intent.amount_capturable_updated", payment_intent(
+      id: "pi_test_authorize", status: "requires_capture"
+    ))
+    assert_equal :processed, Payments::StripeEventHandler.call(capturable)
+    assert_equal :duplicate, Payments::StripeEventHandler.call(capturable)
+
+    @order.reload
+    assert_equal "submitted", @order.status
+    assert_equal "authorized", @order.payment_status
+    assert @order.authorized_at.present?
+    assert_equal 2, StripeEvent.count
+  end
+
+  test "rejects an amount mismatch without recording the event" do
+    event = stripe_event("evt_bad_amount", "payment_intent.amount_capturable_updated", payment_intent(
+      id: "pi_bad", status: "requires_capture", amount: 2_000
+    ))
+
+    assert_raises(Payments::StripeEventHandler::InvalidEvent) { Payments::StripeEventHandler.call(event) }
+    refute StripeEvent.exists?(event_id: "evt_bad_amount")
+    assert_equal "authorization_pending", @order.reload.payment_status
+  end
+
+  test "verified capture queues generation and a full refund revokes download" do
+    @order.update!(
+      status: "submitted",
+      payment_status: "authorized",
+      stripe_payment_intent_id: "pi_paid",
+      authorized_at: Time.current,
+      authorization_expires_at: 5.days.from_now
+    )
+    @order.update!(status: "accepted", payment_status: "capture_pending", capture_requested_at: Time.current)
+
+    assert_enqueued_with(job: GenerateOrderJob, args: [@order.id]) do
+      Payments::StripeEventHandler.call(stripe_event(
+        "evt_paid", "payment_intent.succeeded", payment_intent(id: "pi_paid", status: "succeeded")
+      ))
     end
+    assert_equal "building", @order.reload.status
+    assert_equal "paid", @order.payment_status
 
-    order.reload
-    assert_equal "paid", order.payment_status
-    assert_equal "ready", order.status
-    assert_equal "pi_test_paid", order.stripe_payment_intent_id
-    assert order.ready_for_download?
+    Payments::StripeEventHandler.call(stripe_event("evt_refund", "charge.refunded", OpenStruct.new(
+      payment_intent: "pi_paid", currency: "usd", amount_refunded: 1_900
+    )))
+    assert_equal "refunded", @order.reload.payment_status
+    refute @order.ready_for_download?
+  end
+
+  private
+
+  def payment_intent(id:, status:, amount: 1_900)
+    OpenStruct.new(
+      id: id,
+      status: status,
+      amount: amount,
+      currency: "usd",
+      metadata: { "order_public_id" => @order.public_id },
+      receipt_email: @user.email
+    )
+  end
+
+  def stripe_event(id, type, object)
+    OpenStruct.new(id: id, type: type, created: Time.current.to_i, data: OpenStruct.new(object: object))
   end
 end

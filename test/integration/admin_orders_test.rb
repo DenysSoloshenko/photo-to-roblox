@@ -25,7 +25,7 @@ class AdminOrdersTest < ActionDispatch::IntegrationTest
     ENV["ADMIN_EMAILS"] = @original_admin_emails
   end
 
-  test "operator can download sources, publish a free preview, and unlock the paid map" do
+  test "operator captures an authorized order, uploads result, and approves delivery" do
     get "/api/v1/admin/orders"
     assert_response :success
     source_url = response.parsed_body.dig("orders", 0, "source_photos", 0, "download_url")
@@ -35,21 +35,66 @@ class AdminOrdersTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_equal "photo", response.body
 
+    @order.update!(
+      status: "submitted",
+      payment_status: "authorized",
+      stripe_payment_intent_id: "pi_authorized",
+      authorized_at: Time.current,
+      authorization_expires_at: 5.days.from_now
+    )
+    original_key = ENV["STRIPE_SECRET_KEY"]
+    ENV["STRIPE_SECRET_KEY"] = "sk_test_local"
+    intent = Struct.new(:id, :status, :amount, :currency, :metadata, :receipt_email)
+      .new("pi_authorized", "succeeded", 1_900, "usd", { "order_public_id" => @order.public_id }, @customer.email)
+    assert_enqueued_with(job: GenerateOrderJob) do
+      Stripe::PaymentIntent.stub(:capture, intent) do
+        post "/api/v1/admin/orders/#{@order.public_id}/accept", headers: csrf_headers
+      end
+    end
+    assert_response :success
+    assert_equal "building", response.parsed_body.dig("order", "status")
+    assert_equal "paid", response.parsed_body.dig("order", "payment_status")
+
     patch "/api/v1/admin/orders/#{@order.public_id}", params: {
-      status: "preview_ready",
-      payment_status: "unpaid",
+      status: "reviewing",
       preview_image: fixture_file_upload("preview.png", "image/png"),
       result_file: fixture_file_upload("result.rbxlx", "application/xml")
     }, headers: csrf_headers
     assert_response :success
-    assert response.parsed_body.dig("order", "preview_url").present?
     assert_equal 1, response.parsed_body.dig("order", "preview_scene_ir", "stats", "part_count")
     assert_nil response.parsed_body.dig("order", "result_url")
 
-    @order.reload.update!(payment_status: "paid", paid_at: Time.current, status: "ready")
-    get "/api/v1/admin/orders/#{@order.public_id}"
+    assert_difference -> { Notification.count }, 1 do
+      post "/api/v1/admin/orders/#{@order.public_id}/approve", headers: csrf_headers
+    end
     assert_response :success
     assert response.parsed_body.dig("order", "result_url").present?
+  ensure
+    ENV["STRIPE_SECRET_KEY"] = original_key
+  end
+
+  test "operator decline releases an uncaptured authorization" do
+    @order.update!(
+      status: "submitted",
+      payment_status: "authorized",
+      stripe_payment_intent_id: "pi_decline",
+      authorized_at: Time.current,
+      authorization_expires_at: 5.days.from_now
+    )
+    original_key = ENV["STRIPE_SECRET_KEY"]
+    ENV["STRIPE_SECRET_KEY"] = "sk_test_local"
+    intent = Struct.new(:id, :status, :amount, :currency, :metadata, :receipt_email)
+      .new("pi_decline", "canceled", 1_900, "usd", { "order_public_id" => @order.public_id }, @customer.email)
+    Stripe::PaymentIntent.stub(:cancel, intent) do
+      post "/api/v1/admin/orders/#{@order.public_id}/decline", headers: csrf_headers
+    end
+
+    assert_response :success
+    assert_equal "declined", response.parsed_body.dig("order", "status")
+    assert_equal "released", response.parsed_body.dig("order", "payment_status")
+    assert response.parsed_body.dig("order", "released_at").present?
+  ensure
+    ENV["STRIPE_SECRET_KEY"] = original_key
   end
 
   private

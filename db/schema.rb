@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_09_11_000700) do
+ActiveRecord::Schema[8.0].define(version: 2026_09_13_000100) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -73,7 +73,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_09_11_000700) do
   create_table "orders", force: :cascade do |t|
     t.integer "user_id", null: false
     t.string "public_id", null: false
-    t.string "status", default: "submitted", null: false
+    t.string "status", default: "payment_pending", null: false
     t.string "payment_status", default: "unpaid", null: false
     t.string "title", null: false
     t.string "scene_type", default: "other", null: false
@@ -95,6 +95,26 @@ ActiveRecord::Schema[8.0].define(version: 2026_09_11_000700) do
     t.string "stripe_checkout_session_id"
     t.string "stripe_payment_intent_id"
     t.datetime "checkout_started_at"
+    t.text "stripe_checkout_url"
+    t.integer "checkout_attempts", default: 0, null: false
+    t.datetime "authorization_expires_at"
+    t.datetime "authorized_at"
+    t.datetime "capture_requested_at"
+    t.datetime "captured_at"
+    t.datetime "released_at"
+    t.datetime "refund_requested_at"
+    t.datetime "refunded_at"
+    t.datetime "payment_failed_at"
+    t.text "payment_error"
+    t.datetime "accepted_at"
+    t.datetime "declined_at"
+    t.datetime "cancelled_at"
+    t.datetime "approved_at"
+    t.datetime "generation_started_at"
+    t.datetime "generation_finished_at"
+    t.integer "generation_attempts", default: 0, null: false
+    t.jsonb "generation_metrics", default: {}, null: false
+    t.text "generation_error"
     t.index ["payment_status", "created_at"], name: "index_orders_on_payment_status_and_created_at"
     t.index ["public_id"], name: "index_orders_on_public_id", unique: true
     t.index ["status", "delivery_due_at"], name: "index_orders_on_status_and_delivery_due_at"
@@ -102,6 +122,18 @@ ActiveRecord::Schema[8.0].define(version: 2026_09_11_000700) do
     t.index ["stripe_payment_intent_id"], name: "index_orders_on_stripe_payment_intent_id", unique: true
     t.index ["user_id", "created_at"], name: "index_orders_on_user_id_and_created_at"
     t.index ["user_id"], name: "index_orders_on_user_id"
+  end
+
+  create_table "stripe_events", force: :cascade do |t|
+    t.string "event_id", null: false
+    t.string "event_type", null: false
+    t.string "order_public_id"
+    t.datetime "stripe_created_at"
+    t.datetime "processed_at", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["event_id"], name: "index_stripe_events_on_event_id", unique: true
+    t.index ["order_public_id", "processed_at"], name: "index_stripe_events_on_order_public_id_and_processed_at"
   end
 
   create_table "users", force: :cascade do |t|

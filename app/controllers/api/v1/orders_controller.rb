@@ -5,7 +5,7 @@ module Api
       MAX_IMAGE_SIZE = 10.megabytes
 
       before_action :authenticate_user!
-      before_action :protect_api!, only: %i[create purchase]
+      before_action :protect_api!, only: %i[create authorize_payment purchase cancel]
 
       def index
         orders = current_user.orders.with_attached_source_photos.with_attached_preview_image.with_attached_result_file.order(created_at: :desc)
@@ -22,7 +22,13 @@ module Api
         errors << "Confirm that you may use the uploaded photos" unless ActiveModel::Type::Boolean.new.cast(params[:rights_confirmed])
         return render json: { errors: errors }, status: :unprocessable_entity if errors.any?
 
-        order = current_user.orders.new(order_params.merge(price_cents: Order::PRICE_CENTS, currency: "USD", rights_confirmed_at: Time.current))
+        order = current_user.orders.new(order_params.merge(
+          status: "payment_pending",
+          payment_status: "unpaid",
+          price_cents: Order::PRICE_CENTS,
+          currency: "USD",
+          rights_confirmed_at: Time.current
+        ))
         Order.transaction do
           order.save!
           order.source_photos.attach(photos)
@@ -36,7 +42,7 @@ module Api
         order = find_order
         attachment = case params[:kind]
                      when "result" then order.result_file if order.ready_for_download?
-                     when "preview" then order.preview_image
+                     when "preview" then order.preview_image if order.status.in?(%w[preview_ready ready delivered])
                      end
         return render json: { error: "file_not_available" }, status: :not_found unless attachment&.attached?
 
@@ -46,20 +52,33 @@ module Api
                   disposition: params[:kind] == "preview" ? "inline" : "attachment"
       end
 
-      def purchase
+      def authorize_payment
         order = find_order
-        unless order.status.in?(%w[preview_ready ready])
-          return render json: { error: "preview_not_ready" }, status: :unprocessable_entity
-        end
-
-        if order.payment_status == "paid"
-          return render json: { order: order_json(order), checkout_url: nil }
-        end
-
         checkout = ::Payments::StripeCheckout.new(order).create
         render json: { order: order_json(order.reload), checkout_url: checkout.url }
       rescue ::Payments::StripeCheckout::NotConfigured => error
         render json: { error: "stripe_not_configured", message: error.message }, status: :service_unavailable
+      rescue ::Payments::StripeCheckout::InvalidState => error
+        render json: { error: "payment_authorization_not_allowed", message: error.message }, status: :unprocessable_entity
+      rescue Stripe::StripeError => error
+        Rails.logger.warn({ event: "stripe_checkout_failed", order_id: order&.public_id, error_class: error.class.name }.to_json)
+        render json: { error: "payment_service_unavailable" }, status: :bad_gateway
+      end
+
+      def purchase
+        authorize_payment
+      end
+
+      def cancel
+        order = find_order
+        ::Payments::OrderActions.new(order).cancel!
+        render json: { order: order_json(order.reload) }
+      rescue ::Payments::OrderActions::InvalidState => error
+        render json: { error: "order_cancellation_not_allowed", message: error.message }, status: :unprocessable_entity
+      rescue ::Payments::OrderActions::NotConfigured
+        render json: { error: "stripe_not_configured" }, status: :service_unavailable
+      rescue Stripe::StripeError
+        render json: { error: "payment_service_unavailable" }, status: :bad_gateway
       end
 
       private
