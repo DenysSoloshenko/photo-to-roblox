@@ -118,6 +118,20 @@ Without an API key, the UI blocks photograph analysis and explains why. The deve
 
 An order can be created without an OpenAI key, but automatic fulfillment stays disabled until both Astra flags and `OPENAI_API_KEY` are configured. PostgreSQL is required. In development, notification emails are written to `tmp/mails` unless SMTP variables are supplied. Register using an address listed in `ADMIN_EMAILS` to reveal the operator queue.
 
+### Render preview deployment
+
+The checked-in `render.yaml` deploys the React build and Rails API as one free
+Render web service with a free PostgreSQL database. Render prompts for
+`OPENAI_API_KEY`; the value is stored only in Render and is never committed.
+The preview URL is `https://scenefoundry-roblox.onrender.com`.
+
+This free deployment is intended for validation, not paid production use.
+Render's free PostgreSQL database expires after 30 days, the web service sleeps
+after inactivity, and its local filesystem is ephemeral. Before accepting real
+orders, move Active Storage to private S3-compatible storage, use a durable
+database plan, configure a mail provider that supports HTTPS delivery, and add
+Stripe production credentials and a signed webhook.
+
 ### Social login
 
 Create OAuth applications for the providers you want to enable, then put their client ID and secret in `.env`. All supported options stay visible in the account dialog; unconfigured providers are disabled and labeled “Setup required.” For the default local setup, register these callback URLs:
