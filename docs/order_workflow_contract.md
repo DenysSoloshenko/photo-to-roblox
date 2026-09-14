@@ -6,10 +6,11 @@ This document is the shared contract for the manual-first $19 order workflow. It
 
 - The customer uploads one to three source photographs and creates an order.
 - The customer then authorizes a $19 USD card hold through Stripe Checkout. The application does not capture the money yet.
-- Only an operator can accept the order. Acceptance captures the existing PaymentIntent exactly once and queues premium generation.
+- Every new order is persisted and emailed to all configured `ADMIN_EMAILS` recipients with the customer's complete brief and protected source-photo links.
+- Only an operator can approve the source photos. Approval captures the existing PaymentIntent exactly once and moves the order into manual production.
 - Declining an order cancels the uncaptured PaymentIntent and releases the hold.
-- Astra generation runs only after a verified capture and behind server-side enablement and spend/concurrency limits.
-- Generated output remains private while an operator reviews it. The customer receives the interactive preview and `.rbxlx` only after approval.
+- Customer orders never launch AI generation automatically. The operator creates the map outside the order system and uploads the finished `.rbxlx`.
+- Uploaded output remains private while an operator reviews it. The customer receives the interactive preview and `.rbxlx` only after final approval.
 - A result download is never exposed unless payment is captured, the order is approved, and a result file exists.
 
 ## Order states
@@ -19,14 +20,21 @@ This document is the shared contract for the manual-first $19 order workflow. It
 | `payment_pending` | Order exists but no usable card authorization has been confirmed. | Authorize $19 hold |
 | `submitted` | Stripe confirmed an uncaptured authorization; the order waits for an operator. | Wait or cancel request |
 | `accepted` | Operator accepted and capture has been requested. | Wait |
-| `building` | Payment is captured and premium generation is running or queued. | Wait |
-| `reviewing` | Generated SceneIR/`.rbxlx` exists and awaits operator QA. | Wait |
+| `building` | Payment is captured and the operator is building the map manually. | Wait |
+| `reviewing` | Uploaded SceneIR/`.rbxlx` exists and awaits operator QA. | Wait |
 | `preview_ready` | Optional customer preview stage; output is approved but final release is not marked complete. | Explore preview |
 | `ready` | Approved paid result is available. | Preview and download |
 | `delivered` | Customer delivery is complete. | Preview and download |
 | `declined` | Operator declined before capture and released the hold. | Create a new order |
 | `cancelled` | Customer/operator cancelled before fulfillment. | Create a new order |
 | `failed` | Payment or generation needs operator attention. | Contact support / wait |
+
+The API also exposes a derived `workflow_state` for the admin UI:
+
+- `pending_review`: `payment_pending`, `submitted`
+- `in_progress`: `accepted`, `building`, `reviewing`, `preview_ready`
+- `completed`: `ready`, `delivered`
+- `failed`: `declined`, `cancelled`, `failed`
 
 ## Payment states
 
@@ -57,7 +65,7 @@ All customer and operator mutations require the existing session and CSRF token.
 
 - `POST /api/v1/admin/orders/:public_id/accept`
   - Requires `submitted` + `authorized`.
-  - Captures the PaymentIntent once; queues generation after capture is confirmed.
+  - Approves the source photos and captures the PaymentIntent once. Confirmed capture moves the order to manual `building` work; it does not enqueue AI generation.
   - Returns `{ order }`.
 - `POST /api/v1/admin/orders/:public_id/decline`
   - Requires uncaptured payment. Cancels the PaymentIntent and marks `declined` / `released`.
@@ -66,7 +74,7 @@ All customer and operator mutations require the existing session and CSRF token.
   - Requires `reviewing` + `paid` + attached `.rbxlx` + preview SceneIR.
   - Marks the order `ready` and sends the existing customer notification/email.
 - `PATCH /api/v1/admin/orders/:public_id`
-  - Keeps notes and replacement artifact upload. Direct state changes must still satisfy model transition rules.
+  - Keeps notes and replacement artifact upload. Uploading a valid `.rbxlx` while `building` extracts the interactive preview and moves the order to `reviewing` automatically.
 
 ### Stripe
 
@@ -78,6 +86,7 @@ All customer and operator mutations require the existing session and CSRF token.
 
 In addition to existing order fields:
 
+- `workflow_state` (`pending_review`, `in_progress`, `completed`, or `failed`)
 - `authorization_expires_at`
 - `authorized_at`
 - `capture_requested_at`
@@ -89,9 +98,9 @@ In addition to existing order fields:
 - `generation_error` (admin only)
 - booleans `can_authorize`, `can_cancel`, `can_accept`, `can_decline`, `can_approve`, `can_download`
 
-## Generation boundary
+## Experimental generation boundary
 
-`GenerateOrderJob` is the only production entry point for automatic fulfillment. It:
+`GenerateOrderJob` is retained for isolated developer experiments, but no customer-order transition enqueues it. If invoked explicitly, it:
 
 1. Locks and verifies `paid` + `building` before spending money.
 2. Refuses to run unless `ASTRA_ORDER_AUTOMATION_ENABLED=true`, `ASTRA_QUALITY_ENABLED=true`, and an API key is present.
@@ -101,7 +110,7 @@ In addition to existing order fields:
 6. Ends in `reviewing`; it never publishes directly to the customer.
 7. Ends in `failed` with a private error on configuration/API/build failure and never retries blindly after an expensive attempt.
 
-Required environment controls:
+Experimental environment controls:
 
 - `ASTRA_ORDER_AUTOMATION_ENABLED=false`
 - `ASTRA_ORDER_MAX_CONCURRENT=1`

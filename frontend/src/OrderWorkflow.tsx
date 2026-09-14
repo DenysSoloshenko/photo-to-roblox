@@ -12,7 +12,7 @@ import {
   updateAdminOrder,
 } from "./api";
 import SceneViewer from "./SceneViewer";
-import type { AccountUser, GenerationMetrics, ManualOrder, OrderStatus } from "./types";
+import type { AccountUser, ManualOrder, OrderStatus, OrderWorkflowState } from "./types";
 
 type Confirmation = {
   title: string;
@@ -24,6 +24,7 @@ type Confirmation = {
 
 type OrderAction = "authorize" | "cancel" | null;
 type OperatorAction = "accept" | "decline" | "approve";
+type OrderFilter = "all" | OrderWorkflowState;
 
 const ORDER_PROGRESS: Record<OrderStatus, number> = {
   payment_pending: 8,
@@ -53,29 +54,6 @@ function formatMoney(cents: number, currency: string, locale: string) {
     currency: currency.toUpperCase(),
     maximumFractionDigits: cents % 100 === 0 ? 0 : 2,
   }).format(cents / 100);
-}
-
-function firstMetric(metrics: GenerationMetrics | null, keys: string[]) {
-  for (const key of keys) {
-    const value = metrics?.[key];
-    if (typeof value === "number" || typeof value === "string") return value;
-  }
-  return null;
-}
-
-function formatDuration(value: string | number | null, locale: string) {
-  if (value == null) return "—";
-  const milliseconds = Number(value);
-  if (!Number.isFinite(milliseconds)) return String(value);
-  if (milliseconds < 1_000) return `${Math.round(milliseconds)} ms`;
-  return `${new Intl.NumberFormat(locale, { maximumFractionDigits: 1 }).format(milliseconds / 1_000)} s`;
-}
-
-function formatApiCost(value: string | number | null, locale: string) {
-  if (value == null) return "—";
-  const amount = Number(value);
-  if (!Number.isFinite(amount)) return String(value);
-  return new Intl.NumberFormat(locale, { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 4 }).format(amount);
 }
 
 export function CreateOrderPage({ user, csrfToken, onAuth, onCreated }: { user: AccountUser | null; csrfToken: string; onAuth: () => void; onCreated: () => void }) {
@@ -251,6 +229,7 @@ function OrderPreviewModal({ order, onClose }: { order: ManualOrder; onClose: ()
 export function AdminQueue({ csrfToken }: { csrfToken: string }) {
   const { t } = useTranslation();
   const [orders, setOrders] = useState<ManualOrder[]>([]);
+  const [filter, setFilter] = useState<OrderFilter>("all");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const load = useCallback(async () => {
@@ -268,7 +247,17 @@ export function AdminQueue({ csrfToken }: { csrfToken: string }) {
     const interval = window.setInterval(() => void load(), 15_000);
     return () => window.clearInterval(interval);
   }, [load]);
-  return <main className="portal-main admin-main"><div className="page-heading"><div><span className="eyebrow">{t("admin.eyebrow")}</span><h1>{t("admin.title")}</h1><p>{t("admin.lede")}</p></div><button className="secondary-link" onClick={() => void load()}>{t("admin.refresh")}</button></div><section className="email-template-strip surface"><div><span className="eyebrow">{t("admin.emailTemplates")}</span><strong>{t("admin.emailTemplatesBody")}</strong></div><nav aria-label={t("admin.emailTemplates")}><a href="/api/v1/admin/email_previews/password_reset" target="_blank" rel="noreferrer">{t("admin.passwordResetEmail")}</a><a href="/api/v1/admin/email_previews/preview_ready" target="_blank" rel="noreferrer">{t("admin.previewReadyEmail")}</a><a href="/api/v1/admin/email_previews/map_ready" target="_blank" rel="noreferrer">{t("admin.mapReadyEmail")}</a></nav></section>{error && <pre className="error-box" role="alert">{error}</pre>}{loading ? <p>{t("admin.loading")}</p> : orders.length === 0 ? <div className="empty-orders surface"><h2>{t("admin.empty")}</h2></div> : <div className="admin-list">{orders.map((order) => <AdminOrderCard key={order.public_id} order={order} csrfToken={csrfToken} onSaved={load} />)}</div>}</main>;
+  const filters: OrderFilter[] = ["all", "pending_review", "in_progress", "completed", "failed"];
+  const visibleOrders = filter === "all" ? orders : orders.filter((order) => order.workflow_state === filter);
+  const countFor = (value: OrderFilter) => value === "all" ? orders.length : orders.filter((order) => order.workflow_state === value).length;
+
+  return <main className="portal-main admin-main">
+    <div className="page-heading"><div><span className="eyebrow">{t("admin.eyebrow")}</span><h1>{t("admin.title")}</h1><p>{t("admin.lede")}</p></div><button className="secondary-link" onClick={() => void load()}>{t("admin.refresh")}</button></div>
+    <section className="email-template-strip surface"><div><span className="eyebrow">{t("admin.emailTemplates")}</span><strong>{t("admin.emailTemplatesBody")}</strong></div><nav aria-label={t("admin.emailTemplates")}><a href="/api/v1/admin/email_previews/new_order" target="_blank" rel="noreferrer">{t("admin.newOrderEmail")}</a><a href="/api/v1/admin/email_previews/password_reset" target="_blank" rel="noreferrer">{t("admin.passwordResetEmail")}</a><a href="/api/v1/admin/email_previews/preview_ready" target="_blank" rel="noreferrer">{t("admin.previewReadyEmail")}</a><a href="/api/v1/admin/email_previews/map_ready" target="_blank" rel="noreferrer">{t("admin.mapReadyEmail")}</a></nav></section>
+    <nav className="order-filter-bar" aria-label={t("admin.filterLabel")}>{filters.map((value) => <button key={value} className={filter === value ? "active" : ""} onClick={() => setFilter(value)}><span>{t(`admin.workflow.${value}`)}</span><b>{countFor(value)}</b></button>)}</nav>
+    {error && <pre className="error-box" role="alert">{error}</pre>}
+    {loading ? <p>{t("admin.loading")}</p> : orders.length === 0 ? <div className="empty-orders surface"><h2>{t("admin.empty")}</h2></div> : visibleOrders.length === 0 ? <div className="empty-orders surface"><h2>{t("admin.emptyFilter")}</h2></div> : <div className="admin-list">{visibleOrders.map((order) => <AdminOrderCard key={order.public_id} order={order} csrfToken={csrfToken} onSaved={load} />)}</div>}
+  </main>;
 }
 
 function AdminOrderCard({ order, csrfToken, onSaved }: { order: ManualOrder; csrfToken: string; onSaved: () => Promise<void> }) {
@@ -282,10 +271,6 @@ function AdminOrderCard({ order, csrfToken, onSaved }: { order: ManualOrder; csr
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
   const [resetToken, setResetToken] = useState(0);
   const ignoreSelection = useCallback(() => undefined, []);
-  const metrics = order.generation_metrics || null;
-  const generationTime = firstMetric(metrics, ["total_ms", "elapsed_ms", "latency_ms", "vision_ms"]);
-  const apiCost = firstMetric(metrics, ["api_cost_usd", "cost_usd", "draft_api_cost_usd"]);
-  const model = firstMetric(metrics, ["vision_model", "model", "provider"]);
 
   useEffect(() => setNotes(order.admin_notes || ""), [order.admin_notes]);
 
@@ -334,7 +319,40 @@ function AdminOrderCard({ order, csrfToken, onSaved }: { order: ManualOrder; csr
   };
 
   const progress = ORDER_PROGRESS[order.status];
-  return <article className="admin-order surface"><div className="admin-order-heading"><div><span className={`status-pill status-${order.status}`}>{t(`orders.status.${order.status}`)}</span><h2>{order.title}</h2><p>{order.user?.display_name} · {order.user?.email}</p></div><div className="admin-heading-meta"><strong>{formatMoney(order.price_cents, order.currency, locale)}</strong><span>{t("admin.due")}: {formatDate(order.delivery_due_at, locale)}</span></div></div><OrderProgress order={order} progress={progress} /><div className="source-links">{order.source_photos.map((photo, index) => <a key={photo.id || photo.filename} href={photo.download_url}>{t("admin.source", { number: index + 1 })}: {photo.filename}</a>)}</div><section className="admin-status-grid" aria-label={t("admin.operationalStatus")}><div><span>{t("admin.status")}</span><strong>{t(`orders.status.${order.status}`)}</strong></div><div><span>{t("admin.payment")}</span><strong>{t(`orders.paymentStatus.${order.payment_status}`)}</strong></div><div><span>{t("admin.attempts")}</span><strong>{order.generation_attempts || 0}</strong></div><div><span>{t("admin.generationWindow")}</span><strong>{formatDuration(generationTime, locale)}</strong></div><div><span>{t("admin.apiCost")}</span><strong>{formatApiCost(apiCost, locale)}</strong></div><div><span>{t("admin.model")}</span><strong>{model || "—"}</strong></div></section>{order.generation_started_at && <p className="generation-timing">{t("admin.started")}: {formatDate(order.generation_started_at, locale)} · {t("admin.finished")}: {formatDate(order.generation_finished_at, locale)}</p>}{order.payment_error && <div className="generation-error" role="alert"><strong>{t("admin.paymentError")}</strong><pre>{order.payment_error}</pre></div>}{order.generation_error && <div className="generation-error" role="alert"><strong>{t("admin.generationError")}</strong><pre>{order.generation_error}</pre></div>}{order.preview_scene_ir && <section className="admin-preview"><header><div><span className="eyebrow">{t("admin.interactivePreview")}</span><strong>{t("admin.qaBeforeRelease")}</strong></div><button className="secondary-link" onClick={() => setResetToken((value) => value + 1)}>{t("orders.resetCamera")}</button></header><div><SceneViewer sceneIr={order.preview_scene_ir} resetToken={resetToken} onSelect={ignoreSelection} /></div></section>}<div className="admin-upload-grid"><label className="form-field"><span>{t("admin.preview")}</span><input key={`preview-${order.public_id}-${order.preview_url || "none"}`} type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => setPreview(event.target.files?.[0] || null)} /><small>{order.preview_url ? t("admin.replacementRetained") : t("admin.optionalPreview")}</small></label><label className="form-field"><span>{t("admin.result")}</span><input key={`result-${order.public_id}-${order.can_download}`} type="file" accept=".rbxlx,application/xml,text/xml" onChange={(event) => setResult(event.target.files?.[0] || null)} /><small>{order.result_url || order.preview_scene_ir ? t("admin.replacementRetained") : t("admin.resultRequired")}</small></label></div><label className="form-field"><span>{t("admin.notes")}</span><textarea rows={3} value={notes} onChange={(event) => setNotes(event.target.value)} /></label>{error && <pre className="error-box" role="alert">{error}</pre>}<div className="admin-save-row"><small>{order.public_id}</small><button className="secondary-link" onClick={() => void save()} disabled={busy !== null}>{busy === "save" ? t("admin.saving") : t("admin.save")}</button></div><div className="operator-actions" aria-label={t("admin.operatorActions")}><button className="operator-button accept" onClick={() => confirmAction("accept")} disabled={busy !== null || !order.can_accept} title={!order.can_accept ? t("admin.guards.accept") : undefined}>{busy === "accept" ? t("admin.working") : t("admin.actions.accept")}</button><button className="operator-button decline" onClick={() => confirmAction("decline")} disabled={busy !== null || !order.can_decline} title={!order.can_decline ? t("admin.guards.decline") : undefined}>{busy === "decline" ? t("admin.working") : t("admin.actions.decline")}</button><button className="operator-button approve" onClick={() => confirmAction("approve")} disabled={busy !== null || !order.can_approve} title={!order.can_approve ? t("admin.guards.approve") : undefined}>{busy === "approve" ? t("admin.working") : t("admin.actions.approve")}</button></div><ul className="guard-list"><li className={order.can_accept ? "available" : ""}>{t("admin.guards.accept")}</li><li className={order.can_decline ? "available" : ""}>{t("admin.guards.decline")}</li><li className={order.can_approve ? "available" : ""}>{t("admin.guards.approve")}</li></ul>{confirmation && <ConfirmationDialog confirmation={confirmation} onClose={() => setConfirmation(null)} />}</article>;
+  return <article className="admin-order surface">
+    <div className="admin-order-heading">
+      <div>
+        <span className={`status-pill workflow-${order.workflow_state}`}>{t(`admin.workflow.${order.workflow_state}`)}</span>
+        <h2>{order.title}</h2>
+        <p>{order.user?.display_name} · {order.user?.email}</p>
+      </div>
+      <div className="admin-heading-meta"><strong>{formatMoney(order.price_cents, order.currency, locale)}</strong><span>{t("admin.due")}: {formatDate(order.delivery_due_at, locale)}</span></div>
+    </div>
+    <OrderProgress order={order} progress={progress} />
+    <div className="source-links">{order.source_photos.map((photo, index) => <a key={photo.id || photo.filename} href={photo.download_url}>{t("admin.source", { number: index + 1 })}: {photo.filename}</a>)}</div>
+    <section className="admin-status-grid manual-status-grid" aria-label={t("admin.operationalStatus")}>
+      <div><span>{t("admin.workflowStatus")}</span><strong>{t(`admin.workflow.${order.workflow_state}`)}</strong></div>
+      <div><span>{t("admin.status")}</span><strong>{t(`orders.status.${order.status}`)}</strong></div>
+      <div><span>{t("admin.payment")}</span><strong>{t(`orders.paymentStatus.${order.payment_status}`)}</strong></div>
+    </section>
+    {order.payment_error && <div className="generation-error" role="alert"><strong>{t("admin.paymentError")}</strong><pre>{order.payment_error}</pre></div>}
+    {order.generation_error && <div className="generation-error" role="alert"><strong>{t("admin.fulfillmentError")}</strong><pre>{order.generation_error}</pre></div>}
+    {order.preview_scene_ir && <section className="admin-preview"><header><div><span className="eyebrow">{t("admin.interactivePreview")}</span><strong>{t("admin.qaBeforeRelease")}</strong></div><button className="secondary-link" onClick={() => setResetToken((value) => value + 1)}>{t("orders.resetCamera")}</button></header><div><SceneViewer sceneIr={order.preview_scene_ir} resetToken={resetToken} onSelect={ignoreSelection} /></div></section>}
+    <div className="admin-upload-grid">
+      <label className="form-field"><span>{t("admin.preview")}</span><input key={`preview-${order.public_id}-${order.preview_url || "none"}`} type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => setPreview(event.target.files?.[0] || null)} /><small>{order.preview_url ? t("admin.replacementRetained") : t("admin.optionalPreview")}</small></label>
+      <label className="form-field"><span>{t("admin.result")}</span><input key={`result-${order.public_id}-${order.can_download}`} type="file" accept=".rbxlx,application/xml,text/xml" onChange={(event) => setResult(event.target.files?.[0] || null)} /><small>{order.result_url || order.preview_scene_ir ? t("admin.replacementRetained") : t("admin.resultRequired")}</small></label>
+    </div>
+    <label className="form-field"><span>{t("admin.notes")}</span><textarea rows={3} value={notes} onChange={(event) => setNotes(event.target.value)} /></label>
+    {error && <pre className="error-box" role="alert">{error}</pre>}
+    <div className="admin-save-row"><small>{order.public_id}</small><button className="secondary-link" onClick={() => void save()} disabled={busy !== null}>{busy === "save" ? t("admin.saving") : t("admin.save")}</button></div>
+    <div className="operator-actions" aria-label={t("admin.operatorActions")}>
+      <button className="operator-button accept" onClick={() => confirmAction("accept")} disabled={busy !== null || !order.can_accept} title={!order.can_accept ? t("admin.guards.accept") : undefined}>{busy === "accept" ? t("admin.working") : t("admin.actions.accept")}</button>
+      <button className="operator-button decline" onClick={() => confirmAction("decline")} disabled={busy !== null || !order.can_decline} title={!order.can_decline ? t("admin.guards.decline") : undefined}>{busy === "decline" ? t("admin.working") : t("admin.actions.decline")}</button>
+      <button className="operator-button approve" onClick={() => confirmAction("approve")} disabled={busy !== null || !order.can_approve} title={!order.can_approve ? t("admin.guards.approve") : undefined}>{busy === "approve" ? t("admin.working") : t("admin.actions.approve")}</button>
+    </div>
+    <ul className="guard-list"><li className={order.can_accept ? "available" : ""}>{t("admin.guards.accept")}</li><li className={order.can_decline ? "available" : ""}>{t("admin.guards.decline")}</li><li className={order.can_approve ? "available" : ""}>{t("admin.guards.approve")}</li></ul>
+    {confirmation && <ConfirmationDialog confirmation={confirmation} onClose={() => setConfirmation(null)} />}
+  </article>;
 }
 
 function ConfirmationDialog({ confirmation, onClose }: { confirmation: Confirmation; onClose: () => void }) {

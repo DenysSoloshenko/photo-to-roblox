@@ -349,6 +349,11 @@ button:disabled { cursor: not-allowed; opacity: .45; }
 .email-template-strip strong { display: block; margin-top: 5px; color: #4d625c; font-size: 10px; font-weight: 600; }
 .email-template-strip nav { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 7px; }
 .email-template-strip a { border: 1px solid rgba(16,39,33,.15); border-radius: 999px; padding: 8px 11px; background: white; color: #315d50; font-size: 9px; font-weight: 750; text-decoration: none; }
+.order-filter-bar { display: grid; margin: 0 0 22px; padding: 5px; border: 1px solid rgba(16,39,33,.12); border-radius: 14px; grid-template-columns: repeat(5, 1fr); gap: 5px; background: rgba(245,249,246,.82); }
+.order-filter-bar button { display: flex; min-height: 43px; border: 0; border-radius: 10px; padding: 8px 12px; align-items: center; justify-content: space-between; gap: 9px; cursor: pointer; color: #61736d; background: transparent; font-size: 9px; font-weight: 750; }
+.order-filter-bar button b { display: inline-flex; min-width: 23px; height: 23px; border-radius: 50%; align-items: center; justify-content: center; color: #6b7c76; background: rgba(16,39,33,.08); font-size: 8px; }
+.order-filter-bar button.active { color: white; background: #173d34; box-shadow: 0 7px 18px rgba(20,57,48,.15); }
+.order-filter-bar button.active b { color: #173d34; background: #f4e7d8; }
 .admin-order-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 15px; }
 .admin-order-heading h2 { margin-top: 8px; }
 .admin-order-heading p, .admin-order-heading > span { color: #788681; font-size: 10px; }
@@ -391,6 +396,10 @@ button:disabled { cursor: not-allowed; opacity: .45; }
 .status-payment_pending { background: #f0e6d5; color: #7f5b34; }
 .status-accepted { background: #dfe9f0; color: #456378; }
 .status-declined, .status-failed { background: #f1dddd; color: #914c4c; }
+.workflow-pending_review { background: #f0e6d5; color: #7f5b34; }
+.workflow-in_progress { background: #dfe9f0; color: #456378; }
+.workflow-completed { background: #dcece3; color: #2d6a53; }
+.workflow-failed { background: #f1dddd; color: #914c4c; }
 
 .admin-main { width: min(1240px, calc(100% - 36px)); }
 .admin-order { padding: clamp(22px, 3vw, 34px); }
@@ -403,6 +412,7 @@ button:disabled { cursor: not-allowed; opacity: .45; }
 .admin-status-grid span, .admin-status-grid strong { display: block; }
 .admin-status-grid span { color: #7b8a85; font-size: 8px; letter-spacing: .06em; text-transform: uppercase; }
 .admin-status-grid strong { margin-top: 6px; overflow: hidden; color: #28473e; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+.admin-status-grid.manual-status-grid { grid-template-columns: repeat(3, 1fr); }
 .generation-timing { margin: 9px 0 0; color: #7d8c87; font: 8px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; }
 .generation-error { margin-top: 16px; border: 1px solid rgba(149, 64, 46, .2); border-radius: 11px; padding: 13px; background: #f8e9e4; color: #7e3227; }
 .generation-error strong { display: block; margin-bottom: 6px; font-size: 10px; }
@@ -461,6 +471,8 @@ button:disabled { cursor: not-allowed; opacity: .45; }
   .portal-nav { order: 3; width: 100%; overflow-x: auto; justify-content: flex-start; }
   .account-menu > span { display: none; }
   .portal-main { padding-top: 24px; }
+  .order-filter-bar { display: flex; overflow-x: auto; }
+  .order-filter-bar button { min-width: 132px; }
   .hero-card { display: block; }
   .hero-card > div:first-child { padding: 38px 25px; }
   .hero-card h1 { font-size: 47px; }

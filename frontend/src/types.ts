@@ -130,6 +130,8 @@ export type PaymentStatus =
   | "refunded"
   | "failed";
 
+export type OrderWorkflowState = "pending_review" | "in_progress" | "completed" | "failed";
+
 export interface GenerationMetrics extends Metrics {
   model?: string;
   provider?: string;
@@ -142,6 +144,7 @@ export interface GenerationMetrics extends Metrics {
 export interface ManualOrder {
   public_id: string;
   status: OrderStatus;
+  workflow_state: OrderWorkflowState;
   payment_status: PaymentStatus;
   title: string;
   scene_type: string;

@@ -68,9 +68,6 @@ services:
         value: "10000"
       - key: ASTRA_QUALITY_ENABLED
         value: "false"
-      - key: ASTRA_ORDER_AUTOMATION_ENABLED
-        value: "false"
-
 databases:
   - name: scenefoundry-roblox-db
     plan: free
