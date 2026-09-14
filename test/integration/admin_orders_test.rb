@@ -97,6 +97,20 @@ class AdminOrdersTest < ActionDispatch::IntegrationTest
     ENV["STRIPE_SECRET_KEY"] = original_key
   end
 
+  test "operator can inspect the real transactional email templates" do
+    get "/api/v1/admin/email_previews/password_reset"
+    assert_response :success
+    assert_includes response.body, "Reset your password"
+
+    get "/api/v1/admin/email_previews/preview_ready"
+    assert_response :success
+    assert_includes response.body, "Your free preview is ready"
+
+    get "/api/v1/admin/email_previews/map_ready"
+    assert_response :success
+    assert_includes response.body, "Your map is ready"
+  end
+
   private
 
   def csrf_headers

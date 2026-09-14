@@ -52,10 +52,11 @@ Rails.application.configure do
     config.action_mailer.smtp_settings = {
       address: ENV.fetch("SMTP_ADDRESS"),
       port: ENV.fetch("SMTP_PORT", 587).to_i,
+      domain: ENV.fetch("SMTP_DOMAIN", ENV.fetch("APP_HOST")),
       user_name: ENV["SMTP_USERNAME"],
       password: ENV["SMTP_PASSWORD"],
-      authentication: :plain,
-      enable_starttls_auto: true
+      authentication: ENV.fetch("SMTP_AUTHENTICATION", "plain").to_sym,
+      enable_starttls_auto: ActiveModel::Type::Boolean.new.cast(ENV.fetch("SMTP_ENABLE_STARTTLS_AUTO", "true"))
     }
   else
     # Keep preview deployments bootable without SMTP credentials. Order-ready
@@ -63,6 +64,7 @@ Rails.application.configure do
     # before accepting customer orders.
     config.action_mailer.delivery_method = :test
   end
+  config.action_mailer.raise_delivery_errors = true
   config.action_mailer.default_url_options = { host: ENV.fetch("APP_HOST"), protocol: "https" }
 
   # Enable DNS rebinding protection and other `Host` header attacks.

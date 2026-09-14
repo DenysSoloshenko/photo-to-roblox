@@ -14,6 +14,6 @@ class OAuthIdentityResolverTest < ActiveSupport::TestCase
   test "refuses to link an unverified email" do
     profile = OAuth::Provider::Profile.new(uid: "provider-2", email: "unsafe@example.com", email_verified: false, name: "Unsafe")
 
-    assert_raises(OAuth::Provider::Error) { OAuth::IdentityResolver.call("github", profile) }
+    assert_raises(OAuth::Provider::Error) { OAuth::IdentityResolver.call("google", profile) }
   end
 end

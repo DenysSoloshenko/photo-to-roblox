@@ -8,13 +8,13 @@ class AccountsAndOrdersTest < ActionDispatch::IntegrationTest
     @csrf_token = response.parsed_body.fetch("csrf_token")
   end
 
-  test "session exposes supported oauth providers and a usable csrf token" do
+  test "session exposes only Google oauth and a usable csrf token" do
     get "/api/v1/auth/session"
 
     assert_response :success
     assert response.parsed_body.fetch("csrf_token").present?
     providers = response.parsed_body.fetch("oauth_providers").index_by { |provider| provider.fetch("name") }
-    assert_equal %w[discord github google], providers.keys.sort
+    assert_equal ["google"], providers.keys
     assert_includes [true, false], providers.fetch("google").fetch("configured")
   end
 
@@ -131,6 +131,46 @@ class AccountsAndOrdersTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_equal "denys@example.com", response.parsed_body.dig("user", "email")
     refute_equal logged_out_token, response.parsed_body.fetch("csrf_token")
+  end
+
+  test "requests a password reset without revealing whether the account exists" do
+    register
+
+    assert_enqueued_emails 1 do
+      post "/api/v1/auth/password/forgot", params: { email: "denys@example.com" }, headers: csrf_headers, as: :json
+    end
+    assert_response :accepted
+    assert_equal "password_reset_instructions_sent", response.parsed_body.fetch("message")
+
+    assert_no_enqueued_emails do
+      post "/api/v1/auth/password/forgot", params: { email: "missing@example.com" }, headers: csrf_headers, as: :json
+    end
+    assert_response :accepted
+    assert_equal "password_reset_instructions_sent", response.parsed_body.fetch("message")
+  end
+
+  test "resets the password, consumes the token, and signs the user in" do
+    register
+    user = User.find_by!(email: "denys@example.com")
+    token = user.issue_password_reset!
+
+    patch "/api/v1/auth/password/reset", params: {
+      token: token,
+      password: "a-new-secure-password",
+      password_confirmation: "a-new-secure-password"
+    }, headers: csrf_headers, as: :json
+
+    assert_response :success
+    assert_equal user.email, response.parsed_body.dig("user", "email")
+    assert user.reload.authenticate("a-new-secure-password")
+    assert_nil user.password_reset_digest
+
+    patch "/api/v1/auth/password/reset", params: {
+      token: token,
+      password: "another-secure-password",
+      password_confirmation: "another-secure-password"
+    }, headers: { "X-CSRF-Token" => response.parsed_body.fetch("csrf_token") }, as: :json
+    assert_response :unprocessable_entity
   end
 
   private

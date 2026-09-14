@@ -282,7 +282,7 @@ button:disabled { cursor: not-allowed; opacity: .45; }
 .beta-note { border-radius: 12px; padding: 13px; background: #f5eadd; color: #795f50; font-size: 10px; line-height: 1.5; }
 
 .modal-backdrop { position: fixed; z-index: 100; inset: 0; display: grid; overflow: auto; padding: 24px; place-items: center; background: rgba(9,27,22,.65); backdrop-filter: blur(8px); }
-.auth-dialog { position: relative; width: min(440px, 100%); border-radius: 22px; padding: 36px; background: #f7faf7; box-shadow: 0 30px 90px rgba(0,0,0,.25); }
+.auth-dialog { position: relative; width: min(470px, 100%); border-radius: 22px; padding: 36px; background: #f7faf7; box-shadow: 0 30px 90px rgba(0,0,0,.25); }
 .auth-dialog h2 { margin-top: 10px; font-size: 32px; }
 .auth-dialog > p { color: #6a7c77; font-size: 11px; line-height: 1.55; }
 .modal-close { position: absolute; top: 16px; right: 17px; border: 0; background: transparent; color: #687a74; cursor: pointer; font-size: 24px; }
@@ -290,8 +290,15 @@ button:disabled { cursor: not-allowed; opacity: .45; }
 .social-grid button { display: flex; min-height: 43px; border: 1px solid rgba(16,39,33,.16); border-radius: 10px; padding: 0 13px; align-items: center; justify-content: space-between; background: white; color: #25463c; cursor: pointer; font-size: 11px; font-weight: 750; }
 .social-grid button small { color: #8b7770; font-size: 8px; font-weight: 650; }
 .social-grid button:disabled { background: #eef2ef; }
+.google-label { display: flex; align-items: center; gap: 11px; }
+.google-label b { display: grid; width: 22px; height: 22px; place-items: center; border: 1px solid #dbe2df; border-radius: 50%; background: white; color: #4285f4; font-family: Arial, sans-serif; font-size: 13px; }
+.google-preferred { margin: 7px 0 0 !important; color: #81908b !important; font-size: 9px !important; text-align: center; }
 .or-line { display: flex; margin: 18px 0 4px; align-items: center; gap: 10px; color: #84918d; font-size: 9px; }
 .or-line::before, .or-line::after { height: 1px; flex: 1; content: ""; background: #d5ded9; }
+.password-label { display: flex !important; margin-bottom: 7px !important; align-items: center; justify-content: space-between; gap: 12px; }
+.password-label > span { margin: 0; }
+.password-label button { border: 0; padding: 0; background: transparent; color: #285e50; cursor: pointer; font-size: 9px; font-weight: 750; text-decoration: underline; text-underline-offset: 2px; }
+.success-box { margin: 16px 0 0; border: 1px solid rgba(48, 121, 91, .2); border-radius: 10px; padding: 12px; background: #e5f2eb; color: #28644f; font-size: 10px; line-height: 1.55; }
 .auth-switch { margin-top: 18px !important; text-align: center; }
 .auth-switch button { border: 0; background: transparent; color: #285e50; cursor: pointer; font-weight: 750; text-decoration: underline; }
 .terms-copy { display: block; color: #89948f; font-size: 8px; line-height: 1.5; text-align: center; }
@@ -338,6 +345,10 @@ button:disabled { cursor: not-allowed; opacity: .45; }
 .map-preview-dialog footer p { max-width: 720px; margin: 0; color: #687a74; font-size: 10px; line-height: 1.55; }
 
 .admin-order { padding: 26px; }
+.email-template-strip { display: flex; margin-bottom: 22px; padding: 18px 20px; align-items: center; justify-content: space-between; gap: 18px; }
+.email-template-strip strong { display: block; margin-top: 5px; color: #4d625c; font-size: 10px; font-weight: 600; }
+.email-template-strip nav { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 7px; }
+.email-template-strip a { border: 1px solid rgba(16,39,33,.15); border-radius: 999px; padding: 8px 11px; background: white; color: #315d50; font-size: 9px; font-weight: 750; text-decoration: none; }
 .admin-order-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 15px; }
 .admin-order-heading h2 { margin-top: 8px; }
 .admin-order-heading p, .admin-order-heading > span { color: #788681; font-size: 10px; }
@@ -472,6 +483,8 @@ button:disabled { cursor: not-allowed; opacity: .45; }
   .admin-status-grid > div:nth-child(even) { border-right: 0; }
   .admin-status-grid > div:nth-last-child(-n + 2) { border-bottom: 0; }
   .admin-upload-grid, .operator-actions, .guard-list { grid-template-columns: 1fr; }
+  .email-template-strip { align-items: flex-start; flex-direction: column; }
+  .email-template-strip nav { justify-content: flex-start; }
   .admin-preview > div { height: 430px; }
   .confirmation-dialog { padding: 25px; }
   .confirmation-dialog > div { grid-template-columns: 1fr; }

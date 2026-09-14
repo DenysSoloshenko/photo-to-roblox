@@ -16,12 +16,6 @@ function errorPayloadText(errors: ApiErrorPayload["errors"]): string | undefined
   return Object.entries(errors).flatMap(([field, messages]) => messages.map((message) => `${field}: ${message}`)).join("\n");
 }
 
-async function parseResponse(response: Response): Promise<SceneResponse> {
-  const body = (await response.json()) as SceneResponse & ApiErrorPayload;
-  if (!response.ok) throw new ApiError(body, response.status);
-  return body;
-}
-
 async function parseJson<T>(response: Response): Promise<T> {
   const body = (await response.json()) as T & ApiErrorPayload;
   if (!response.ok) throw new ApiError(body, response.status);
@@ -74,6 +68,22 @@ export function loginAccount(csrfToken: string, email: string, password: string)
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password }),
+  });
+}
+
+export function requestPasswordReset(csrfToken: string, email: string): Promise<{ ok: boolean; message: string }> {
+  return secureFetch("/api/v1/auth/password/forgot", csrfToken, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email }),
+  });
+}
+
+export function resetPassword(csrfToken: string, token: string, password: string, passwordConfirmation: string): Promise<{ user: AccountUser; csrf_token: string }> {
+  return secureFetch("/api/v1/auth/password/reset", csrfToken, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ token, password, password_confirmation: passwordConfirmation }),
   });
 }
 
@@ -131,13 +141,13 @@ export function approveAdminOrder(csrfToken: string, publicId: string): Promise<
   return secureFetch(`/api/v1/admin/orders/${publicId}/approve`, csrfToken, { method: "POST" });
 }
 
-export async function analyzePhoto(photo: File, hint: string, qualityMode: QualityMode): Promise<SceneResponse> {
+export async function analyzePhoto(photo: File, hint: string, qualityMode: QualityMode, csrfToken: string): Promise<SceneResponse> {
   const body = new FormData();
   body.append("photo", photo);
   body.append("quality_mode", qualityMode);
   body.append("include_map", "true");
   if (hint.trim()) body.append("hint", hint.trim());
-  return parseResponse(await fetch("/api/v1/scenes/analyze", { method: "POST", body }));
+  return secureFetch("/api/v1/scenes/analyze", csrfToken, { method: "POST", body });
 }
 
 export function downloadReadyRoblox(file: RobloxFile): void {
@@ -156,14 +166,12 @@ export function downloadReadyRoblox(file: RobloxFile): void {
   window.setTimeout(() => URL.revokeObjectURL(url), 1_000);
 }
 
-export async function compileScene(sceneSpec: Record<string, unknown>): Promise<SceneResponse> {
-  return parseResponse(
-    await fetch("/api/v1/scenes/compile", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ scene_spec: sceneSpec, include_map: true }),
-    }),
-  );
+export async function compileScene(sceneSpec: Record<string, unknown>, csrfToken: string): Promise<SceneResponse> {
+  return secureFetch("/api/v1/scenes/compile", csrfToken, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ scene_spec: sceneSpec, include_map: true }),
+  });
 }
 
 export async function downloadRoblox(sceneSpec: Record<string, unknown>): Promise<void> {

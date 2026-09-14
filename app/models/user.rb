@@ -1,4 +1,8 @@
+require "digest"
+
 class User < ApplicationRecord
+  PASSWORD_RESET_TTL = 30.minutes
+
   has_secure_password validations: false
 
   has_many :identities, dependent: :destroy
@@ -17,6 +21,37 @@ class User < ApplicationRecord
 
   def oauth_only?
     password_digest.blank?
+  end
+
+  def issue_password_reset!
+    token = SecureRandom.urlsafe_base64(32)
+    update!(
+      password_reset_digest: self.class.password_reset_digest(token),
+      password_reset_sent_at: Time.current
+    )
+    token
+  end
+
+  def reset_password!(password:, password_confirmation:)
+    assign_attributes(
+      password: password,
+      password_confirmation: password_confirmation,
+      password_reset_digest: nil,
+      password_reset_sent_at: nil,
+      session_version: session_version + 1
+    )
+    save
+  end
+
+  def self.find_for_password_reset(token)
+    return if token.blank?
+
+    where("password_reset_sent_at >= ?", PASSWORD_RESET_TTL.ago)
+      .find_by(password_reset_digest: password_reset_digest(token))
+  end
+
+  def self.password_reset_digest(token)
+    Digest::SHA256.hexdigest(token.to_s)
   end
 
   private

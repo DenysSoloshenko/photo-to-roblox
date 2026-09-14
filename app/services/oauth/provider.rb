@@ -12,19 +12,6 @@ module OAuth
         token_url: "https://oauth2.googleapis.com/token",
         profile_url: "https://openidconnect.googleapis.com/v1/userinfo",
         scope: "openid email profile"
-      },
-      "github" => {
-        authorize_url: "https://github.com/login/oauth/authorize",
-        token_url: "https://github.com/login/oauth/access_token",
-        profile_url: "https://api.github.com/user",
-        emails_url: "https://api.github.com/user/emails",
-        scope: "user:email"
-      },
-      "discord" => {
-        authorize_url: "https://discord.com/oauth2/authorize",
-        token_url: "https://discord.com/api/oauth2/token",
-        profile_url: "https://discord.com/api/users/@me",
-        scope: "identify email"
       }
     }.freeze
 
@@ -135,22 +122,10 @@ module OAuth
       case name
       when "google"
         Profile.new(uid: data.fetch("sub"), email: data["email"], email_verified: data["email_verified"] == true, name: data["name"])
-      when "discord"
-        Profile.new(uid: data.fetch("id"), email: data["email"], email_verified: data["verified"] == true, name: data["global_name"].presence || data["username"])
-      when "github"
-        email_data = github_email(data, token)
-        Profile.new(uid: data.fetch("id").to_s, email: email_data&.fetch("email", nil), email_verified: email_data&.fetch("verified", false) == true, name: data["name"].presence || data["login"])
       end
     rescue KeyError
       raise Error, "OAuth profile is missing an account identifier"
     end
 
-    def github_email(profile_data, token)
-      emails = get_json(@settings.fetch(:emails_url), token)
-      verified = emails.select { |candidate| candidate["verified"] }
-      verified.find { |candidate| candidate["primary"] } ||
-        verified.find { |candidate| candidate["email"] == profile_data["email"] } ||
-        verified.first
-    end
   end
 end

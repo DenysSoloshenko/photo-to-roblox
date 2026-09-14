@@ -4,6 +4,10 @@ module Api
       MAX_UPLOAD_BYTES = 10 * 1024 * 1024
       ALLOWED_TYPES = %w[image/jpeg image/png image/webp].freeze
 
+      before_action :authenticate_user!
+      before_action :require_admin!
+      before_action :protect_api!, only: %i[analyze compile export]
+
       rescue_from Roblox::MapArtifact::TooLarge do |error|
         render json: { error: "map_too_large", message: error.message }, status: :payload_too_large
       end

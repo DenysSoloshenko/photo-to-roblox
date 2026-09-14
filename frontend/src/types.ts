@@ -93,7 +93,7 @@ export interface AccountUser {
   oauth_only: boolean;
 }
 
-export type OAuthProviderName = "google" | "github" | "discord";
+export type OAuthProviderName = "google";
 
 export interface OAuthProviderStatus {
   name: OAuthProviderName;

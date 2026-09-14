@@ -30,6 +30,26 @@ services:
         value: scenefoundry-roblox.onrender.com
       - key: ADMIN_EMAILS
         value: den.solosh73@gmail.com
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: MAIL_FROM
+        value: SceneFoundry <orders@scenefoundry.app>
+      - key: SMTP_ADDRESS
+        sync: false
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_DOMAIN
+        value: scenefoundry-roblox.onrender.com
+      - key: SMTP_USERNAME
+        sync: false
+      - key: SMTP_PASSWORD
+        sync: false
+      - key: SMTP_AUTHENTICATION
+        value: plain
+      - key: SMTP_ENABLE_STARTTLS_AUTO
+        value: "true"
       - key: ACTIVE_STORAGE_SERVICE
         value: local
       - key: OPENAI_API_KEY

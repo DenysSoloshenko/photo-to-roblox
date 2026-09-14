@@ -149,7 +149,7 @@ export function CreateOrderPage({ user, csrfToken, onAuth, onCreated }: { user: 
           <label className="consent-row"><input type="checkbox" checked={rights} onChange={(event) => setRights(event.target.checked)} /><span>{t("manual.rights")}</span></label>
           <div className="hold-disclosure" role="note"><strong>{t("manual.holdDisclosureTitle")}</strong><p>{t("manual.holdDisclosureBody")}</p></div>
           {error && <pre className="error-box" role="alert">{error}</pre>}
-          <button className="primary-button order-submit" disabled={busy || photos.length === 0 || !title || !rights}>{busy ? t("manual.sending") : user ? t("manual.request") : t("manual.signUpRequest")}</button>
+          <button className="primary-button order-submit" disabled={busy || photos.length === 0 || !title || !rights}>{busy ? t("manual.sending") : user ? t("manual.request") : t("manual.signInRequest")}</button>
           <p className="no-card">{t("manual.nextStep")}</p>
         </form>
 
@@ -268,7 +268,7 @@ export function AdminQueue({ csrfToken }: { csrfToken: string }) {
     const interval = window.setInterval(() => void load(), 15_000);
     return () => window.clearInterval(interval);
   }, [load]);
-  return <main className="portal-main admin-main"><div className="page-heading"><div><span className="eyebrow">{t("admin.eyebrow")}</span><h1>{t("admin.title")}</h1><p>{t("admin.lede")}</p></div><button className="secondary-link" onClick={() => void load()}>{t("admin.refresh")}</button></div>{error && <pre className="error-box" role="alert">{error}</pre>}{loading ? <p>{t("admin.loading")}</p> : orders.length === 0 ? <div className="empty-orders surface"><h2>{t("admin.empty")}</h2></div> : <div className="admin-list">{orders.map((order) => <AdminOrderCard key={order.public_id} order={order} csrfToken={csrfToken} onSaved={load} />)}</div>}</main>;
+  return <main className="portal-main admin-main"><div className="page-heading"><div><span className="eyebrow">{t("admin.eyebrow")}</span><h1>{t("admin.title")}</h1><p>{t("admin.lede")}</p></div><button className="secondary-link" onClick={() => void load()}>{t("admin.refresh")}</button></div><section className="email-template-strip surface"><div><span className="eyebrow">{t("admin.emailTemplates")}</span><strong>{t("admin.emailTemplatesBody")}</strong></div><nav aria-label={t("admin.emailTemplates")}><a href="/api/v1/admin/email_previews/password_reset" target="_blank" rel="noreferrer">{t("admin.passwordResetEmail")}</a><a href="/api/v1/admin/email_previews/preview_ready" target="_blank" rel="noreferrer">{t("admin.previewReadyEmail")}</a><a href="/api/v1/admin/email_previews/map_ready" target="_blank" rel="noreferrer">{t("admin.mapReadyEmail")}</a></nav></section>{error && <pre className="error-box" role="alert">{error}</pre>}{loading ? <p>{t("admin.loading")}</p> : orders.length === 0 ? <div className="empty-orders surface"><h2>{t("admin.empty")}</h2></div> : <div className="admin-list">{orders.map((order) => <AdminOrderCard key={order.public_id} order={order} csrfToken={csrfToken} onSaved={load} />)}</div>}</main>;
 }
 
 function AdminOrderCard({ order, csrfToken, onSaved }: { order: ManualOrder; csrfToken: string; onSaved: () => Promise<void> }) {

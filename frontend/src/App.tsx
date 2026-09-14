@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Trans, useTranslation } from "react-i18next";
-import { analyzePhoto, compileScene, downloadReadyRoblox, getSession, listNotifications, loginAccount, logoutAccount, registerAccount, startOAuth } from "./api";
+import { analyzePhoto, compileScene, downloadReadyRoblox, getSession, listNotifications, loginAccount, logoutAccount, registerAccount, requestPasswordReset, resetPassword, startOAuth } from "./api";
 import type { QualityMode } from "./api";
 import i18n from "./i18n";
 import { AdminQueue, CreateOrderPage, OrdersPage } from "./OrderWorkflow";
@@ -36,11 +36,12 @@ type PortalView = "create" | "orders" | "admin" | "lab";
 
 export default function App() {
   const { t } = useTranslation();
+  const initialResetToken = new URLSearchParams(window.location.search).get("reset_token") || "";
   const [view, setView] = useState<PortalView>(() => new URLSearchParams(window.location.search).has("order") ? "orders" : "create");
   const [user, setUser] = useState<AccountUser | null>(null);
   const [csrfToken, setCsrfToken] = useState("");
   const [oauthProviders, setOauthProviders] = useState<OAuthProviderStatus[]>([]);
-  const [authOpen, setAuthOpen] = useState(false);
+  const [authOpen, setAuthOpen] = useState(Boolean(initialResetToken));
   const [sessionLoading, setSessionLoading] = useState(true);
   const [unreadCount, setUnreadCount] = useState(0);
   const activeLanguage: Language = i18n.resolvedLanguage?.startsWith("fr") ? "fr" : "en";
@@ -58,9 +59,17 @@ export default function App() {
 
   useEffect(() => {
     void refreshSession();
-    const params = new URLSearchParams(window.location.search);
-    if (params.has("oauth") || params.has("oauth_error")) window.history.replaceState({}, "", window.location.pathname);
+    const url = new URL(window.location.href);
+    if (url.searchParams.has("oauth") || url.searchParams.has("oauth_error")) {
+      url.searchParams.delete("oauth");
+      url.searchParams.delete("oauth_error");
+      window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
+    }
   }, [refreshSession]);
+
+  useEffect(() => {
+    if (!sessionLoading && (view === "admin" || view === "lab") && !user?.admin) setView("create");
+  }, [sessionLoading, user, view]);
 
   useEffect(() => {
     if (!user) {
@@ -79,7 +88,16 @@ export default function App() {
     setView("create");
   };
 
-  if (view === "lab") return <GeneratorLab onExit={() => setView("create")} />;
+  const closeAuth = () => {
+    setAuthOpen(false);
+    const url = new URL(window.location.href);
+    if (url.searchParams.has("reset_token")) {
+      url.searchParams.delete("reset_token");
+      window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
+    }
+  };
+
+  if (view === "lab" && user?.admin) return <GeneratorLab csrfToken={csrfToken} onExit={() => setView("create")} />;
 
   return (
     <div className="portal-shell">
@@ -92,7 +110,7 @@ export default function App() {
           <button className={view === "create" ? "active" : ""} onClick={() => setView("create")}>{t("portal.create")}</button>
           {user && <button className={view === "orders" ? "active" : ""} onClick={() => setView("orders")}>{t("portal.orders")}</button>}
           {user?.admin && <button className={view === "admin" ? "active" : ""} onClick={() => setView("admin")}>{t("portal.queue")}</button>}
-          <button onClick={() => setView("lab")}>{t("portal.lab")}</button>
+          {user?.admin && <button onClick={() => setView("lab")}>{t("portal.lab")}</button>}
         </nav>
         <div className="topbar-actions">
           <nav className="language-switcher" aria-label={t("language.label")}>
@@ -102,7 +120,7 @@ export default function App() {
           {user && <button className="notification-bell" onClick={() => setView("orders")} aria-label={t("portal.notifications")}>♢{unreadCount > 0 && <span>{unreadCount}</span>}</button>}
           {!sessionLoading && (user ? (
             <div className="account-menu"><span>{user.display_name}</span><button onClick={logOut}>{t("auth.logout")}</button></div>
-          ) : <button className="header-signin" onClick={() => setAuthOpen(true)}>{t("auth.signUp")}</button>)}
+          ) : <button className="header-signin" onClick={() => setAuthOpen(true)}>{t("auth.signIn")}</button>)}
         </div>
       </header>
 
@@ -110,44 +128,85 @@ export default function App() {
       {view === "orders" && user && <OrdersPage csrfToken={csrfToken} />}
       {view === "admin" && user?.admin && <AdminQueue csrfToken={csrfToken} />}
 
-      {authOpen && <AuthDialog csrfToken={csrfToken} providers={oauthProviders} onClose={() => setAuthOpen(false)} onAuthenticated={(response) => {
+      {authOpen && <AuthDialog csrfToken={csrfToken} providers={oauthProviders} resetToken={initialResetToken} onClose={closeAuth} onAuthenticated={(response) => {
         setUser(response.user);
         setCsrfToken(response.csrf_token);
-        setAuthOpen(false);
+        closeAuth();
       }} />}
     </div>
   );
 }
 
-function AuthDialog({ csrfToken, providers, onClose, onAuthenticated }: { csrfToken: string; providers: OAuthProviderStatus[]; onClose: () => void; onAuthenticated: (response: { user: AccountUser; csrf_token: string }) => void }) {
+type AuthMode = "login" | "register" | "forgot" | "reset";
+
+function AuthDialog({ csrfToken, providers, resetToken, onClose, onAuthenticated }: { csrfToken: string; providers: OAuthProviderStatus[]; resetToken: string; onClose: () => void; onAuthenticated: (response: { user: AccountUser; csrf_token: string }) => void }) {
   const { t } = useTranslation();
-  const [mode, setMode] = useState<"login" | "register">("register");
+  const [mode, setMode] = useState<AuthMode>(resetToken ? "reset" : "login");
   const [displayName, setDisplayName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [passwordConfirmation, setPasswordConfirmation] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const google = providers.find((provider) => provider.name === "google");
+
+  const changeMode = (nextMode: AuthMode) => {
+    setMode(nextMode);
+    setError(null);
+    setNotice(null);
+    setPassword("");
+    setPasswordConfirmation("");
+  };
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault(); setBusy(true); setError(null);
     try {
-      const response = mode === "register" ? await registerAccount(csrfToken, { displayName, email, password }) : await loginAccount(csrfToken, email, password);
+      if (mode === "forgot") {
+        await requestPasswordReset(csrfToken, email);
+        setNotice(t("auth.resetSent"));
+        return;
+      }
+      if (mode === "reset") {
+        if (password !== passwordConfirmation) throw new Error(t("auth.passwordMismatch"));
+        onAuthenticated(await resetPassword(csrfToken, resetToken, password, passwordConfirmation));
+        return;
+      }
+      const response = mode === "register"
+        ? await registerAccount(csrfToken, { displayName, email, password })
+        : await loginAccount(csrfToken, email, password);
       onAuthenticated(response);
     } catch (reason) { setError(errorText(reason, t("errors.unknown"))); } finally { setBusy(false); }
   };
 
-  return <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}><section className="auth-dialog" role="dialog" aria-modal="true" aria-labelledby="auth-title"><button className="modal-close" onClick={onClose} aria-label={t("auth.close")}>×</button><span className="eyebrow">SceneFoundry account</span><h2 id="auth-title">{mode === "register" ? t("auth.createTitle") : t("auth.loginTitle")}</h2><p>{t("auth.accountBody")}</p>
-    <div className="social-grid">{providers.map((provider) => {
-      const label = provider.name[0].toUpperCase() + provider.name.slice(1);
-      return <button type="button" key={provider.name} disabled={!provider.configured} onClick={() => void startOAuth(csrfToken, provider.name)}><span>{t("auth.continueWith", { provider: label })}</span>{!provider.configured && <small>{t("auth.oauthSetupRequired")}</small>}</button>;
-    })}</div>
-    <div className="or-line"><span>{t("auth.or")}</span></div>
-    <form onSubmit={submit}>{mode === "register" && <label className="form-field"><span>{t("auth.name")}</span><input required value={displayName} onChange={(event) => setDisplayName(event.target.value)} /></label>}<label className="form-field"><span>{t("auth.email")}</span><input type="email" required value={email} onChange={(event) => setEmail(event.target.value)} /></label><label className="form-field"><span>{t("auth.password")}</span><input type="password" minLength={10} required value={password} onChange={(event) => setPassword(event.target.value)} /><small>{t("auth.passwordHint")}</small></label>{error && <pre className="error-box">{error}</pre>}<button className="primary-button" disabled={busy}>{busy ? t("auth.working") : mode === "register" ? t("auth.create") : t("auth.signIn")}</button></form>
-    <p className="auth-switch">{mode === "register" ? t("auth.haveAccount") : t("auth.newAccount")} <button onClick={() => { setMode(mode === "register" ? "login" : "register"); setError(null); }}>{mode === "register" ? t("auth.signIn") : t("auth.create")}</button></p><small className="terms-copy">{t("auth.terms")}</small>
+  const beginGoogle = async () => {
+    setBusy(true);
+    setError(null);
+    try { await startOAuth(csrfToken, "google"); }
+    catch (reason) { setError(errorText(reason, t("errors.unknown"))); setBusy(false); }
+  };
+
+  const title = mode === "register" ? t("auth.createTitle") : mode === "forgot" ? t("auth.forgotTitle") : mode === "reset" ? t("auth.resetTitle") : t("auth.loginTitle");
+  const body = mode === "forgot" ? t("auth.forgotBody") : mode === "reset" ? t("auth.resetBody") : t("auth.accountBody");
+  const showAccountChoices = mode === "login" || mode === "register";
+
+  return <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}><section className="auth-dialog" role="dialog" aria-modal="true" aria-labelledby="auth-title"><button className="modal-close" onClick={onClose} aria-label={t("auth.close")}>×</button><span className="eyebrow">SceneFoundry account</span><h2 id="auth-title">{title}</h2><p>{body}</p>
+    {showAccountChoices && <><div className="social-grid"><button type="button" className="google-button" disabled={!google?.configured || busy} onClick={() => void beginGoogle()}><span className="google-label"><b>G</b>{t("auth.continueWith", { provider: "Google" })}</span>{!google?.configured && <small>{t("auth.oauthSetupRequired")}</small>}</button></div><p className="google-preferred">{t("auth.googlePreferred")}</p><div className="or-line"><span>{t("auth.or")}</span></div></>}
+    <form onSubmit={submit}>
+      {mode === "register" && <label className="form-field"><span>{t("auth.name")}</span><input required autoComplete="name" value={displayName} onChange={(event) => setDisplayName(event.target.value)} /></label>}
+      {mode !== "reset" && <label className="form-field"><span>{t("auth.email")}</span><input type="email" required autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} /></label>}
+      {mode !== "forgot" && <label className="form-field"><span className="password-label"><span>{mode === "reset" ? t("auth.newPassword") : t("auth.password")}</span>{mode === "login" && <button type="button" onClick={() => changeMode("forgot")}>{t("auth.forgot")}</button>}</span><input type="password" minLength={10} required autoComplete={mode === "reset" ? "new-password" : mode === "login" ? "current-password" : "new-password"} value={password} onChange={(event) => setPassword(event.target.value)} /><small>{t("auth.passwordHint")}</small></label>}
+      {mode === "reset" && <label className="form-field"><span>{t("auth.confirmPassword")}</span><input type="password" minLength={10} required autoComplete="new-password" value={passwordConfirmation} onChange={(event) => setPasswordConfirmation(event.target.value)} /></label>}
+      {notice && <p className="success-box" role="status">{notice}</p>}
+      {error && <pre className="error-box" role="alert">{error}</pre>}
+      <button className="primary-button" disabled={busy || Boolean(notice)}>{busy ? t("auth.working") : mode === "register" ? t("auth.create") : mode === "forgot" ? t("auth.sendReset") : mode === "reset" ? t("auth.resetPassword") : t("auth.signIn")}</button>
+    </form>
+    {showAccountChoices ? <p className="auth-switch">{mode === "register" ? t("auth.haveAccount") : t("auth.newAccount")} <button type="button" onClick={() => changeMode(mode === "register" ? "login" : "register")}>{mode === "register" ? t("auth.signIn") : t("auth.create")}</button></p> : <p className="auth-switch"><button type="button" onClick={() => changeMode("login")}>{t("auth.backToSignIn")}</button></p>}
+    {showAccountChoices && <small className="terms-copy">{t("auth.terms")}</small>}
   </section></div>;
 }
 
-function GeneratorLab({ onExit }: { onExit: () => void }) {
+function GeneratorLab({ csrfToken, onExit }: { csrfToken: string; onExit: () => void }) {
   const { t } = useTranslation();
   const [photo, setPhoto] = useState<File | null>(null);
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
@@ -203,7 +262,7 @@ function GeneratorLab({ onExit }: { onExit: () => void }) {
     setStatus("analyzing");
     setError(null);
     try {
-      receiveScene(await analyzePhoto(photo, hint, qualityMode));
+      receiveScene(await analyzePhoto(photo, hint, qualityMode, csrfToken));
     } catch (reason) {
       setError(errorText(reason, t("errors.unknown")));
       setStatus("idle");
@@ -214,7 +273,7 @@ function GeneratorLab({ onExit }: { onExit: () => void }) {
     setStatus("building");
     setError(null);
     try {
-      const response = await compileScene(JSON.parse(editor) as Record<string, unknown>);
+      const response = await compileScene(JSON.parse(editor) as Record<string, unknown>, csrfToken);
       setSceneIr(response.scene_ir);
       setRobloxFile(response.roblox_file || null);
       setMetrics((current) => ({ ...current, ...response.metrics }));

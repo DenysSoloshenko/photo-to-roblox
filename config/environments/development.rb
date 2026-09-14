@@ -33,15 +33,18 @@ Rails.application.configure do
     config.action_mailer.smtp_settings = {
       address: ENV.fetch("SMTP_ADDRESS"),
       port: ENV.fetch("SMTP_PORT", 587).to_i,
+      domain: ENV.fetch("SMTP_DOMAIN", "localhost"),
       user_name: ENV["SMTP_USERNAME"],
       password: ENV["SMTP_PASSWORD"],
-      authentication: :plain,
-      enable_starttls_auto: true
+      authentication: ENV.fetch("SMTP_AUTHENTICATION", "plain").to_sym,
+      enable_starttls_auto: ActiveModel::Type::Boolean.new.cast(ENV.fetch("SMTP_ENABLE_STARTTLS_AUTO", "true"))
     }
   else
     config.action_mailer.delivery_method = :file
     config.action_mailer.file_settings = { location: Rails.root.join("tmp/mails") }
   end
+  config.action_mailer.raise_delivery_errors = true
+  config.action_mailer.show_previews = true
   config.action_mailer.default_url_options = { host: ENV.fetch("APP_HOST", "127.0.0.1"), port: ENV.fetch("APP_PORT", 5173) }
 
   # Print deprecation notices to the Rails logger.

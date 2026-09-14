@@ -2,11 +2,28 @@ require "test_helper"
 
 class ApiV1ScenesControllerTest < ActionDispatch::IntegrationTest
   def setup
+    @original_admin_emails = ENV["ADMIN_EMAILS"]
+    ENV["ADMIN_EMAILS"] = "lab-admin@example.com"
     @spec = JSON.parse(Rails.root.join("examples/park.json").read)
+    get "/api/v1/auth/session"
+    @csrf_token = response.parsed_body.fetch("csrf_token")
+    post "/api/v1/auth/register", params: {
+      display_name: "Lab Admin",
+      email: "lab-admin@example.com",
+      password: "lab-admin-password",
+      password_confirmation: "lab-admin-password",
+      terms_accepted: true
+    }, headers: csrf_headers, as: :json
+    assert_response :created
+    @csrf_token = response.parsed_body.fetch("csrf_token")
+  end
+
+  def teardown
+    ENV["ADMIN_EMAILS"] = @original_admin_emails
   end
 
   test "compiles edited JSON without embedding a map by default" do
-    post "/api/v1/scenes/compile", params: { scene_spec: @spec }, as: :json
+    post "/api/v1/scenes/compile", params: { scene_spec: @spec }, headers: csrf_headers, as: :json
 
     assert_response :success
     body = JSON.parse(response.body)
@@ -19,7 +36,7 @@ class ApiV1ScenesControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "compiles edited JSON with an embedded ready map when requested" do
-    post "/api/v1/scenes/compile", params: { scene_spec: @spec, include_map: true }, as: :json
+    post "/api/v1/scenes/compile", params: { scene_spec: @spec, include_map: true }, headers: csrf_headers, as: :json
 
     assert_response :success
     body = JSON.parse(response.body)
@@ -70,7 +87,7 @@ class ApiV1ScenesControllerTest < ActionDispatch::IntegrationTest
         hint: "keep the large tree",
         quality_mode: "astra_max",
         include_map: "true"
-      }
+      }, headers: csrf_headers
     end
 
     assert_response :success
@@ -105,7 +122,7 @@ class ApiV1ScenesControllerTest < ActionDispatch::IntegrationTest
     end
 
     Vision::SceneAnalyzer.stub(:for_quality, analyzer_factory) do
-      post "/api/v1/scenes/analyze", params: { photo: upload }
+      post "/api/v1/scenes/analyze", params: { photo: upload }, headers: csrf_headers
     end
 
     assert_response :success
@@ -127,7 +144,7 @@ class ApiV1ScenesControllerTest < ActionDispatch::IntegrationTest
     end
 
     Vision::SceneAnalyzer.stub(:for_quality, analyzer_factory) do
-      post "/api/v1/scenes/analyze", params: { photo: upload, quality_mode: "ultra" }
+      post "/api/v1/scenes/analyze", params: { photo: upload, quality_mode: "ultra" }, headers: csrf_headers
     end
 
     assert_response :unprocessable_entity
@@ -138,7 +155,7 @@ class ApiV1ScenesControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "downloads rbxlx" do
-    post "/api/v1/scenes/export", params: { scene_spec: @spec }, as: :json
+    post "/api/v1/scenes/export", params: { scene_spec: @spec }, headers: csrf_headers, as: :json
 
     assert_response :success
     assert_equal "application/xml", response.media_type
@@ -148,10 +165,23 @@ class ApiV1ScenesControllerTest < ActionDispatch::IntegrationTest
 
   test "returns field-aware validation errors" do
     @spec.fetch("paths").first["surface_id"] = "unknown"
-    post "/api/v1/scenes/compile", params: { scene_spec: @spec }, as: :json
+    post "/api/v1/scenes/compile", params: { scene_spec: @spec }, headers: csrf_headers, as: :json
 
     assert_response :unprocessable_entity
     body = JSON.parse(response.body)
     assert_equal "$.paths[0].surface_id", body.fetch("errors").first.fetch("path")
+  end
+
+  test "rejects AI Lab access after sign out" do
+    delete "/api/v1/auth/logout", headers: csrf_headers
+    get "/api/v1/status"
+
+    assert_response :unauthorized
+  end
+
+  private
+
+  def csrf_headers
+    { "X-CSRF-Token" => @csrf_token }
   end
 end

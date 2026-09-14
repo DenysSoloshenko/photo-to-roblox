@@ -10,6 +10,8 @@ Rails.application.routes.draw do
         post "register", to: "registrations#create"
         post "login", to: "sessions#create"
         delete "logout", to: "sessions#destroy"
+        post "password/forgot", to: "passwords#create"
+        patch "password/reset", to: "passwords#update"
         post "oauth/:provider", to: "oauth#start"
         get "oauth/:provider/callback", to: "oauth#callback"
       end
@@ -28,6 +30,7 @@ Rails.application.routes.draw do
       post "payments/stripe/webhook", to: "payments/stripe#webhook"
 
       namespace :admin do
+        get "email_previews/:template", to: "email_previews#show", as: :email_preview
         resources :orders, param: :public_id, only: %i[index show update] do
           member do
             get "files/source/:attachment_id", to: "orders#download_source", as: :source_file
