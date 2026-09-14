@@ -1,0 +1,19 @@
+NEW ORDER TO REVIEW
+
+Customer: <%= @order.user.display_name %> · <%= @order.user.email %>
+Project: <%= @order.title %>
+Location type: <%= @order.scene_type.humanize %>
+Visual direction: <%= @order.style.humanize %>
+Must preserve: <%= @order.must_preserve.presence || "Not provided" %>
+Instructions: <%= @order.instructions.presence || "Not provided" %>
+Photo rights: <%= @order.rights_confirmed_at.present? ? "Confirmed" : "Not confirmed" %>
+Payment: <%= @order.payment_status.humanize %> · <%= @order.currency %> <%= format("%.2f", @order.price_cents / 100.0) %>
+Due: <%= @order.delivery_due_at.to_fs(:long) %>
+
+Source photos:
+<% if @source_links.any? %><% @source_links.each do |source| %>- <%= source[:filename] %>: <%= source[:url] %>
+<% end %><% else %>- No source photos were attached.
+<% end %>
+Open admin orders: <%= @admin_url %>
+
+Order <%= @order.public_id %> · submitted <%= @order.submitted_at.to_fs(:long) %>

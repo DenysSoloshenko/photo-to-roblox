@@ -8,6 +8,7 @@ class OrderSerializer
     data = {
       public_id: order.public_id,
       status: order.status,
+      workflow_state: order.workflow_state,
       payment_status: order.payment_status,
       title: order.title,
       scene_type: order.scene_type,

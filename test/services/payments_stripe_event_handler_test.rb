@@ -50,7 +50,7 @@ class PaymentsStripeEventHandlerTest < ActiveSupport::TestCase
     assert_equal "authorization_pending", @order.reload.payment_status
   end
 
-  test "verified capture queues generation and a full refund revokes download" do
+  test "verified capture starts manual work without AI and a full refund revokes download" do
     @order.update!(
       status: "submitted",
       payment_status: "authorized",
@@ -60,7 +60,7 @@ class PaymentsStripeEventHandlerTest < ActiveSupport::TestCase
     )
     @order.update!(status: "accepted", payment_status: "capture_pending", capture_requested_at: Time.current)
 
-    assert_enqueued_with(job: GenerateOrderJob, args: [@order.id]) do
+    assert_no_enqueued_jobs only: GenerateOrderJob do
       Payments::StripeEventHandler.call(stripe_event(
         "evt_paid", "payment_intent.succeeded", payment_intent(id: "pi_paid", status: "succeeded")
       ))

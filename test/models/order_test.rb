@@ -29,4 +29,23 @@ class OrderTest < ActiveSupport::TestCase
     refute @order.can_accept?
     assert @order.can_decline?
   end
+
+  test "maps detailed internal states to the four manual workflow states" do
+    {
+      "payment_pending" => "pending_review",
+      "submitted" => "pending_review",
+      "accepted" => "in_progress",
+      "building" => "in_progress",
+      "reviewing" => "in_progress",
+      "preview_ready" => "in_progress",
+      "ready" => "completed",
+      "delivered" => "completed",
+      "declined" => "failed",
+      "cancelled" => "failed",
+      "failed" => "failed"
+    }.each do |internal_status, workflow_state|
+      @order.status = internal_status
+      assert_equal workflow_state, @order.workflow_state
+    end
+  end
 end

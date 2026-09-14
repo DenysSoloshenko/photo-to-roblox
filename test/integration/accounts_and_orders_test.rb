@@ -2,10 +2,16 @@ require "test_helper"
 
 class AccountsAndOrdersTest < ActionDispatch::IntegrationTest
   setup do
+    @original_admin_emails = ENV["ADMIN_EMAILS"]
+    ENV["ADMIN_EMAILS"] = "operator@example.com"
     ActionMailer::Base.deliveries.clear
     get "/api/v1/auth/session"
     assert_response :success
     @csrf_token = response.parsed_body.fetch("csrf_token")
+  end
+
+  teardown do
+    ENV["ADMIN_EMAILS"] = @original_admin_emails
   end
 
   test "session exposes only Google oauth and a usable csrf token" do
@@ -22,26 +28,36 @@ class AccountsAndOrdersTest < ActionDispatch::IntegrationTest
     register
 
     photo = fixture_file_upload("source.jpg", "image/jpeg")
-    post "/api/v1/orders",
-      params: {
-        title: "Family garden",
-        scene_type: "garden",
-        style: "faithful",
-        must_preserve: "Central path and old tree",
-        instructions: "Keep it playable",
-        rights_confirmed: "true",
-        source_photos: [photo]
-      },
-      headers: csrf_headers
+    assert_difference -> { ActionMailer::Base.deliveries.size }, 1 do
+      post "/api/v1/orders",
+        params: {
+          title: "Family garden",
+          scene_type: "garden",
+          style: "faithful",
+          must_preserve: "Central path and old tree",
+          instructions: "Keep it playable",
+          rights_confirmed: "true",
+          source_photos: [photo]
+        },
+        headers: csrf_headers
+    end
 
     assert_response :created
     created = response.parsed_body.fetch("order")
     assert_equal "payment_pending", created.fetch("status")
+    assert_equal "pending_review", created.fetch("workflow_state")
     assert_equal "unpaid", created.fetch("payment_status")
     assert created.fetch("can_authorize")
     assert_equal 1_900, created.fetch("price_cents")
     assert_nil created.fetch("result_url")
     assert Order.find_by!(public_id: created.fetch("public_id")).source_photos.attached?
+
+    admin_email = ActionMailer::Base.deliveries.last
+    assert_equal ["operator@example.com"], admin_email.to
+    assert_equal "New SceneFoundry order: Family garden", admin_email.subject
+    assert_includes admin_email.text_part.body.decoded, "denys@example.com"
+    assert_includes admin_email.text_part.body.decoded, "Central path and old tree"
+    assert_includes admin_email.text_part.body.decoded, "source.jpg"
 
     get "/api/v1/orders"
     assert_response :success

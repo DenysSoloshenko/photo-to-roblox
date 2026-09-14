@@ -46,21 +46,22 @@ class AdminOrdersTest < ActionDispatch::IntegrationTest
     ENV["STRIPE_SECRET_KEY"] = "sk_test_local"
     intent = Struct.new(:id, :status, :amount, :currency, :metadata, :receipt_email)
       .new("pi_authorized", "succeeded", 1_900, "usd", { "order_public_id" => @order.public_id }, @customer.email)
-    assert_enqueued_with(job: GenerateOrderJob) do
+    assert_no_enqueued_jobs only: GenerateOrderJob do
       Stripe::PaymentIntent.stub(:capture, intent) do
         post "/api/v1/admin/orders/#{@order.public_id}/accept", headers: csrf_headers
       end
     end
     assert_response :success
     assert_equal "building", response.parsed_body.dig("order", "status")
+    assert_equal "in_progress", response.parsed_body.dig("order", "workflow_state")
     assert_equal "paid", response.parsed_body.dig("order", "payment_status")
 
     patch "/api/v1/admin/orders/#{@order.public_id}", params: {
-      status: "reviewing",
       preview_image: fixture_file_upload("preview.png", "image/png"),
       result_file: fixture_file_upload("result.rbxlx", "application/xml")
     }, headers: csrf_headers
     assert_response :success
+    assert_equal "reviewing", response.parsed_body.dig("order", "status")
     assert_equal 1, response.parsed_body.dig("order", "preview_scene_ir", "stats", "part_count")
     assert_nil response.parsed_body.dig("order", "result_url")
 
@@ -68,6 +69,7 @@ class AdminOrdersTest < ActionDispatch::IntegrationTest
       post "/api/v1/admin/orders/#{@order.public_id}/approve", headers: csrf_headers
     end
     assert_response :success
+    assert_equal "completed", response.parsed_body.dig("order", "workflow_state")
     assert response.parsed_body.dig("order", "result_url").present?
   ensure
     ENV["STRIPE_SECRET_KEY"] = original_key
@@ -98,6 +100,11 @@ class AdminOrdersTest < ActionDispatch::IntegrationTest
   end
 
   test "operator can inspect the real transactional email templates" do
+    get "/api/v1/admin/email_previews/new_order"
+    assert_response :success
+    assert_includes response.body, "New order to review"
+    assert_includes response.body, "pacific-centre.jpg"
+
     get "/api/v1/admin/email_previews/password_reset"
     assert_response :success
     assert_includes response.body, "Reset your password"

@@ -1,6 +1,7 @@
 class Order < ApplicationRecord
   PRICE_CENTS = 1_900
   STATUSES = %w[payment_pending submitted accepted building reviewing preview_ready ready delivered declined cancelled failed].freeze
+  WORKFLOW_STATES = %w[pending_review in_progress completed failed].freeze
   PAYMENT_STATUSES = %w[unpaid authorization_pending authorized capture_pending paid released refund_pending refunded failed].freeze
   STATUS_TRANSITIONS = {
     "payment_pending" => %w[submitted cancelled failed],
@@ -56,7 +57,7 @@ class Order < ApplicationRecord
 
   after_update_commit :notify_preview_ready, if: :became_preview_ready?
   after_update_commit :notify_ready, if: :became_ready?
-  after_update_commit :enqueue_premium_generation, if: :became_paid_building?
+  after_create_commit :notify_admin_of_new_order
 
   def ready_for_download?
     %w[ready delivered].include?(status) && payment_status == "paid" && result_file.attached?
@@ -85,6 +86,19 @@ class Order < ApplicationRecord
 
   def can_download?
     ready_for_download?
+  end
+
+  def workflow_state
+    case status
+    when "payment_pending", "submitted"
+      "pending_review"
+    when "accepted", "building", "reviewing", "preview_ready"
+      "in_progress"
+    when "ready", "delivered"
+      "completed"
+    else
+      "failed"
+    end
   end
 
   def authorization_expired?
@@ -156,11 +170,7 @@ class Order < ApplicationRecord
     OrderReadyNotifier.call(self, stage: :download)
   end
 
-  def became_paid_building?
-    saved_change_to_status? && status == "building" && payment_status == "paid"
-  end
-
-  def enqueue_premium_generation
-    GenerateOrderJob.perform_later(id)
+  def notify_admin_of_new_order
+    AdminOrderNotifier.call(self)
   end
 end

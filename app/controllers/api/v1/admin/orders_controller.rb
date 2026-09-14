@@ -28,6 +28,7 @@ module Api
             order.preview_image.attach(params[:preview_image]) if params[:preview_image].present?
             order.result_file.attach(params[:result_file]) if params[:result_file].present?
             order.preview_scene_ir = preview_scene_ir if preview_scene_ir
+            order.status = "reviewing" if preview_scene_ir && order.status == "building"
             order.update!(update_params)
           end
           render json: { order: order_json(order.reload) }

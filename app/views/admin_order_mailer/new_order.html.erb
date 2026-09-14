@@ -1,0 +1,28 @@
+<h1 style="font-family:Georgia,serif;font-size:30px;font-weight:500">New order to review</h1>
+<p style="font-size:16px;line-height:1.6"><strong><%= @order.user.display_name %></strong> submitted a new SceneFoundry request.</p>
+
+<table role="presentation" style="width:100%;border-collapse:collapse;font-size:14px;line-height:1.5">
+  <tr><td style="padding:7px 0;color:#6a7c77">Customer</td><td style="padding:7px 0"><%= @order.user.display_name %> · <a href="mailto:<%= @order.user.email %>"><%= @order.user.email %></a></td></tr>
+  <tr><td style="padding:7px 0;color:#6a7c77">Project</td><td style="padding:7px 0"><strong><%= @order.title %></strong></td></tr>
+  <tr><td style="padding:7px 0;color:#6a7c77">Location type</td><td style="padding:7px 0"><%= @order.scene_type.humanize %></td></tr>
+  <tr><td style="padding:7px 0;color:#6a7c77">Visual direction</td><td style="padding:7px 0"><%= @order.style.humanize %></td></tr>
+  <tr><td style="padding:7px 0;color:#6a7c77">Must preserve</td><td style="padding:7px 0"><%= @order.must_preserve.presence || "Not provided" %></td></tr>
+  <tr><td style="padding:7px 0;color:#6a7c77">Instructions</td><td style="padding:7px 0"><%= @order.instructions.presence || "Not provided" %></td></tr>
+  <tr><td style="padding:7px 0;color:#6a7c77">Photo rights</td><td style="padding:7px 0"><%= @order.rights_confirmed_at.present? ? "Confirmed" : "Not confirmed" %></td></tr>
+  <tr><td style="padding:7px 0;color:#6a7c77">Payment</td><td style="padding:7px 0"><%= @order.payment_status.humanize %> · <%= @order.currency %> <%= format("%.2f", @order.price_cents / 100.0) %></td></tr>
+  <tr><td style="padding:7px 0;color:#6a7c77">Due</td><td style="padding:7px 0"><%= @order.delivery_due_at.to_fs(:long) %></td></tr>
+</table>
+
+<h2 style="margin-top:26px;font-family:Georgia,serif;font-size:21px;font-weight:500">Source photos</h2>
+<% if @source_links.any? %>
+  <ul style="padding-left:20px;font-size:14px;line-height:1.8">
+    <% @source_links.each do |source| %>
+      <li><a href="<%= source[:url] %>"><%= source[:filename] %></a></li>
+    <% end %>
+  </ul>
+<% else %>
+  <p style="font-size:14px;color:#6a7c77">No source photos were attached.</p>
+<% end %>
+
+<p style="margin:28px 0"><a href="<%= @admin_url %>" style="display:inline-block;padding:14px 20px;border-radius:10px;background:#173d34;color:white;text-decoration:none;font-weight:700">Open admin orders</a></p>
+<p style="font-size:13px;color:#6a7c77">Order <%= @order.public_id %> · submitted <%= @order.submitted_at.to_fs(:long) %></p>
