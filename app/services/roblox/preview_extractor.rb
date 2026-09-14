@@ -1,11 +1,11 @@
 require "digest"
-require "rexml/document"
-require "rexml/xpath"
+require "nokogiri"
 
 module Roblox
   class PreviewExtractor
     MAX_PARTS = 1_500
     PART_CLASSES = %w[Part SpawnLocation WedgePart CornerWedgePart MeshPart UnionOperation].freeze
+    PART_XPATH = "//Item[#{PART_CLASSES.map { |name| "@class='#{name}'" }.join(" or ")}]".freeze
     SHAPES = { "0" => "ball", "1" => "block", "2" => "cylinder" }.freeze
     MATERIALS = Scene::MaterialCatalog::MATERIALS.each_with_object({}) do |(name, attributes), catalog|
       catalog[attributes.fetch(:roblox).to_s] ||= name
@@ -13,16 +13,18 @@ module Roblox
 
     def extract(xml, fallback_name: "Roblox map")
       started_at = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-      document = REXML::Document.new(xml)
-      nodes = REXML::XPath.match(document, "//Item").select { |item| PART_CLASSES.include?(item.attributes["class"]) }
+      document = Nokogiri::XML(xml) { |config| config.nonet }
+      raise Nokogiri::XML::SyntaxError, document.errors.first.message if document.errors.any?
+
+      all_nodes = document.xpath(PART_XPATH)
+      nodes = sample_nodes(all_nodes)
       raise ArgumentError, "The Roblox map does not contain previewable parts" if nodes.empty?
-      raise ArgumentError, "The Roblox map contains more than #{MAX_PARTS} previewable parts" if nodes.length > MAX_PARTS
 
       parts = nodes.each_with_index.map { |item, index| extract_part(item, index) }
       bounds = calculate_bounds(parts)
       camera = extract_camera(document) || default_camera(bounds)
       spawn_part = parts.find { |part| part["class"] == "SpawnLocation" }
-      name = property_text(REXML::XPath.first(document, "//Item[@class='Workspace']/Item[@class='Model']"), "Name").presence || fallback_name
+      name = property_text(document.at_xpath("//Item[@class='Workspace']/Item[@class='Model']"), "Name").presence || fallback_name
 
       {
         "version" => "1.0",
@@ -39,18 +41,20 @@ module Roblox
         "camera" => camera,
         "stats" => {
           "part_count" => parts.length,
+          "source_part_count" => all_nodes.length,
+          "preview_sampled" => all_nodes.length > MAX_PARTS,
           "triangle_estimate" => parts.sum { |part| part["shape"] == "block" ? 12 : 96 },
           "compile_ms" => ((Process.clock_gettime(Process::CLOCK_MONOTONIC) - started_at) * 1_000).round(2)
         }
       }
-    rescue REXML::ParseException => error
+    rescue Nokogiri::XML::SyntaxError => error
       raise ArgumentError, "Result is not a valid .rbxlx XML file: #{error.message.lines.first.to_s.strip}"
     end
 
     private
 
     def extract_part(item, index)
-      class_name = item.attributes["class"].to_s
+      class_name = item["class"].to_s
       frame = property_node(item, "CFrame")
       matrix = frame ? matrix_from(frame) : identity_matrix
       size = vector(property_node(item, "size"), [1, 1, 1])
@@ -100,12 +104,12 @@ module Roblox
       node = property_node(item, "Color")
       return Scene::MaterialCatalog.fetch(material_for(item)).fetch(:color) unless node
 
-      values = %w[R G B].map { |axis| (node.elements[axis]&.text.to_f * 255).round.clamp(0, 255) }
+      values = %w[R G B].map { |axis| (node.at_xpath("./#{axis}")&.text.to_f * 255).round.clamp(0, 255) }
       format("#%02x%02x%02x", *values)
     end
 
     def extract_camera(document)
-      camera = REXML::XPath.first(document, "//Item[@class='Camera']")
+      camera = document.at_xpath("//Item[@class='Camera']")
       frame = property_node(camera, "CFrame")
       focus = property_node(camera, "Focus")
       return unless frame && focus
@@ -131,7 +135,7 @@ module Roblox
 
     def property_node(item, name)
       return unless item
-      REXML::XPath.first(item, "Properties/*[@name='#{name}']")
+      item.at_xpath("./Properties/*[@name='#{name}']")
     end
 
     def property_text(item, name)
@@ -151,11 +155,11 @@ module Roblox
 
     def vector(node, fallback)
       return fallback unless node
-      %w[X Y Z].map.with_index { |axis, index| node.elements[axis]&.text&.to_f || fallback[index] }
+      %w[X Y Z].map.with_index { |axis, index| node.at_xpath("./#{axis}")&.text&.to_f || fallback[index] }
     end
 
     def matrix_from(node)
-      3.times.map { |row| 3.times.map { |column| node.elements["R#{row}#{column}"]&.text&.to_f || identity_matrix[row][column] } }
+      3.times.map { |row| 3.times.map { |column| node.at_xpath("./R#{row}#{column}")&.text&.to_f || identity_matrix[row][column] } }
     end
 
     def euler_yxz(matrix)
@@ -172,6 +176,13 @@ module Roblox
 
     def safe_id(value, index)
       value.to_s.parameterize.presence || "imported-#{index + 1}"
+    end
+
+    def sample_nodes(nodes)
+      return nodes if nodes.length <= MAX_PARTS
+
+      stride = nodes.length.to_f / MAX_PARTS
+      Array.new(MAX_PARTS) { |index| nodes[(index * stride).floor] }
     end
 
     def identity_matrix

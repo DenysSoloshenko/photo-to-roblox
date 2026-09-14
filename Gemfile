@@ -5,6 +5,7 @@ gem "rails", "~> 8.0.0"
 # Use the Puma web server [https://github.com/puma/puma]
 gem "puma", ">= 5.0"
 gem "rexml", ">= 3.3"
+gem "nokogiri", "~> 1.18"
 gem "pg", "~> 1.5"
 gem "bcrypt", "~> 3.1"
 gem "stripe", "~> 15.0"

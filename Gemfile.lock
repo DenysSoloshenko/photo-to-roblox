@@ -220,6 +220,7 @@ DEPENDENCIES
   aws-sdk-s3 (~> 1.0)
   bcrypt (~> 3.1)
   debug
+  nokogiri (~> 1.18)
   pg (~> 1.5)
   puma (>= 5.0)
   rails (~> 8.0.0)
