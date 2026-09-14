@@ -12,6 +12,10 @@ The production workflow does not require a user to write JSON or custom code for
 
 ## Visual Gallery
 
+### End-to-end order demo
+
+[Watch the 32-second SceneFoundry workflow demo](docs/demo/SceneFoundry_Workflow_Demo.mp4). It uses the supplied Pacific Centre photograph and finished Roblox result to show the actual sign-in, recovery, operator review, customer delivery, and email-preview surfaces.
+
 ### House and landscaped grounds
 
 ![A reconstructed Roblox house with landscaped grounds, a pool, trees, and paths](docs/images/house-scene.png)
@@ -26,8 +30,8 @@ The park is the checked-in development fixture rendered by the running applicati
 
 ## What Works
 
-- Email/password registration with bcrypt password hashing and encrypted, HttpOnly cookie sessions.
-- Google, GitHub, and Discord OAuth login controls with clear setup state until provider credentials are configured.
+- A single, clear sign-in entry point: Google is the only social provider, while email/password remains available as a fallback.
+- Email/password registration with bcrypt password hashing, encrypted HttpOnly cookie sessions, and expiring password-reset links.
 - Private customer accounts with a persistent order history.
 - Requests containing one to three private source photos, a scene/style brief, and a recorded image-rights confirmation.
 - A manual operator queue with source downloads, private notes, replacement artifacts, an interactive QA preview, and explicit accept/capture, decline/release, and approve/deliver actions.
@@ -37,6 +41,7 @@ The park is the checked-in development fixture rendered by the running applicati
 - A guarded background job runs Astra Max only after verified capture, enforces concurrency and daily-spend ceilings, records cost/latency, and leaves the result in private operator review.
 - Customer progress for every order and payment state; interactive preview and `.rbxlx` download become visible only after approval.
 - In-app notifications and email when the preview or paid download becomes ready.
+- Admin-only previews of the exact password-reset, preview-ready, and map-ready email templates before SMTP is enabled.
 - JPEG, PNG, and WebP uploads up to 10 MB.
 - A fully localized interface in English and French, with English as the default and the selected language saved in the browser.
 - Image analysis through the OpenAI Responses API using a Base64 data URL.
@@ -54,6 +59,7 @@ The park is the checked-in development fixture rendered by the running applicati
 - Per-order timing, token usage, estimated API cost, and an `order_id` in the API response.
 - Structured `scene_order_completed` events in the Rails log.
 - Safe geometry generation without model-produced executable code, Roblox scripts, or untrusted external asset IDs.
+- The operator queue, email-template previews, and AI Lab are hidden from customers and enforced as admin-only on the server.
 
 ## Architecture
 
@@ -102,7 +108,7 @@ Requirements:
 cp .env.example .env
 # Add OPENAI_API_KEY to .env
 # Set ADMIN_EMAILS to the account that will fulfill orders
-# Add Stripe test keys and OAuth credentials when testing those integrations
+# Add Stripe test keys and Google OAuth credentials when testing those integrations
 # Defaults: Terra high draft + Terra medium refinement
 # Optional premium profile, after configuring authentication, quotas, and spend limits:
 # ASTRA_QUALITY_ENABLED=true
@@ -132,15 +138,19 @@ orders, move Active Storage to private S3-compatible storage, use a durable
 database plan, configure a mail provider that supports HTTPS delivery, and add
 Stripe production credentials and a signed webhook.
 
-### Social login
+### Google sign-in
 
-Create OAuth applications for the providers you want to enable, then put their client ID and secret in `.env`. All supported options stay visible in the account dialog; unconfigured providers are disabled and labeled “Setup required.” For the default local setup, register these callback URLs:
+Create a Google OAuth web application, then put its client ID and secret in `.env`. The Google button stays visible but disabled with “Setup required” until both values are present. Use this callback URL for the default local setup:
 
 - Google: `http://127.0.0.1:3000/api/v1/auth/oauth/google/callback`
-- GitHub: `http://127.0.0.1:3000/api/v1/auth/oauth/github/callback`
-- Discord: `http://127.0.0.1:3000/api/v1/auth/oauth/discord/callback`
 
-Set `APP_URL` to the browser-facing origin and `API_URL` to the Rails origin. Verified provider email addresses are required before a social identity is linked to an existing account.
+Set `APP_URL` to the browser-facing origin and `API_URL` to the Rails origin. A verified Google email is required before an identity is linked to an existing account. Email/password sign-in remains available so customers can recover access when Google is unavailable or their account was created by email.
+
+### SMTP and email templates
+
+In development, Action Mailer writes messages to `tmp/mails` when SMTP is not configured. To send real mail, set `MAIL_FROM`, `SMTP_ADDRESS`, `SMTP_PORT`, `SMTP_DOMAIN`, `SMTP_USERNAME`, `SMTP_PASSWORD`, `SMTP_AUTHENTICATION`, and `SMTP_ENABLE_STARTTLS_AUTO` in `.env` or the deployment environment.
+
+An authenticated admin can inspect the exact rendered templates from the **Order queue** without sending mail. The available previews are password reset, preview ready, and map ready. Production SMTP intentionally remains disabled until valid provider credentials are supplied; no email password is committed to Git.
 
 ### Payments and private files
 
@@ -170,7 +180,9 @@ The interface opens in English. Use the `EN` / `FR` control in the header to swi
 | `GET` | `/api/v1/auth/session` | Current account, CSRF token, and enabled OAuth providers |
 | `POST` | `/api/v1/auth/register` | Create an email/password account |
 | `POST` | `/api/v1/auth/login` | Start an encrypted browser session |
-| `POST` | `/api/v1/auth/oauth/:provider` | Start Google, GitHub, or Discord OAuth |
+| `POST` | `/api/v1/auth/oauth/google` | Start Google OAuth |
+| `POST` | `/api/v1/auth/password/forgot` | Send an enumeration-safe password-reset email |
+| `PATCH` | `/api/v1/auth/password/reset` | Replace the password with a valid 30-minute token |
 | `GET, POST` | `/api/v1/orders` | List private orders or create a request awaiting payment authorization |
 | `POST` | `/api/v1/orders/:public_id/authorize_payment` | Create or reuse a hosted $19 manual-capture Stripe Checkout session |
 | `POST` | `/api/v1/orders/:public_id/cancel` | Cancel before capture and release/expire the authorization |
@@ -180,6 +192,7 @@ The interface opens in English. Use the `EN` / `FR` control in the header to swi
 | `POST` | `/api/v1/payments/stripe/webhook` | Verify and deduplicate authorization, capture, release, failure, and refund events |
 | `GET` | `/api/v1/notifications` | List in-app order notifications |
 | `GET, PATCH` | `/api/v1/admin/orders` | Operate the manual fulfillment queue |
+| `GET` | `/api/v1/admin/email_previews/:template` | Preview a transactional email as an admin |
 | `GET` | `/api/v1/scenes/schema` | Structured-generation JSON Schema |
 | `POST` | `/api/v1/scenes/analyze` | Multipart `photo`, optional `hint`, `quality_mode`, and `include_map` → SceneSpec, SceneIR, metrics, and optionally a ready map |
 | `POST` | `/api/v1/scenes/compile` | Edited `scene_spec`, with optional `include_map` → SceneIR and optionally a ready map |
@@ -248,7 +261,9 @@ Estimated cost is calculated from the response's actual token usage. Pricing ent
 - A customer cannot download the `.rbxlx` until Stripe confirms capture, generation produces a result, and an operator approves it.
 - Stripe webhooks are deduplicated in PostgreSQL and every payment transition validates the order ID, amount, currency, and PaymentIntent identity.
 - Astra order generation starts only for a paid order in `building`, runs once by default, and is disabled unless explicit automation and spend-limit configuration is present.
-- Social accounts are linked by email only when the provider confirms that email is verified.
+- Google accounts are linked by email only when Google confirms that email is verified.
+- Password-reset tokens are stored as SHA-256 digests, expire after 30 minutes, and invalidate existing sessions when used.
+- AI Lab routes require an authenticated admin in addition to being hidden from non-admin navigation.
 - Default limits are 1,500 parts and 120,000 estimated triangles.
 - Repeated-group expansion is checked before geometry is produced.
 - Semantic IDs must be unique, and surface/path references must resolve.
@@ -269,7 +284,7 @@ bundle exec rails scenes:generate
 
 Latest verified AI-pipeline baseline (the account/order suite is also run by `bin/verify`):
 
-- Rails: 57 tests, 319 assertions, 0 failures. The suite covers accounts, CSRF, OAuth identity linking, private orders and result files, state-transition guards, manual-capture Stripe authorization, event deduplication, capture/release, Astra job gating and reserved spend, operator approval, `.rbxlx` preview extraction, notifications, four unrelated scene families, exact quality profiles, incomplete API responses, and ready-map integrity.
+- Rails: 62 tests, 363 assertions, 0 failures. The suite covers accounts, CSRF, Google identity linking, password recovery, admin-only email previews and AI Lab, private orders and result files, state-transition guards, manual-capture Stripe authorization, event deduplication, capture/release, Astra job gating and reserved spend, operator approval, large-map `.rbxlx` preview sampling, notifications, four unrelated scene families, exact quality profiles, incomplete API responses, and ready-map integrity.
 - Frontend: TypeScript type check and Vite production build pass.
 - Live two-pass Terra workflow: a new garden image completed in 75.73 seconds for an estimated $0.116264 (45.86-second high-reasoning draft plus 29.57-second medium review), normalized an over-budget draft from 1,720 to 1,244 estimated parts, and compiled without photo-specific code.
 - Live Astra Max workflow on a new 5.14 MB garden photograph: 830.44 seconds of vision work (634.56-second `max` draft plus 195.88-second `high` review), estimated API cost $2.999685 from 15,444 input and 56,133 output tokens, then a 1.40 MB ready `.rbxlx` response with 1,040 compiled parts. End-to-end server time was 832.27 seconds.
@@ -284,7 +299,8 @@ The live verification used a local ignored `OPENAI_API_KEY`; no secret is commit
 - The development queue adapter is in-process. Production should use a durable Active Job backend before enabling automatic Astra fulfillment.
 - Generation failure remains a private operator state; refunds are reconciled from Stripe events but an operator must initiate a refund in Stripe Dashboard in this milestone.
 - PostgreSQL is production-ready for relational data, while local Active Storage is suitable only for a single persistent instance. Set the existing S3 environment variables before horizontally scaling or deploying to ephemeral storage.
-- OAuth controls remain disabled until provider credentials and matching callback URLs are configured.
+- Google sign-in remains disabled until its client ID, client secret, and matching callback URL are configured. Email/password access continues to work without Google credentials.
+- Real SMTP delivery remains disabled until mail-provider credentials are supplied. Development mail and admin template previews work without them.
 - A single photograph cannot reveal true depth or hidden geometry. SceneFoundry preserves the recognizable composition and records assumptions, but it does not claim photogrammetric accuracy.
 - This milestone builds geometry from Roblox primitives. A visually unusual object can be preserved as an editable approximate mass, but dedicated assets, `MeshPart`, terrain voxels, and textures will be required for product-grade object fidelity.
 - The second pass reviews structured composition, not a rendered preview. The largest remaining quality improvement is a render-and-compare loop that lets the model correct the actual generated image.
