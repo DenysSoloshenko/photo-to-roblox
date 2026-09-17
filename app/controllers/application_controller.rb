@@ -7,7 +7,18 @@ class ApplicationController < ActionController::API
 
   attr_reader :current_user
 
+  before_action :prevent_private_response_caching
+
+  rescue_from ActiveRecord::RecordNotFound do
+    render json: { error: "not_found" }, status: :not_found
+  end
+
   private
+
+  def prevent_private_response_caching
+    response.headers["Cache-Control"] = "no-store"
+    response.headers["Referrer-Policy"] = "no-referrer"
+  end
 
   def authenticate_user!
     payload = cookies.encrypted[SESSION_COOKIE]

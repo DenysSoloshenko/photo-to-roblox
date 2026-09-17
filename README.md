@@ -122,7 +122,7 @@ Open [http://127.0.0.1:5173](http://127.0.0.1:5173). `bin/dev` starts Rails on p
 
 Without an API key, the UI blocks photograph analysis and explains why. The development example remains available only in `development` and `test`; it is never reported as a vision result.
 
-Customer orders do not need an OpenAI key. The key and Astra flags are used only by the admin-only AI Lab. PostgreSQL is required. In development, notification emails are written to `tmp/mails` unless SMTP variables are supplied. Every address in `ADMIN_EMAILS` receives the full new-order notification; registering with one of those addresses reveals the admin Orders workspace.
+Customer orders do not need an OpenAI key. The key and Astra flags are used only by the admin-only AI Lab. PostgreSQL is required. In development, notification emails are written to `tmp/mails` unless SMTP variables are supplied. Every address in `ADMIN_EMAILS` receives the full new-order notification; an account with one of those addresses gains admin access only after verified Google sign-in or a successful password reset sent to that mailbox. Existing accounts must complete one of these verification flows after upgrading; the migration does not trust previously entered email addresses. First-time Google verification removes any unverified password and revokes old sessions to prevent account pre-registration attacks.
 
 ### Render preview deployment
 

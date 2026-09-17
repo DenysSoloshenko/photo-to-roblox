@@ -189,6 +189,49 @@ class AccountsAndOrdersTest < ActionDispatch::IntegrationTest
     assert_response :unprocessable_entity
   end
 
+  test "registering an operator address does not grant administrative access" do
+    ENV["ADMIN_EMAILS"] = "denys@example.com"
+    register
+    assert_equal false, response.parsed_body.dig("user", "admin")
+    get "/api/v1/admin/orders"
+    assert_response :forbidden
+    get "/api/v1/status"
+    assert_response :forbidden
+
+    user = User.find_by!(email: "denys@example.com")
+    token = user.issue_password_reset!
+    patch "/api/v1/auth/password/reset", params: {
+      token: token, password: "verified-owner-password", password_confirmation: "verified-owner-password"
+    }, headers: csrf_headers, as: :json
+    assert_response :success
+    assert_equal true, response.parsed_body.dig("user", "admin")
+    get "/api/v1/admin/orders"
+    assert_response :success
+    assert_equal "no-store", response.headers["Cache-Control"]
+  end
+
+  test "password reset rejects blank and mismatched passwords without consuming the token" do
+    register
+    user = User.find_by!(email: "denys@example.com")
+    token = user.issue_password_reset!
+    [{ password: "", password_confirmation: "" },
+     { password: "new-password-value", password_confirmation: "different-password" }].each do |values|
+      patch "/api/v1/auth/password/reset", params: values.merge(token: token), headers: csrf_headers, as: :json
+      assert_response :unprocessable_entity
+      assert user.reload.authenticate("very-secure-password")
+      assert_equal user, User.find_for_password_reset(token)
+      assert_nil user.email_verified_at
+    end
+  end
+
+  test "missing private resources return JSON without cacheable account data" do
+    register
+    get "/api/v1/orders/does-not-exist"
+    assert_response :not_found
+    assert_equal "not_found", response.parsed_body["error"]
+    assert_equal "no-store", response.headers["Cache-Control"]
+  end
+
   private
 
   def register

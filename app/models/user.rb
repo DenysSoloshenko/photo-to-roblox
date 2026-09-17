@@ -13,10 +13,11 @@ class User < ApplicationRecord
 
   validates :email, presence: true, format: { with: URI::MailTo::EMAIL_REGEXP }, uniqueness: { case_sensitive: false }
   validates :display_name, presence: true, length: { maximum: 80 }
-  validates :password, length: { minimum: 10, maximum: 128 }, allow_nil: true
+  validates :password, length: { minimum: 10 }, confirmation: true, allow_nil: true
+  validate :password_fits_bcrypt
 
   def admin?
-    ENV.fetch("ADMIN_EMAILS", "").split(",").map { |value| value.strip.downcase }.include?(email.downcase)
+    email_verified_at.present? && ENV.fetch("ADMIN_EMAILS", "").split(",").map { |value| value.strip.downcase }.include?(email.downcase)
   end
 
   def oauth_only?
@@ -33,12 +34,18 @@ class User < ApplicationRecord
   end
 
   def reset_password!(password:, password_confirmation:)
+    if password.blank?
+      errors.add(:password, "is required")
+      return false
+    end
+
     assign_attributes(
       password: password,
       password_confirmation: password_confirmation,
       password_reset_digest: nil,
       password_reset_sent_at: nil,
-      session_version: session_version + 1
+      session_version: session_version + 1,
+      email_verified_at: email_verified_at || Time.current
     )
     save
   end
@@ -55,6 +62,10 @@ class User < ApplicationRecord
   end
 
   private
+
+  def password_fits_bcrypt
+    errors.add(:password, "must be 72 bytes or fewer") if password && password.bytesize > 72
+  end
 
   def normalize_email
     self.email = email.to_s.strip.downcase

@@ -18,6 +18,7 @@ class AdminOrdersTest < ActionDispatch::IntegrationTest
       terms_accepted: true
     }, headers: csrf_headers, as: :json
     assert_response :created
+    User.find_by!(email: "operator@example.com").update!(email_verified_at: Time.current)
     @csrf_token = response.parsed_body.fetch("csrf_token")
   end
 
