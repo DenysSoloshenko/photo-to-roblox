@@ -12,7 +12,7 @@ import {
   listOrders,
   updateAdminOrder,
 } from "./api";
-import SceneViewer from "./SceneViewer";
+import SceneViewer from "./ScenePreview";
 import type { AccountUser, ManualOrder, OrderStatus, OrderWorkflowState } from "./types";
 
 type Confirmation = {

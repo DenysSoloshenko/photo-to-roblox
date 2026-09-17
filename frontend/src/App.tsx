@@ -4,7 +4,7 @@ import { analyzePhoto, compileScene, downloadReadyRoblox, fetchJson, getSession,
 import type { QualityMode } from "./api";
 import i18n from "./i18n";
 import { AdminQueue, CreateOrderPage, OrdersPage } from "./OrderWorkflow";
-import SceneViewer from "./SceneViewer";
+import SceneViewer from "./ScenePreview";
 import type { AccountUser, Metrics, OAuthProviderStatus, RobloxFile, SceneIR, SceneResponse } from "./types";
 
 type Status = "idle" | "analyzing" | "building" | "ready";
