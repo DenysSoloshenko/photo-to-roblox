@@ -103,4 +103,12 @@ class VisionHttpTransportTest < ActiveSupport::TestCase
       assert_raises(Vision::SceneAnalyzer::ConfigurationError) { Vision::HttpTransport.new(read_timeout: value) }
     end
   end
+  test "retries share one time budget" do
+    transport = Vision::HttpTransport.new(read_timeout: 0.1, sleeper: ->(_) { flunk "should not sleep beyond the deadline" })
+    with_responses([response(429, "{}", "Retry-After" => "2")]) do
+      assert_raises(Vision::SceneAnalyzer::TimeoutError) { post(transport) }
+      assert_equal 1, @requests.size
+    end
+  end
+
 end

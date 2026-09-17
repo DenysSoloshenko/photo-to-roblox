@@ -22,13 +22,14 @@ module Vision
       uri = URI(url)
       raise SceneAnalyzer::ConfigurationError, "Vision endpoint must use HTTPS" unless uri.is_a?(URI::HTTPS)
 
+      deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + @read_timeout
       attempt = 0
       loop do
         request = Net::HTTP::Post.new(uri)
         headers.each { |name, value| request[name] = value }
         request["X-Client-Request-Id"] = SecureRandom.uuid
         request.body = body
-        response, raw_body = perform(uri, request)
+        response, raw_body = perform(uri, request, deadline)
         status = response.code.to_i
         request_id = response["x-request-id"]
         parsed = parse_body(raw_body)
@@ -44,6 +45,8 @@ module Vision
         retryable = RETRYABLE_STATUSES.include?(status) && code != "insufficient_quota"
         if retryable && attempt < @max_retries && delay
           Rails.logger.warn({ event: "vision_request_retry", status: status, request_id: request_id, attempt: attempt + 1, delay_seconds: delay }.to_json)
+          raise Net::ReadTimeout if Process.clock_gettime(Process::CLOCK_MONOTONIC) + delay >= deadline
+
           @sleeper.call(delay)
           attempt += 1
           next
@@ -66,17 +69,18 @@ module Vision
 
     private
 
-    def perform(uri, request)
+    def perform(uri, request, deadline)
       body = +""
       response = nil
-      started_at = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      remaining = deadline - Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      raise Net::ReadTimeout unless remaining.positive?
       Net::HTTP.start(uri.host, uri.port, use_ssl: true, open_timeout: 10,
-        read_timeout: @read_timeout, write_timeout: 30, max_retries: 0) do |http|
+        read_timeout: remaining, write_timeout: [30, remaining].min, max_retries: 0) do |http|
         http.request(request) do |upstream|
           response = upstream
           upstream.read_body do |chunk|
             raise SceneAnalyzer::ApiError, "OpenAI API response exceeds the 5 MB limit" if body.bytesize + chunk.bytesize > MAX_RESPONSE_BYTES
-            raise Net::ReadTimeout if Process.clock_gettime(Process::CLOCK_MONOTONIC) - started_at > @read_timeout
+            raise Net::ReadTimeout if Process.clock_gettime(Process::CLOCK_MONOTONIC) >= deadline
 
             body << chunk
           end
