@@ -4,7 +4,15 @@ require "json"
 module Vision
   class SceneAnalyzer
     class ConfigurationError < StandardError; end
-    class ApiError < StandardError; end
+    class ApiError < StandardError
+      attr_reader :status, :request_id, :retry_after
+
+      def initialize(message, status: nil, request_id: nil, retry_after: nil)
+        super(message)
+        @status, @request_id, @retry_after = status, request_id, retry_after
+      end
+    end
+    class RateLimitError < ApiError; end
     class TimeoutError < ApiError; end
 
     DEFAULT_MODEL = "gpt-5.6-terra"
@@ -42,7 +50,7 @@ module Vision
           refinement_enabled: true,
           refinement_reasoning_effort: ENV.fetch("ASTRA_REFINEMENT_REASONING_EFFORT", "high"),
           quality_mode: quality_mode,
-          transport: transport || HttpTransport.new(read_timeout: ENV.fetch("ASTRA_READ_TIMEOUT_SECONDS", "1200").to_i)
+          transport: transport || HttpTransport.new(read_timeout: ENV.fetch("ASTRA_READ_TIMEOUT_SECONDS", "1200"))
         )
       else
         new(
@@ -116,7 +124,9 @@ module Vision
           "output_tokens" => usage.fetch("output_tokens", 0),
           "draft_api_cost_usd" => draft_cost,
           "refinement_api_cost_usd" => refinement ? refinement_cost : nil,
-          "api_cost_usd" => (draft_cost.to_f + refinement_cost.to_f).round(6),
+          "api_cost_usd" => draft_cost && refinement_cost ? (draft_cost + refinement_cost).round(6) : nil,
+          "provider_request_ids" => [draft[:request_id], refinement&.dig(:request_id)].compact,
+          "provider_attempts" => draft.fetch(:attempts) + (refinement&.fetch(:attempts) || 0),
           "pricing_basis" => "OpenAI list pricing verified #{PRICING_LAST_VERIFIED}; image tokens are included in input_tokens"
         }
       }
@@ -245,9 +255,14 @@ module Vision
         headers: { "Authorization" => "Bearer #{@api_key}", "Content-Type" => "application/json" },
         body: JSON.generate(payload)
       )
+      scene_spec = JSON.parse(extract_output_text(response))
+      raise ApiError, "vision output must be a SceneSpec object" unless scene_spec.is_a?(Hash)
+
       {
-        scene_spec: JSON.parse(extract_output_text(response)),
-        usage: response.fetch("usage", {}),
+        scene_spec: scene_spec,
+        usage: response["usage"].is_a?(Hash) ? response["usage"] : {},
+        request_id: response.dig("_transport", "request_id"),
+        attempts: response.dig("_transport", "attempts") || 1,
         elapsed_ms: ((monotonic_time - started_at) * 1000).round(2)
       }
     end
@@ -282,11 +297,15 @@ module Vision
         raise ApiError, "vision response did not complete: #{reason}"
       end
 
-      response.fetch("output", []).each do |item|
-        next unless item["type"] == "message"
+      output = response["output"]
+      raise ApiError, "vision response did not contain an output array" unless output.is_a?(Array)
 
-        item.fetch("content", []).each do |content|
-          return content.fetch("text") if content["type"] == "output_text"
+      output.each do |item|
+        next unless item.is_a?(Hash) && item["type"] == "message" && item["content"].is_a?(Array)
+
+        item["content"].each do |content|
+          next unless content.is_a?(Hash)
+          return content["text"] if content["type"] == "output_text" && content["text"].is_a?(String)
           raise ApiError, content.fetch("refusal", "vision request was refused") if content["type"] == "refusal"
         end
       end

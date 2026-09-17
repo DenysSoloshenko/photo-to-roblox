@@ -16,10 +16,10 @@ module Api
         render json: {
           ok: true,
           vision_configured: ENV["OPENAI_API_KEY"].present?,
-          vision_model: ENV.fetch("VISION_MODEL", Vision::SceneAnalyzer::DEFAULT_MODEL),
-          vision_reasoning_effort: ENV.fetch("VISION_REASONING_EFFORT", Vision::SceneAnalyzer::DEFAULT_REASONING_EFFORT).presence,
-          vision_refinement_enabled: ENV.fetch("VISION_REFINEMENT_ENABLED", "true") == "true",
-          vision_refinement_reasoning_effort: ENV.fetch("VISION_REFINEMENT_REASONING_EFFORT", Vision::SceneAnalyzer::DEFAULT_REFINEMENT_REASONING_EFFORT).presence,
+          vision_model: Vision::SceneAnalyzer::DEFAULT_MODEL,
+          vision_reasoning_effort: Vision::SceneAnalyzer::DEFAULT_REASONING_EFFORT,
+          vision_refinement_enabled: true,
+          vision_refinement_reasoning_effort: Vision::SceneAnalyzer::DEFAULT_REFINEMENT_REASONING_EFFORT,
           quality_modes: Vision::SceneAnalyzer::QUALITY_MODES,
           default_quality_mode: "terra",
           astra_quality_enabled: ENV.fetch("ASTRA_QUALITY_ENABLED", "false") == "true",
@@ -76,8 +76,11 @@ module Api
         render json: { error: "vision_not_configured", message: error.message }, status: :service_unavailable
       rescue Vision::SceneAnalyzer::TimeoutError => error
         render json: { error: "vision_timeout", message: error.message }, status: :gateway_timeout
+      rescue Vision::SceneAnalyzer::RateLimitError => error
+        response.headers["Retry-After"] = error.retry_after.ceil.to_s if error.retry_after
+        render json: { error: "vision_rate_limited", message: error.message, request_id: error.request_id }, status: :too_many_requests
       rescue Vision::SceneAnalyzer::ApiError => error
-        render json: { error: "vision_api_error", message: error.message }, status: :bad_gateway
+        render json: { error: "vision_api_error", message: error.message, request_id: error.request_id }, status: :bad_gateway
       rescue Scene::ValidationError => error
         render json: { error: "invalid_scene_spec", errors: error.errors }, status: :unprocessable_entity
       end

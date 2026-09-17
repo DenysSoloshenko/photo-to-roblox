@@ -158,4 +158,22 @@ class VisionSceneAnalyzerTest < ActiveSupport::TestCase
 
     assert_match(/max_output_tokens/, error.message)
   end
+  test "unknown model pricing remains unknown instead of reporting a free request" do
+    spec = JSON.parse(Rails.root.join("examples/park.json").read)
+    result = Vision::SceneAnalyzer.new(api_key: "test", model: "unknown-model", transport: FakeTransport.new(spec))
+      .analyze(bytes: "photo", mime_type: "image/png", filename: "test.png")
+    assert_nil result.dig(:metrics, "api_cost_usd")
+    assert_equal 2, result.dig(:metrics, "provider_attempts")
+  end
+
+  test "missing output and non-object scene JSON raise controlled API errors" do
+    [nil, [{ "type" => "message", "content" => [{ "type" => "output_text", "text" => "[]" }] }]].each do |output|
+      transport = Object.new
+      transport.define_singleton_method(:post) { |**_| { "status" => "completed", "output" => output } }
+      assert_raises(Vision::SceneAnalyzer::ApiError) do
+        Vision::SceneAnalyzer.new(api_key: "test", transport: transport).analyze(bytes: "photo", mime_type: "image/png", filename: "test.png")
+      end
+    end
+  end
+
 end
