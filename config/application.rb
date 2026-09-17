@@ -42,5 +42,7 @@ module PhotoToRoblox
     config.api_only = true
     config.middleware.use ActionDispatch::Cookies
     config.active_job.queue_adapter = :async
+    # All uploads and downloads go through owner/admin-authorized API routes.
+    config.active_storage.draw_routes = false
   end
 end

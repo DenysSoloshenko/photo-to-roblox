@@ -245,6 +245,15 @@ class AccountsAndOrdersTest < ActionDispatch::IntegrationTest
     end
   end
 
+  test "framework direct uploads cannot bypass application authorization" do
+    assert_no_difference "ActiveStorage::Blob.count" do
+      post "/rails/active_storage/direct_uploads", params: {
+        blob: { filename: "untrusted.png", byte_size: 1, checksum: "x", content_type: "image/png" }
+      }, as: :json
+    end
+    assert_response :not_found
+  end
+
   private
 
   def register
