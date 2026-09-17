@@ -13,10 +13,9 @@ module Payments
     end
 
     def apply!
-      validator = PaymentIntentValidator.new(order, payment_intent)
-      validator.validate!
-
       order.with_lock do
+        validator = PaymentIntentValidator.new(order, payment_intent)
+        validator.validate!
         intent_status = Payments::StripeValue.fetch(payment_intent, :status).to_s
         order.stripe_payment_intent_id ||= validator.payment_intent_id
 
@@ -43,7 +42,9 @@ module Payments
 
     def authorize!
       return if order.payment_status == "authorized" && order.status == "submitted"
-      raise InvalidTransition, "captured or released payment cannot be authorized" if order.payment_status.in?(%w[paid released refunded])
+      # Signed events can arrive after capture/refund/release, or while capture
+      # is in flight. A stale authorization must never roll that state back.
+      return if order.payment_status.in?(%w[capture_pending paid released refund_pending refunded])
 
       order.status = "submitted" if order.status == "payment_pending"
       order.payment_status = "authorized"
@@ -54,7 +55,7 @@ module Payments
     end
 
     def capture!
-      return if order.payment_status == "paid" && order.status == "building"
+      return if order.payment_status.in?(%w[paid refund_pending refunded])
       unless order.status == "accepted" && order.payment_status == "capture_pending"
         raise InvalidTransition, "payment was captured without an accepted order"
       end

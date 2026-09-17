@@ -8,6 +8,7 @@ module Payments
     end
 
     def validate!
+      raise InvalidPayment, "payment intent id is missing" if payment_intent_id.blank?
       require_match!("payment intent", payment_intent_id, order.stripe_payment_intent_id) if order.stripe_payment_intent_id.present?
       require_match!("order", Payments::StripeValue.metadata_value(payment_intent, :order_public_id), order.public_id)
       require_match!("amount", Payments::StripeValue.fetch(payment_intent, :amount).to_i, order.price_cents)

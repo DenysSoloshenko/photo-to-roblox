@@ -49,5 +49,11 @@ Rails.application.routes.draw do
     end
   end
 
-  root to: redirect("/index.html")
+  # Preserve checkout/order and password-reset query parameters when loading
+  # the static React entry point. The default string redirect discards them.
+  frontend = redirect(status: 302) do |_params, request|
+    "/index.html#{request.query_string.present? ? "?#{request.query_string}" : ""}"
+  end
+  get "/orders", to: frontend
+  root to: frontend
 end

@@ -119,6 +119,13 @@ class AdminOrdersTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "Your map is ready"
   end
 
+  test "generic updates cannot bypass explicit order actions" do
+    patch "/api/v1/admin/orders/#{@order.public_id}", params: { status: "failed", admin_notes: "Private note" }, headers: csrf_headers, as: :json
+    assert_response :success
+    assert_equal "payment_pending", @order.reload.status
+    assert_equal "Private note", @order.admin_notes
+  end
+
   private
 
   def csrf_headers

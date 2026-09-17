@@ -232,6 +232,19 @@ class AccountsAndOrdersTest < ActionDispatch::IntegrationTest
     assert_equal "no-store", response.headers["Cache-Control"]
   end
 
+  test "frontend entry routes preserve checkout and password reset parameters" do
+    get "/orders?checkout=authorized&order=private-order"
+    assert_redirected_to "/index.html?checkout=authorized&order=private-order"
+    assert_response :found
+    get "/?reset_token=one-time-token"
+    if response.redirect?
+      assert_redirected_to "/index.html?reset_token=one-time-token"
+    else
+      # ActionDispatch::Static serves / directly when a built index exists.
+      assert_response :success
+    end
+  end
+
   private
 
   def register

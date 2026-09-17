@@ -24,7 +24,7 @@ module Api
           order = find_order
           validate_uploads!
           preview_scene_ir = extract_preview(params[:result_file], order.title) if params[:result_file].present?
-          Order.transaction do
+          order.with_lock do
             order.preview_image.attach(params[:preview_image]) if params[:preview_image].present?
             order.result_file.attach(params[:result_file]) if params[:result_file].present?
             order.preview_scene_ir = preview_scene_ir if preview_scene_ir
@@ -90,7 +90,7 @@ module Api
         end
 
         def update_params
-          params.permit(:status, :admin_notes)
+          params.permit(:admin_notes)
         end
 
         def validate_uploads!

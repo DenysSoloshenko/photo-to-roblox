@@ -75,6 +75,29 @@ class PaymentsStripeEventHandlerTest < ActiveSupport::TestCase
     refute @order.ready_for_download?
   end
 
+  test "late authorization and capture events preserve fulfillment and refund state" do
+    @order.update!(status: "submitted", payment_status: "authorized", stripe_payment_intent_id: "pi_late")
+    @order.update!(status: "accepted", payment_status: "capture_pending")
+    Payments::StripeEventHandler.call(stripe_event("evt_late_capture", "payment_intent.succeeded", payment_intent(id: "pi_late", status: "succeeded")))
+    @order.reload.update!(status: "reviewing")
+    Payments::StripeEventHandler.call(stripe_event("evt_late_authorize", "payment_intent.amount_capturable_updated", payment_intent(id: "pi_late", status: "requires_capture")))
+    Payments::StripeEventHandler.call(stripe_event("evt_late_capture_2", "payment_intent.succeeded", payment_intent(id: "pi_late", status: "succeeded")))
+    assert_equal "reviewing", @order.reload.status
+    assert_equal "paid", @order.payment_status
+    @order.update!(payment_status: "refunded")
+    Payments::StripeEventHandler.call(stripe_event("evt_after_refund", "payment_intent.succeeded", payment_intent(id: "pi_late", status: "succeeded")))
+    assert_equal "refunded", @order.reload.payment_status
+  end
+
+  test "validates against the locked current payment intent rather than a stale order" do
+    stale_order = Order.find(@order.id)
+    @order.update!(stripe_payment_intent_id: "pi_current")
+    assert_raises(Payments::PaymentIntentValidator::InvalidPayment) do
+      Payments::PaymentIntentTransition.apply!(stale_order, payment_intent(id: "pi_stale", status: "requires_capture"))
+    end
+    assert_equal "authorization_pending", @order.reload.payment_status
+  end
+
   private
 
   def payment_intent(id:, status:, amount: 1_900)
