@@ -10,6 +10,12 @@ The separate AI Lab keeps the automated pipeline available for internal experime
 
 The production workflow does not require a user to write JSON or custom code for each photograph. The vision model creates a compact, structured scene description; trusted application code validates it, builds the geometry, renders the preview, and exports a real Roblox XML place file.
 
+## Production readiness review
+
+The September 16 review fixes verified admin access, account recovery, frontend request handling, Vision retries, checkout navigation, stale payment events, and vulnerable Ruby dependencies. It adds CI and defers the 3D bundle until a preview is opened. See [the detailed production checklist](docs/production-readiness-2026-09-16.md) for deployment blockers, acceptance criteria, verification evidence, and commit history.
+
+Current local verification: **84 Rails tests / 495 assertions**, **10 API-client tests**, TypeScript and production build passing; npm and Ruby dependency audits have no known advisory matches. These checks do not replace staging tests of Stripe, mail, S3, the production Ruby runtime, or real Roblox Studio output. Existing admin accounts need verified Google sign-in or an emailed password reset after the new migration.
+
 ## Visual Gallery
 
 ### End-to-end order demo
@@ -280,9 +286,9 @@ bin/verify
 bundle exec rails scenes:generate
 ```
 
-`bin/verify` runs the Rails test suite, TypeScript type checking, the Vite production build, and `git diff --check`. The scene generator writes all development fixtures to `generated_maps/` and records actual local processing time and file sizes in `generated_maps/generation_metrics.json`.
+`bin/verify` runs the Rails test suite, API-client regression tests, TypeScript type checking, the Vite production build, and `git diff --check`. CI also runs npm and Ruby dependency audits. The scene generator writes all development fixtures to `generated_maps/` and records actual local processing time and file sizes in `generated_maps/generation_metrics.json`.
 
-Latest verified AI-pipeline baseline (the account/order suite is also run by `bin/verify`):
+Historical AI-pipeline baseline (see the production review above for current test counts):
 
 - Rails: 63 tests, 393 assertions, 0 failures. The suite covers accounts, CSRF, Google identity linking, password recovery, new-order admin email delivery, admin-only email previews and AI Lab, four-state manual order grouping, private orders and result files, state-transition guards, manual-capture Stripe authorization, event deduplication, capture/release, isolated Astra job gating, operator approval, large-map `.rbxlx` preview sampling, notifications, four unrelated scene families, exact quality profiles, incomplete API responses, and ready-map integrity.
 - Frontend: TypeScript type check and Vite production build pass.

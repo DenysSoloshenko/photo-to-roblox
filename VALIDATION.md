@@ -1,3 +1,7 @@
+# Historical milestone validation
+
+This file records the original prototype milestone. For the current audit, test results, and remaining launch work, see [Production readiness — September 16, 2026](docs/production-readiness-2026-09-16.md).
+
 # Acceptance status
 
 | Критерий первого этапа | Статус | Доказательство |
