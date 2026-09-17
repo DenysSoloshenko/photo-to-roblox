@@ -4,5 +4,5 @@ set -eu
 cd "$(dirname "$0")/.."
 
 bundle exec rails test
-(cd frontend && npm run typecheck && npm run build)
+(cd frontend && npm test && npm run typecheck && npm run build)
 git diff --check

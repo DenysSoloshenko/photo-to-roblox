@@ -5,6 +5,7 @@ export type QualityMode = "terra" | "astra_max";
 export class ApiError extends Error {
   constructor(public payload: ApiErrorPayload, public status: number) {
     super(payload.message || errorPayloadText(payload.errors) || payload.error || `HTTP ${status}`);
+    this.name = "ApiError";
   }
 }
 
@@ -13,46 +14,116 @@ function errorPayloadText(errors: ApiErrorPayload["errors"]): string | undefined
   if (Array.isArray(errors)) {
     return errors.map((item) => typeof item === "string" ? item : `${item.path}: ${item.message}`).join("\n");
   }
-  return Object.entries(errors).flatMap(([field, messages]) => messages.map((message) => `${field}: ${message}`)).join("\n");
+  return Object.entries(errors).flatMap(([field, messages]) => Array.isArray(messages) ? messages.map((message) => `${field}: ${message}`) : []).join("\n");
 }
 
-async function parseJson<T>(response: Response): Promise<T> {
-  const body = (await response.json()) as T & ApiErrorPayload;
-  if (!response.ok) throw new ApiError(body, response.status);
-  return body;
+export interface RequestOptions {
+  signal?: AbortSignal;
+  timeoutMs?: number;
+}
+
+function pause(ms: number, signal: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    signal.throwIfAborted();
+    const abort = () => { clearTimeout(timer); reject(signal.reason); };
+    const timer = setTimeout(() => { signal.removeEventListener("abort", abort); resolve(); }, ms);
+    signal.addEventListener("abort", abort, { once: true });
+  });
+}
+
+async function readJson<T>(response: Response): Promise<T> {
+  const text = await response.text();
+  try {
+    const body: unknown = JSON.parse(text);
+    if (!body || typeof body !== "object" || Array.isArray(body)) throw new Error("Invalid envelope");
+    return body as T;
+  } catch {
+    throw new ApiError({ error: "invalid_response", message: `HTTP ${response.status}: the server returned an invalid response. Please try again later.` }, response.status);
+  }
+}
+
+async function readError(response: Response): Promise<ApiError> {
+  try {
+    const body = await readJson<ApiErrorPayload>(response);
+    return new ApiError(body, response.status);
+  } catch (error) {
+    if (error instanceof ApiError) return error;
+    throw error;
+  }
+}
+
+async function request<T>(url: string, init: RequestInit, options: RequestOptions, decode: (response: Response) => Promise<T>): Promise<T> {
+  const controller = new AbortController();
+  const cancel = () => controller.abort(options.signal?.reason);
+  options.signal?.addEventListener("abort", cancel, { once: true });
+  if (options.signal?.aborted) cancel();
+  const timer = setTimeout(() => controller.abort(new DOMException("Request timed out", "TimeoutError")), options.timeoutMs ?? 30_000);
+  const headers = new Headers(init.headers);
+  if (!headers.has("Accept")) headers.set("Accept", "application/json");
+  const canRetry = (init.method || "GET").toUpperCase() === "GET";
+  try {
+    for (let attempt = 0; ; attempt += 1) {
+      controller.signal.throwIfAborted();
+      const response = await fetch(url, { ...init, headers, credentials: "same-origin", cache: "no-store", signal: controller.signal });
+      if (response.ok) return await decode(response);
+      if (canRetry && attempt < 2 && [429, 502, 503, 504].includes(response.status)) {
+        const retryAfter = response.headers.get("Retry-After");
+        const seconds = retryAfter === null ? NaN : Number(retryAfter);
+        const delay = retryAfter === null ? 500 * 2 ** attempt : Number.isFinite(seconds) ? seconds * 1000 : Date.parse(retryAfter) - Date.now();
+        // Do not retry earlier than a long server-requested delay.
+        if (Number.isFinite(delay) && delay >= 0 && delay <= 5_000) {
+          await response.body?.cancel();
+          await pause(delay, controller.signal);
+          continue;
+        }
+      }
+      throw await readError(response);
+    }
+  } catch (error) {
+    if (options.signal?.aborted) throw options.signal.reason;
+    if (controller.signal.aborted) throw new ApiError({ error: "request_timeout", message: "The request timed out. It may still be processing; check its status before starting it again." }, 0);
+    if (error instanceof TypeError) throw new ApiError({ error: "network_error", message: "The server could not be reached. Check your connection and try again." }, 0);
+    throw error;
+  } finally {
+    clearTimeout(timer);
+    options.signal?.removeEventListener("abort", cancel);
+  }
+}
+
+export function fetchJson<T>(url: string, options: RequestOptions = {}): Promise<T> {
+  return request(url, {}, options, readJson<T>);
 }
 
 let activeCsrfToken = "";
+let sessionRequest: Promise<SessionResponse> | undefined;
 
-async function secureFetch<T>(url: string, csrfToken: string, init: RequestInit = {}): Promise<T> {
-  const request = async (token: string) => {
+async function secureRequest<T>(url: string, csrfToken: string, init: RequestInit, options: RequestOptions, decode: (response: Response) => Promise<T>): Promise<T> {
+  let token = activeCsrfToken || csrfToken || (await getSession()).csrf_token;
+  for (let attempt = 0; ; attempt += 1) {
     const headers = new Headers(init.headers);
     headers.set("X-CSRF-Token", token);
-    return fetch(url, { ...init, headers, credentials: "same-origin" });
-  };
-
-  let token = csrfToken || activeCsrfToken;
-  if (!token) token = (await getSession()).csrf_token;
-  let response = await request(token);
-  if (response.status === 422) {
-    const body = (await response.clone().json()) as ApiErrorPayload;
-    if (body.error === "invalid_csrf_token") {
-      token = (await getSession()).csrf_token;
-      response = await request(token);
+    try {
+      const parsed = await request(url, { ...init, headers }, options, decode);
+      if (typeof parsed === "object" && parsed && "csrf_token" in parsed) activeCsrfToken = String(parsed.csrf_token);
+      return parsed;
+    } catch (error) {
+      // Only replay an explicit CSRF rejection, which occurs before any mutation.
+      if (attempt === 0 && error instanceof ApiError && error.status === 422 && error.payload.error === "invalid_csrf_token") {
+        token = (await getSession()).csrf_token;
+      } else throw error;
     }
   }
-  const parsed = await parseJson<T>(response);
-  if (typeof parsed === "object" && parsed && "csrf_token" in parsed) {
-    activeCsrfToken = String((parsed as { csrf_token: string }).csrf_token);
-  }
-  return parsed;
 }
 
-export async function getSession(): Promise<SessionResponse> {
-  const session = await fetch("/api/v1/auth/session", { credentials: "same-origin", cache: "no-store" })
-    .then((response) => parseJson<SessionResponse>(response));
-  activeCsrfToken = session.csrf_token;
-  return session;
+function secureFetch<T>(url: string, csrfToken: string, init: RequestInit = {}, options: RequestOptions = {}): Promise<T> {
+  return secureRequest(url, csrfToken, init, options, readJson<T>);
+}
+
+export function getSession(): Promise<SessionResponse> {
+  sessionRequest ||= fetchJson<SessionResponse>("/api/v1/auth/session")
+    .then((session) => { activeCsrfToken = session.csrf_token; return session; })
+    .finally(() => { sessionRequest = undefined; });
+  return sessionRequest;
 }
 
 export function registerAccount(csrfToken: string, payload: { displayName: string; email: string; password: string }): Promise<{ user: AccountUser; csrf_token: string }> {
@@ -87,8 +158,10 @@ export function resetPassword(csrfToken: string, token: string, password: string
   });
 }
 
-export function logoutAccount(csrfToken: string): Promise<{ ok: boolean }> {
-  return secureFetch("/api/v1/auth/logout", csrfToken, { method: "DELETE" });
+export async function logoutAccount(csrfToken: string): Promise<{ ok: boolean }> {
+  const result = await secureFetch<{ ok: boolean }>("/api/v1/auth/logout", csrfToken, { method: "DELETE" });
+  activeCsrfToken = "";
+  return result;
 }
 
 export async function startOAuth(csrfToken: string, provider: string): Promise<void> {
@@ -100,13 +173,12 @@ export function createManualOrder(csrfToken: string, form: FormData): Promise<{ 
   return secureFetch("/api/v1/orders", csrfToken, { method: "POST", body: form });
 }
 
-export function listOrders(): Promise<{ orders: ManualOrder[] }> {
-  return fetch("/api/v1/orders", { credentials: "same-origin", cache: "no-store" }).then((response) => parseJson<{ orders: ManualOrder[] }>(response));
+export function listOrders(options: RequestOptions = {}): Promise<{ orders: ManualOrder[] }> {
+  return fetchJson("/api/v1/orders", options);
 }
 
 export function getOrder(publicId: string): Promise<{ order: ManualOrder }> {
-  return fetch(`/api/v1/orders/${publicId}`, { credentials: "same-origin", cache: "no-store" })
-    .then((response) => parseJson<{ order: ManualOrder }>(response));
+  return fetchJson(`/api/v1/orders/${encodeURIComponent(publicId)}`);
 }
 
 export function authorizeOrderPayment(csrfToken: string, publicId: string): Promise<{ order: ManualOrder; checkout_url: string }> {
@@ -118,11 +190,11 @@ export function cancelOrder(csrfToken: string, publicId: string): Promise<{ orde
 }
 
 export function listNotifications(): Promise<{ notifications: InboxNotification[] }> {
-  return fetch("/api/v1/notifications").then((response) => parseJson<{ notifications: InboxNotification[] }>(response));
+  return fetchJson("/api/v1/notifications");
 }
 
-export function listAdminOrders(): Promise<{ orders: ManualOrder[] }> {
-  return fetch("/api/v1/admin/orders", { credentials: "same-origin", cache: "no-store" }).then((response) => parseJson<{ orders: ManualOrder[] }>(response));
+export function listAdminOrders(options: RequestOptions = {}): Promise<{ orders: ManualOrder[] }> {
+  return fetchJson("/api/v1/admin/orders", options);
 }
 
 export function updateAdminOrder(csrfToken: string, publicId: string, form: FormData): Promise<{ order: ManualOrder }> {
@@ -141,21 +213,25 @@ export function approveAdminOrder(csrfToken: string, publicId: string): Promise<
   return secureFetch(`/api/v1/admin/orders/${publicId}/approve`, csrfToken, { method: "POST" });
 }
 
-export async function analyzePhoto(photo: File, hint: string, qualityMode: QualityMode, csrfToken: string): Promise<SceneResponse> {
+export async function analyzePhoto(photo: File, hint: string, qualityMode: QualityMode, csrfToken: string, options: RequestOptions = {}): Promise<SceneResponse> {
   const body = new FormData();
   body.append("photo", photo);
   body.append("quality_mode", qualityMode);
   body.append("include_map", "true");
   if (hint.trim()) body.append("hint", hint.trim());
-  return secureFetch("/api/v1/scenes/analyze", csrfToken, { method: "POST", body });
+  return secureFetch("/api/v1/scenes/analyze", csrfToken, { method: "POST", body }, { timeoutMs: qualityMode === "astra_max" ? 2_460_000 : 660_000, ...options });
 }
 
-export function downloadReadyRoblox(file: RobloxFile): void {
+export async function downloadReadyRoblox(file: RobloxFile): Promise<void> {
   if (file.encoding !== "base64") throw new Error(`Unsupported map encoding: ${file.encoding}`);
 
   const binary = window.atob(file.data);
   const bytes = new Uint8Array(binary.length);
   for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
+  if (bytes.byteLength !== file.byte_size) throw new Error("The downloaded map is incomplete. Please rebuild it.");
+  const digest = await crypto.subtle.digest("SHA-256", bytes);
+  const checksum = Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
+  if (checksum !== file.sha256) throw new Error("The map checksum does not match. Please rebuild it.");
   const url = URL.createObjectURL(new Blob([bytes], { type: file.media_type }));
   const link = document.createElement("a");
   link.href = url;
@@ -166,27 +242,22 @@ export function downloadReadyRoblox(file: RobloxFile): void {
   window.setTimeout(() => URL.revokeObjectURL(url), 1_000);
 }
 
-export async function compileScene(sceneSpec: Record<string, unknown>, csrfToken: string): Promise<SceneResponse> {
+export async function compileScene(sceneSpec: Record<string, unknown>, csrfToken: string, options: RequestOptions = {}): Promise<SceneResponse> {
   return secureFetch("/api/v1/scenes/compile", csrfToken, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ scene_spec: sceneSpec, include_map: true }),
-  });
+  }, options);
 }
 
-export async function downloadRoblox(sceneSpec: Record<string, unknown>): Promise<void> {
-  const response = await fetch("/api/v1/scenes/export", {
+export async function downloadRoblox(sceneSpec: Record<string, unknown>, csrfToken = ""): Promise<void> {
+  const { blob, disposition } = await secureRequest("/api/v1/scenes/export", csrfToken, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", Accept: "application/xml" },
     body: JSON.stringify({ scene_spec: sceneSpec }),
-  });
-  if (!response.ok) {
-    const payload = (await response.json()) as ApiErrorPayload;
-    throw new ApiError(payload, response.status);
-  }
-  const disposition = response.headers.get("Content-Disposition") || "";
+  }, {}, async (response) => ({ blob: await response.blob(), disposition: response.headers.get("Content-Disposition") || "" }));
   const filename = disposition.match(/filename="?([^";]+)"?/)?.[1] || "roblox-scene.rbxlx";
-  const url = URL.createObjectURL(await response.blob());
+  const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
   link.download = filename;

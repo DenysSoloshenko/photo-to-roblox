@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Trans, useTranslation } from "react-i18next";
-import { analyzePhoto, compileScene, downloadReadyRoblox, getSession, listNotifications, loginAccount, logoutAccount, registerAccount, requestPasswordReset, resetPassword, startOAuth } from "./api";
+import { analyzePhoto, compileScene, downloadReadyRoblox, fetchJson, getSession, listNotifications, loginAccount, logoutAccount, registerAccount, requestPasswordReset, resetPassword, startOAuth } from "./api";
 import type { QualityMode } from "./api";
 import i18n from "./i18n";
 import { AdminQueue, CreateOrderPage, OrdersPage } from "./OrderWorkflow";
@@ -43,6 +43,7 @@ export default function App() {
   const [oauthProviders, setOauthProviders] = useState<OAuthProviderStatus[]>([]);
   const [authOpen, setAuthOpen] = useState(Boolean(initialResetToken));
   const [sessionLoading, setSessionLoading] = useState(true);
+  const [sessionError, setSessionError] = useState<string | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
   const activeLanguage: Language = i18n.resolvedLanguage?.startsWith("fr") ? "fr" : "en";
 
@@ -52,6 +53,9 @@ export default function App() {
       setUser(session.user);
       setCsrfToken(session.csrf_token);
       setOauthProviders(session.oauth_providers);
+      setSessionError(null);
+    } catch (reason) {
+      setSessionError(errorText(reason, "Could not load your session."));
     } finally {
       setSessionLoading(false);
     }
@@ -83,9 +87,13 @@ export default function App() {
 
   const changeLanguage = (language: Language) => void i18n.changeLanguage(language);
   const logOut = async () => {
-    await logoutAccount(csrfToken);
-    await refreshSession();
-    setView("create");
+    try {
+      await logoutAccount(csrfToken);
+      setUser(null);
+      setCsrfToken("");
+      setView("create");
+      await refreshSession();
+    } catch (reason) { setSessionError(errorText(reason, t("errors.unknown"))); }
   };
 
   const closeAuth = () => {
@@ -124,9 +132,10 @@ export default function App() {
         </div>
       </header>
 
+      {sessionError && <div className="error-box" role="alert">{sessionError} <button onClick={() => void refreshSession()}>{t("orders.refresh")}</button></div>}
       {view === "create" && <CreateOrderPage user={user} csrfToken={csrfToken} onAuth={() => setAuthOpen(true)} onCreated={() => setView("orders")} />}
-      {view === "orders" && user && <OrdersPage csrfToken={csrfToken} />}
-      {view === "admin" && user?.admin && <AdminQueue csrfToken={csrfToken} />}
+      {view === "orders" && user && <OrdersPage key={user.id} csrfToken={csrfToken} />}
+      {view === "admin" && user?.admin && <AdminQueue key={user.id} csrfToken={csrfToken} />}
 
       {authOpen && <AuthDialog csrfToken={csrfToken} providers={oauthProviders} resetToken={initialResetToken} onClose={closeAuth} onAuthenticated={(response) => {
         setUser(response.user);
@@ -220,11 +229,13 @@ function GeneratorLab({ csrfToken, onExit }: { csrfToken: string; onExit: () => 
   const [error, setError] = useState<string | null>(null);
   const [resetToken, setResetToken] = useState(0);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const activeRequest = useRef<AbortController | null>(null);
+  useEffect(() => () => activeRequest.current?.abort(), []);
   const [visionStatus, setVisionStatus] = useState<{ configured: boolean; model: string; reasoningEffort?: string; refinementEnabled: boolean; astraEnabled: boolean; examplesEnabled: boolean } | null>(null);
 
   useEffect(() => {
-    fetch("/api/v1/status")
-      .then((response) => response.json())
+    const controller = new AbortController();
+    fetchJson<{ vision_configured: boolean; vision_model: string; vision_reasoning_effort?: string; vision_refinement_enabled: boolean; astra_quality_enabled: boolean; development_examples_enabled: boolean }>("/api/v1/status", { signal: controller.signal })
       .then((body) => setVisionStatus({
         configured: Boolean(body.vision_configured),
         model: String(body.vision_model),
@@ -233,7 +244,8 @@ function GeneratorLab({ csrfToken, onExit }: { csrfToken: string; onExit: () => 
         astraEnabled: Boolean(body.astra_quality_enabled),
         examplesEnabled: Boolean(body.development_examples_enabled),
       }))
-      .catch(() => setVisionStatus(null));
+      .catch((reason) => { if (!controller.signal.aborted) { setVisionStatus(null); setError(errorText(reason, "Could not load AI Lab status.")); } });
+    return () => controller.abort();
   }, []);
 
   useEffect(() => () => {
@@ -257,55 +269,41 @@ function GeneratorLab({ csrfToken, onExit }: { csrfToken: string; onExit: () => 
     setPhotoUrl(file ? URL.createObjectURL(file) : null);
   };
 
-  const analyze = async () => {
-    if (!photo) return setError(t("errors.choosePhoto"));
-    setStatus("analyzing");
+  const runSceneRequest = async (nextStatus: Status, operation: (signal: AbortSignal) => Promise<SceneResponse>) => {
+    if (activeRequest.current) return;
+    const controller = new AbortController();
+    activeRequest.current = controller;
+    setStatus(nextStatus);
+    setRobloxFile(null);
     setError(null);
     try {
-      receiveScene(await analyzePhoto(photo, hint, qualityMode, csrfToken));
+      const response = await operation(controller.signal);
+      if (!controller.signal.aborted) receiveScene(response);
     } catch (reason) {
-      setError(errorText(reason, t("errors.unknown")));
-      setStatus("idle");
+      if (!controller.signal.aborted) { setError(errorText(reason, t("errors.unknown"))); setStatus("idle"); }
+    } finally {
+      if (activeRequest.current === controller) activeRequest.current = null;
     }
   };
 
-  const rebuild = async () => {
-    setStatus("building");
-    setError(null);
-    try {
-      const response = await compileScene(JSON.parse(editor) as Record<string, unknown>, csrfToken);
-      setSceneIr(response.scene_ir);
-      setRobloxFile(response.roblox_file || null);
-      setMetrics((current) => ({ ...current, ...response.metrics }));
-      setStatus("ready");
-    } catch (reason) {
-      setError(errorText(reason, t("errors.unknown")));
-      setStatus("ready");
-    }
+  const analyze = async () => {
+    if (!photo) return setError(t("errors.choosePhoto"));
+    await runSceneRequest("analyzing", (signal) => analyzePhoto(photo, hint, qualityMode, csrfToken, { signal }));
   };
+
+  const rebuild = () => runSceneRequest("building", (signal) => compileScene(JSON.parse(editor) as Record<string, unknown>, csrfToken, { signal }));
 
   const download = async () => {
     setError(null);
     try {
       if (!robloxFile) throw new Error(t("errors.rebuildBeforeDownload"));
-      downloadReadyRoblox(robloxFile);
+      await downloadReadyRoblox(robloxFile);
     } catch (reason) {
       setError(errorText(reason, t("errors.unknown")));
     }
   };
 
-  const loadDevelopmentScene = async () => {
-    setStatus("building");
-    setError(null);
-    try {
-      const response = await fetch("/api/v1/scenes/examples/garden?include_map=true");
-      if (!response.ok) throw new Error(t("errors.developmentUnavailable"));
-      receiveScene((await response.json()) as SceneResponse);
-    } catch (reason) {
-      setError(errorText(reason, t("errors.unknown")));
-      setStatus("idle");
-    }
-  };
+  const loadDevelopmentScene = () => runSceneRequest("building", (signal) => fetchJson<SceneResponse>("/api/v1/scenes/examples/garden?include_map=true", { signal }));
 
   const changeLanguage = (language: Language) => {
     void i18n.changeLanguage(language);
@@ -347,11 +345,11 @@ function GeneratorLab({ csrfToken, onExit }: { csrfToken: string; onExit: () => 
           <p className="lede">{t("upload.lede")}</p>
           <label className={`dropzone ${photoUrl ? "has-photo" : ""}`}>
             {photoUrl ? <img src={photoUrl} alt={t("upload.selectedAlt")} /> : <span className="drop-icon">↥</span>}
-            <input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => choosePhoto(event.target.files?.[0] || null)} />
+            <input type="file" disabled={busy} accept="image/jpeg,image/png,image/webp" onChange={(event) => choosePhoto(event.target.files?.[0] || null)} />
             <span className="drop-copy"><strong>{photo ? photo.name : t("upload.choose")}</strong><small>{t("upload.formats")}</small></span>
           </label>
           <label className="field-label" htmlFor="hint">{t("upload.hintLabel")} <span>{t("upload.optional")}</span></label>
-          <textarea id="hint" value={hint} onChange={(event) => setHint(event.target.value)} placeholder={t("upload.hintPlaceholder")} rows={4} />
+          <textarea disabled={busy} id="hint" value={hint} onChange={(event) => setHint(event.target.value)} placeholder={t("upload.hintPlaceholder")} rows={4} />
           <label className="field-label quality-label" htmlFor="quality-mode">{t("quality.label")}</label>
           <select id="quality-mode" className="quality-select" value={qualityMode} onChange={(event) => setQualityMode(event.target.value as QualityMode)} disabled={busy}>
             <option value="terra">{t("quality.terraOption")}</option>
@@ -389,7 +387,7 @@ function GeneratorLab({ csrfToken, onExit }: { csrfToken: string; onExit: () => 
         <aside className="panel editor-panel">
           <div className="editor-heading"><div><span className="eyebrow">{t("editor.step")}</span><h2>{t("editor.title")}</h2></div><span className="schema-pill">v1.1</span></div>
           <p>{t("editor.description")}</p>
-          <textarea className="json-editor" aria-label="SceneSpec JSON" spellCheck={false} value={editor} onChange={(event) => { setEditor(event.target.value); setRobloxFile(null); }} placeholder={t("editor.placeholder")} />
+          <textarea disabled={busy} className="json-editor" aria-label="SceneSpec JSON" spellCheck={false} value={editor} onChange={(event) => { setEditor(event.target.value); setRobloxFile(null); }} placeholder={t("editor.placeholder")} />
           <div className="editor-actions">
             <button className="secondary-button" onClick={rebuild} disabled={!editor || busy}>{status === "building" ? t("editor.building") : t("editor.rebuild")}</button>
             <button className="download-button" onClick={download} disabled={!robloxFile || busy}>{t("editor.download")}</button>

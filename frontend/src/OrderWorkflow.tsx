@@ -1,3 +1,4 @@
+import { useOrderPolling } from "./useOrderPolling";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -143,35 +144,16 @@ export function CreateOrderPage({ user, csrfToken, onAuth, onCreated }: { user: 
 
 export function OrdersPage({ csrfToken }: { csrfToken: string }) {
   const { t } = useTranslation();
-  const [orders, setOrders] = useState<ManualOrder[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { orders, loading, error, setError, load, applyOrder } = useOrderPolling(listOrders, 20_000);
   const [busy, setBusy] = useState<{ id: string; action: OrderAction } | null>(null);
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
-
-  const load = useCallback(async () => {
-    try {
-      setOrders((await listOrders()).orders);
-      setError(null);
-    } catch (reason) {
-      setError(errorText(reason, t("errors.unknown")));
-    } finally {
-      setLoading(false);
-    }
-  }, [t]);
-
-  useEffect(() => {
-    void load();
-    const interval = window.setInterval(() => void load(), 20_000);
-    return () => window.clearInterval(interval);
-  }, [load]);
 
   const authorize = async (order: ManualOrder) => {
     setBusy({ id: order.public_id, action: "authorize" });
     setError(null);
     try {
       const response = await authorizeOrderPayment(csrfToken, order.public_id);
-      setOrders((all) => all.map((item) => item.public_id === order.public_id ? response.order : item));
+      applyOrder(response.order);
       if (!response.checkout_url) throw new Error(t("orders.checkoutUnavailable"));
       window.location.assign(response.checkout_url);
     } catch (reason) {
@@ -190,7 +172,7 @@ export function OrdersPage({ csrfToken }: { csrfToken: string }) {
       setError(null);
       try {
         const response = await cancelOrder(csrfToken, order.public_id);
-        setOrders((all) => all.map((item) => item.public_id === order.public_id ? response.order : item));
+        applyOrder(response.order);
       } catch (reason) {
         setError(errorText(reason, t("errors.unknown")));
       } finally {
@@ -228,25 +210,8 @@ function OrderPreviewModal({ order, onClose }: { order: ManualOrder; onClose: ()
 
 export function AdminQueue({ csrfToken }: { csrfToken: string }) {
   const { t } = useTranslation();
-  const [orders, setOrders] = useState<ManualOrder[]>([]);
+  const { orders, loading, error, load } = useOrderPolling(listAdminOrders, 15_000);
   const [filter, setFilter] = useState<OrderFilter>("all");
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const load = useCallback(async () => {
-    try {
-      setOrders((await listAdminOrders()).orders);
-      setError(null);
-    } catch (reason) {
-      setError(errorText(reason, t("errors.unknown")));
-    } finally {
-      setLoading(false);
-    }
-  }, [t]);
-  useEffect(() => {
-    void load();
-    const interval = window.setInterval(() => void load(), 15_000);
-    return () => window.clearInterval(interval);
-  }, [load]);
   const filters: OrderFilter[] = ["all", "pending_review", "in_progress", "completed", "failed"];
   const visibleOrders = filter === "all" ? orders : orders.filter((order) => order.workflow_state === filter);
   const countFor = (value: OrderFilter) => value === "all" ? orders.length : orders.filter((order) => order.workflow_state === value).length;
