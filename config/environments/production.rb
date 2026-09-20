@@ -50,7 +50,11 @@ Rails.application.configure do
   # the I18n.default_locale when a translation cannot be found).
   config.i18n.fallbacks = true
   config.active_storage.service = ENV.fetch("ACTIVE_STORAGE_SERVICE", "local").to_sym
-  if ENV["SMTP_ADDRESS"].present?
+  if ENV["RESEND_API_KEY"].present?
+    # Render free services block outbound SMTP ports. Resend uses HTTPS, which
+    # also gives us provider-side delivery logs and idempotent sends.
+    config.action_mailer.delivery_method = :resend_api
+  elsif ENV["SMTP_ADDRESS"].present?
     config.action_mailer.delivery_method = :smtp
     config.action_mailer.smtp_settings = {
       address: ENV.fetch("SMTP_ADDRESS"),
@@ -62,7 +66,7 @@ Rails.application.configure do
       enable_starttls_auto: ActiveModel::Type::Boolean.new.cast(ENV.fetch("SMTP_ENABLE_STARTTLS_AUTO", "true"))
     }
   else
-    # Keep preview deployments bootable without SMTP credentials. Order-ready
+    # Keep preview deployments bootable without delivery credentials. Order-ready
     # notifications still appear in-app; configure a production mail provider
     # before accepting customer orders.
     config.action_mailer.delivery_method = :test

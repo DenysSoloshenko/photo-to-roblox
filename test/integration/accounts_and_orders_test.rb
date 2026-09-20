@@ -152,13 +152,16 @@ class AccountsAndOrdersTest < ActionDispatch::IntegrationTest
   test "requests a password reset without revealing whether the account exists" do
     register
 
-    assert_enqueued_emails 1 do
+    assert_difference -> { ActionMailer::Base.deliveries.size }, 1 do
       post "/api/v1/auth/password/forgot", params: { email: "denys@example.com" }, headers: csrf_headers, as: :json
     end
     assert_response :accepted
     assert_equal "password_reset_instructions_sent", response.parsed_body.fetch("message")
+    reset_email = ActionMailer::Base.deliveries.last
+    assert_equal ["denys@example.com"], reset_email.to
+    assert_includes reset_email.text_part.body.decoded, "?reset_token="
 
-    assert_no_enqueued_emails do
+    assert_no_difference -> { ActionMailer::Base.deliveries.size } do
       post "/api/v1/auth/password/forgot", params: { email: "missing@example.com" }, headers: csrf_headers, as: :json
     end
     assert_response :accepted

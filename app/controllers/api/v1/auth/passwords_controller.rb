@@ -8,7 +8,7 @@ module Api
           user = User.find_by("lower(email) = ?", params[:email].to_s.strip.downcase)
           if user
             token = user.issue_password_reset!
-            AccountMailer.with(user: user, token: token).password_reset.deliver_later
+            deliver_password_reset(user, token)
           end
 
           render json: { ok: true, message: "password_reset_instructions_sent" }, status: :accepted
@@ -33,6 +33,19 @@ module Api
               render json: { errors: user.errors.to_hash }, status: :unprocessable_entity
             end
           end
+        end
+
+        private
+
+        def deliver_password_reset(user, token)
+          # Password reset email is deliberately delivered inside the request.
+          # The default in-memory Active Job queue is not durable across Render
+          # restarts and can otherwise lose security-critical messages.
+          AccountMailer.with(user: user, token: token).password_reset.deliver_now
+        rescue StandardError => error
+          # Always return the same response for known and unknown addresses.
+          # Log only the exception type, never the address or reset token.
+          Rails.logger.error("password_reset_delivery_failed error_class=#{error.class}")
         end
       end
     end

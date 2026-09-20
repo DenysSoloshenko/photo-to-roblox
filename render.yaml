@@ -36,6 +36,10 @@ services:
         sync: false
       - key: MAIL_FROM
         value: SceneFoundry <orders@scenefoundry.app>
+      - key: RESEND_API_KEY
+        sync: false
+      - key: RESEND_API_URL
+        value: https://api.resend.com/emails
       - key: SMTP_ADDRESS
         sync: false
       - key: SMTP_PORT
