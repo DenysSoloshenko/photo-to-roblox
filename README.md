@@ -12,11 +12,21 @@ The production workflow does not require a user to write JSON or custom code for
 
 ## Production readiness review
 
+The current release adds an [open-data neighbourhood case](docs/case-study-springer-park.md) and a refreshed [seven-step launch checklist](docs/launch-checklist-2026-09-20.md). The September 16 review below is historical; its code has since reached the Render release branch.
+
 The September 16 review fixes verified admin access, account recovery, frontend request handling, Vision retries, checkout navigation, stale payment events, and vulnerable Ruby dependencies. It adds CI and defers the 3D bundle until a preview is opened. See [the detailed production checklist](docs/production-readiness-2026-09-16.md) for deployment blockers, acceptance criteria, verification evidence, and commit history.
 
-Current local verification: **84 Rails tests / 495 assertions**, **10 API-client tests**, TypeScript and production build passing; npm and Ruby dependency audits have no known advisory matches. These checks do not replace staging tests of Stripe, mail, S3, the production Ruby runtime, or real Roblox Studio output. Existing admin accounts need verified Google sign-in or an emailed password reset after the new migration.
+Current local verification (September 20): **86 Rails tests / 515 assertions**, **15 frontend/API and case-asset tests**, TypeScript and production build passing. The September 16 dependency audits had no known advisory matches; CI repeats the audits on every push. These checks do not replace staging tests of Stripe, mail, S3, the production Ruby runtime, or real Roblox Studio output. Existing admin accounts need verified Google sign-in or an emailed password reset after the new migration.
 
 ## Visual Gallery
+
+### Springer Park — open-data neighbourhood study
+
+[Explore the public case](https://scenefoundry-roblox.onrender.com/?case=springer-park) · [60-second captioned walkthrough](frontend/public/cases/springer-park/SceneFoundry_Case_Walkthrough.mp4) · [Editable Roblox place](frontend/public/cases/springer-park/Springer_Park_Open_Data.rbxlx)
+
+![Springer Park procedural neighbourhood rendered in Three.js](frontend/public/cases/springer-park/overview.png)
+
+Map data © [OpenStreetMap contributors](https://www.openstreetmap.org/copyright), ODbL 1.0. This independent open-data rebuild has 20 building footprints and 5,682 parts; its original procedural facades do not use Google imagery. It demonstrates an operator-built vector-to-Roblox workflow, not a delivered customer order or a live AI result. The downloadable source/derived databases, limitations and Studio QA still required are documented in [the case methods](docs/case-study-springer-park.md).
 
 ### End-to-end order demo
 

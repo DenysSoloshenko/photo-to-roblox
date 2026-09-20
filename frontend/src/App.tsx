@@ -4,6 +4,7 @@ import { analyzePhoto, compileScene, downloadReadyRoblox, fetchJson, getSession,
 import type { QualityMode } from "./api";
 import i18n from "./i18n";
 import { AdminQueue, CreateOrderPage, OrdersPage } from "./OrderWorkflow";
+import CaseStudyPage from "./CaseStudyPage";
 import SceneViewer from "./ScenePreview";
 import type { AccountUser, Metrics, OAuthProviderStatus, RobloxFile, SceneIR, SceneResponse } from "./types";
 
@@ -32,12 +33,19 @@ function errorText(error: unknown, fallback: string) {
   return error instanceof Error ? error.message : fallback;
 }
 
-type PortalView = "create" | "orders" | "admin" | "lab";
+type PortalView = "create" | "orders" | "admin" | "lab" | "case";
 
 export default function App() {
   const { t } = useTranslation();
   const initialResetToken = new URLSearchParams(window.location.search).get("reset_token") || "";
-  const [view, setView] = useState<PortalView>(() => new URLSearchParams(window.location.search).has("order") ? "orders" : "create");
+  const [view, setView] = useState<PortalView>(() => new URLSearchParams(window.location.search).has("order") ? "orders" : new URLSearchParams(window.location.search).get("case") === "springer-park" ? "case" : "create");
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (view !== "case" && url.searchParams.has("case")) {
+      url.searchParams.delete("case");
+      window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
+    }
+  }, [view]);
   const [user, setUser] = useState<AccountUser | null>(null);
   const [csrfToken, setCsrfToken] = useState("");
   const [oauthProviders, setOauthProviders] = useState<OAuthProviderStatus[]>([]);
@@ -116,6 +124,7 @@ export default function App() {
         </button>
         <nav className="portal-nav" aria-label={t("portal.navLabel")}>
           <button className={view === "create" ? "active" : ""} onClick={() => setView("create")}>{t("portal.create")}</button>
+          <a className={view === "case" ? "active" : ""} href="/?case=springer-park">{activeLanguage === "fr" ? "Étude de cas" : "Case study"}</a>
           {user && <button className={view === "orders" ? "active" : ""} onClick={() => setView("orders")}>{t("portal.orders")}</button>}
           {user?.admin && <button className={view === "admin" ? "active" : ""} onClick={() => setView("admin")}>{t("portal.queue")}</button>}
           {user?.admin && <button onClick={() => setView("lab")}>{t("portal.lab")}</button>}
@@ -134,6 +143,7 @@ export default function App() {
 
       {sessionError && <div className="error-box" role="alert">{sessionError} <button onClick={() => void refreshSession()}>{t("orders.refresh")}</button></div>}
       {view === "create" && <CreateOrderPage user={user} csrfToken={csrfToken} onAuth={() => setAuthOpen(true)} onCreated={() => setView("orders")} />}
+      {view === "case" && <CaseStudyPage />}
       {view === "orders" && user && <OrdersPage key={user.id} csrfToken={csrfToken} />}
       {view === "admin" && user?.admin && <AdminQueue key={user.id} csrfToken={csrfToken} />}
 

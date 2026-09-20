@@ -44,11 +44,12 @@ export default function SceneViewer({ sceneIr, resetToken, onSelect }: Props) {
     const host = hostRef.current;
     if (!host || !sceneIr) return;
 
+    const extent = Math.max(sceneIr.bounds.width, sceneIr.bounds.depth, 110);
     const scene = new THREE.Scene();
     scene.background = new THREE.Color("#b9d7df");
-    scene.fog = new THREE.Fog("#b9d7df", 180, 520);
-    const camera = new THREE.PerspectiveCamera(sceneIr.camera.fov, 1, 0.1, 1_000);
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    scene.fog = new THREE.Fog("#b9d7df", Math.max(180, extent * 1.8), Math.max(520, extent * 4));
+    const camera = new THREE.PerspectiveCamera(sceneIr.camera.fov, 1, 0.1, Math.max(1_000, extent * 8));
+    const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: import.meta.env.DEV });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -71,20 +72,33 @@ export default function SceneViewer({ sceneIr, resetToken, onSelect }: Props) {
 
     scene.add(new THREE.HemisphereLight("#e9f8ff", "#58604b", 1.55));
     const sun = new THREE.DirectionalLight("#fff1d4", 2.1);
-    sun.position.set(70, 105, 50);
+    sun.position.set(extent * .65, extent, extent * .45);
     sun.castShadow = true;
     sun.shadow.mapSize.set(2_048, 2_048);
-    sun.shadow.camera.left = -110;
-    sun.shadow.camera.right = 110;
-    sun.shadow.camera.top = 110;
-    sun.shadow.camera.bottom = -110;
+    sun.shadow.bias = -0.0002;
+    sun.shadow.normalBias = Math.max(0.03, extent / 1400);
+    sun.shadow.camera.left = -extent;
+    sun.shadow.camera.right = extent;
+    sun.shadow.camera.top = extent;
+    sun.shadow.camera.bottom = -extent;
+    sun.shadow.camera.far = extent * 4;
     scene.add(sun);
 
     const sceneGroup = new THREE.Group();
     sceneGroup.name = sceneIr.name;
     scene.add(sceneGroup);
-    const selectables: THREE.Mesh[] = [];
+    const selectables: THREE.InstancedMesh[] = [];
+    const buckets = new Map<string, ScenePart[]>();
     for (const part of sceneIr.parts) {
+      if (part.transparency >= .99) continue;
+      const key = JSON.stringify([part.shape, part.material, part.color, part.transparency, part.cast_shadow]);
+      const bucket = buckets.get(key) || [];
+      bucket.push(part);
+      buckets.set(key, bucket);
+    }
+    const transform = new THREE.Object3D();
+    for (const rows of buckets.values()) {
+      const part = rows[0];
       const material = new THREE.MeshStandardMaterial({
         color: new THREE.Color(part.color),
         transparent: part.transparency > 0,
@@ -94,17 +108,17 @@ export default function SceneViewer({ sceneIr, resetToken, onSelect }: Props) {
         side: THREE.DoubleSide,
         depthWrite: part.transparency < 0.5,
       });
-      const mesh = new THREE.Mesh(geometryFor(part), material);
-      mesh.name = part.id;
-      mesh.userData.sourceId = part.source_id;
-      mesh.position.fromArray(part.position);
-      mesh.scale.fromArray(part.size);
-      mesh.rotation.set(
-        THREE.MathUtils.degToRad(part.rotation[0]),
-        THREE.MathUtils.degToRad(part.rotation[1]),
-        THREE.MathUtils.degToRad(part.rotation[2]),
-        "YXZ",
-      );
+      const mesh = new THREE.InstancedMesh(geometryFor(part), material, rows.length);
+      mesh.userData.sourceIds = rows.map(row => row.source_id);
+      rows.forEach((row, index) => {
+        transform.position.fromArray(row.position);
+        transform.scale.fromArray(row.size);
+        transform.rotation.set(THREE.MathUtils.degToRad(row.rotation[0]), THREE.MathUtils.degToRad(row.rotation[1]), THREE.MathUtils.degToRad(row.rotation[2]), "YXZ");
+        transform.updateMatrix();
+        mesh.setMatrixAt(index, transform.matrix);
+      });
+      mesh.instanceMatrix.needsUpdate = true;
+      mesh.computeBoundingSphere();
       mesh.castShadow = part.cast_shadow && part.transparency < 0.9;
       mesh.receiveShadow = true;
       mesh.visible = part.transparency < 0.99;
@@ -126,7 +140,7 @@ export default function SceneViewer({ sceneIr, resetToken, onSelect }: Props) {
       pointer.y = -((event.clientY - bounds.top) / bounds.height) * 2 + 1;
       raycaster.setFromCamera(pointer, camera);
       const hit = raycaster.intersectObjects(selectables, false)[0];
-      onSelect(hit ? String(hit.object.userData.sourceId) : null);
+      onSelect(hit && hit.instanceId !== undefined ? String(hit.object.userData.sourceIds[hit.instanceId]) : null);
     };
     renderer.domElement.addEventListener("pointerdown", handlePointer);
 
@@ -139,6 +153,20 @@ export default function SceneViewer({ sceneIr, resetToken, onSelect }: Props) {
     const observer = new ResizeObserver(resize);
     observer.observe(host);
     resize();
+    // Local authoring aid only; omitted from production builds.
+    const captureButton = import.meta.env.DEV ? document.createElement("button") : null;
+    if (captureButton) {
+      captureButton.textContent = "Save preview PNG";
+      captureButton.style.cssText = "position:absolute;right:12px;top:12px;z-index:2;padding:8px 12px;border-radius:8px;border:1px solid #abc;background:#fff;cursor:pointer";
+      captureButton.onclick = () => {
+        renderer.render(scene, camera);
+        const link = document.createElement("a");
+        link.download = "scenefoundry-preview.png";
+        link.href = renderer.domElement.toDataURL("image/png");
+        link.click();
+      };
+      host.appendChild(captureButton);
+    }
     renderer.setAnimationLoop(() => {
       controls.update();
       renderer.render(scene, camera);
@@ -150,6 +178,9 @@ export default function SceneViewer({ sceneIr, resetToken, onSelect }: Props) {
       renderer.setAnimationLoop(null);
       renderer.domElement.removeEventListener("pointerdown", handlePointer);
       controls.dispose();
+      grid.geometry.dispose();
+      (grid.material as THREE.Material).dispose();
+      captureButton?.remove();
       scene.traverse((object) => {
         if (object instanceof THREE.Mesh) {
           object.geometry.dispose();

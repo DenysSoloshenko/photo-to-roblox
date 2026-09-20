@@ -58,7 +58,7 @@ function formatMoney(cents: number, currency: string, locale: string) {
 }
 
 export function CreateOrderPage({ user, csrfToken, onAuth, onCreated }: { user: AccountUser | null; csrfToken: string; onAuth: () => void; onCreated: () => void }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [photos, setPhotos] = useState<File[]>([]);
   const [title, setTitle] = useState("");
   const [sceneType, setSceneType] = useState("other");
@@ -107,6 +107,8 @@ export function CreateOrderPage({ user, csrfToken, onAuth, onCreated }: { user: 
         </div>
         <div className="hero-art" aria-hidden="true"><span>photo</span><b>→</b><span>world</span></div>
       </section>
+
+      <a href="/?case=springer-park" className="case-teaser"><img src="/cases/springer-park/overview.png" alt="Springer Park open-data map study" width="320" height="200" loading="lazy" /><div><span className="eyebrow">{i18n.resolvedLanguage?.startsWith("fr") ? "Démonstration avec données ouvertes" : "Open-data case study"}</span><strong>{i18n.resolvedLanguage?.startsWith("fr") ? "D’un quartier à un monde modifiable" : "From a neighbourhood to an editable world"}</strong><span>{i18n.resolvedLanguage?.startsWith("fr") ? "Découvrez le résultat, la méthode et ses limites." : "Explore the result, the process and its limitations."}</span></div><b aria-hidden="true">↗</b></a>
 
       <section className="order-layout">
         <form className="order-form surface" onSubmit={submit}>

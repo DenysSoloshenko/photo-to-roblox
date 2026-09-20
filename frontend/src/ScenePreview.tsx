@@ -5,6 +5,6 @@ import { useTranslation } from "react-i18next";
 const SceneViewer = lazy(() => import("./SceneViewer"));
 
 export default function ScenePreview(props: ComponentProps<typeof SceneViewer>) {
-  const { t } = useTranslation();
-  return <Suspense fallback={<p role="status">{t("orders.loading")}</p>}><SceneViewer {...props} /></Suspense>;
+  const { i18n } = useTranslation();
+  return <Suspense fallback={<p role="status">{i18n.resolvedLanguage?.startsWith("fr") ? "Chargement de l’aperçu 3D…" : "Loading the 3D preview…"}</p>}><SceneViewer {...props} /></Suspense>;
 }
