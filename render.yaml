@@ -23,11 +23,11 @@ services:
       - key: SECRET_KEY_BASE
         generateValue: true
       - key: APP_URL
-        value: https://scenefoundry-roblox.onrender.com
+        value: https://scenefoundry.app
       - key: API_URL
-        value: https://scenefoundry-roblox.onrender.com
+        value: https://scenefoundry.app
       - key: APP_HOST
-        value: scenefoundry-roblox.onrender.com
+        value: scenefoundry.app
       - key: ADMIN_EMAILS
         value: den.solosh73@gmail.com
       - key: GOOGLE_CLIENT_ID
@@ -45,7 +45,7 @@ services:
       - key: SMTP_PORT
         value: "587"
       - key: SMTP_DOMAIN
-        value: scenefoundry-roblox.onrender.com
+        value: scenefoundry.app
       - key: SMTP_USERNAME
         sync: false
       - key: SMTP_PASSWORD
