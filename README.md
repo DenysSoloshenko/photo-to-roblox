@@ -2,6 +2,8 @@
 
 SceneFoundry is a manual-first service for turning photographs of real locations into editable Roblox places, with a separate admin-only AI Lab for experiments.
 
+[**Open SceneFoundry**](https://scenefoundry.app) · [Springer Park live case](https://scenefoundry.app/?case=springer-park)
+
 The customer-facing beta uses a reservation-first offer: creating the request is free, Stripe places a $19 authorization hold, and an operator either approves the photos and captures it or rejects the request and releases the hold. Approved maps are built manually, uploaded by the operator, and remain private until final delivery.
 
 The separate AI Lab keeps the automated pipeline available for internal experiments:
@@ -16,15 +18,26 @@ The current release adds an [open-data neighbourhood case](docs/case-study-sprin
 
 The September 16 review fixes verified admin access, account recovery, frontend request handling, Vision retries, checkout navigation, stale payment events, and vulnerable Ruby dependencies. It adds CI and defers the 3D bundle until a preview is opened. See [the detailed production checklist](docs/production-readiness-2026-09-16.md) for deployment blockers, acceptance criteria, verification evidence, and commit history.
 
-Current local verification (September 20): **86 Rails tests / 515 assertions**, **15 frontend/API and case-asset tests**, TypeScript and production build passing. The September 16 dependency audits had no known advisory matches; CI repeats the audits on every push. These checks do not replace staging tests of Stripe, mail, S3, the production Ruby runtime, or real Roblox Studio output. Existing admin accounts need verified Google sign-in or an emailed password reset after the new migration.
+Current local verification (September 20): **89 Rails tests / 537 assertions**, **15 frontend/API and case-asset tests**, TypeScript and production build passing. The September 16 dependency audits had no known advisory matches; CI repeats the audits on every push. These checks do not replace staging tests of Stripe, S3, or real Roblox Studio output. Production HTTPS and password-reset delivery through Resend are verified on the custom domain. Existing admin accounts need verified Google sign-in or an emailed password reset after the new migration.
 
 ## Visual Gallery
 
 ### Springer Park — open-data neighbourhood study
 
-[Explore the public case](https://scenefoundry-roblox.onrender.com/?case=springer-park) · [60-second captioned walkthrough](frontend/public/cases/springer-park/SceneFoundry_Case_Walkthrough.mp4) · [Editable Roblox place](frontend/public/cases/springer-park/Springer_Park_Open_Data.rbxlx)
+[Explore the public case](https://scenefoundry.app/?case=springer-park) · [60-second captioned walkthrough](frontend/public/cases/springer-park/SceneFoundry_Case_Walkthrough.mp4) · [Editable Roblox place](frontend/public/cases/springer-park/Springer_Park_Open_Data.rbxlx)
 
-![Springer Park procedural neighbourhood rendered in Three.js](frontend/public/cases/springer-park/overview.png)
+<table>
+  <tr>
+    <td width="50%">
+      <img src="frontend/public/cases/springer-park/overview.png" alt="Springer Park procedural neighbourhood overview rendered in Three.js">
+      <br><sub>Full neighbourhood overview</sub>
+    </td>
+    <td width="50%">
+      <img src="frontend/public/cases/springer-park/street.png" alt="Springer Park streets, towers, paths, trees, and landscaped courtyards rendered in Three.js">
+      <br><sub>Street and facade detail</sub>
+    </td>
+  </tr>
+</table>
 
 Map data © [OpenStreetMap contributors](https://www.openstreetmap.org/copyright), ODbL 1.0. This independent open-data rebuild has 20 building footprints and 5,682 parts; its original procedural facades do not use Google imagery. It demonstrates an operator-built vector-to-Roblox workflow, not a delivered customer order or a live AI result. The downloadable source/derived databases, limitations and Studio QA still required are documented in [the case methods](docs/case-study-springer-park.md).
 
@@ -140,12 +153,13 @@ Without an API key, the UI blocks photograph analysis and explains why. The deve
 
 Customer orders do not need an OpenAI key. The key and Astra flags are used only by the admin-only AI Lab. PostgreSQL is required. In development, notification emails are written to `tmp/mails` unless SMTP variables are supplied. Every address in `ADMIN_EMAILS` receives the full new-order notification; an account with one of those addresses gains admin access only after verified Google sign-in or a successful password reset sent to that mailbox. Existing accounts must complete one of these verification flows after upgrading; the migration does not trust previously entered email addresses. First-time Google verification removes any unverified password and revokes old sessions to prevent account pre-registration attacks.
 
-### Render preview deployment
+### Production deployment
 
 The checked-in `render.yaml` deploys the React build and Rails API as one free
 Render web service with a free PostgreSQL database. Render prompts for
 `OPENAI_API_KEY`; the value is stored only in Render and is never committed.
-The preview URL is `https://scenefoundry-roblox.onrender.com`.
+The production site is [https://scenefoundry.app](https://scenefoundry.app),
+with HTTPS enabled and `www.scenefoundry.app` redirected to the root domain.
 
 This free deployment is intended for validation, not paid production use.
 Render's free PostgreSQL database expires after 30 days, the web service sleeps
@@ -164,9 +178,9 @@ Set `APP_URL` to the browser-facing origin and `API_URL` to the Rails origin. A 
 
 ### SMTP and email templates
 
-In development, Action Mailer writes messages to `tmp/mails` when SMTP is not configured. To send real mail, set `MAIL_FROM`, `SMTP_ADDRESS`, `SMTP_PORT`, `SMTP_DOMAIN`, `SMTP_USERNAME`, `SMTP_PASSWORD`, `SMTP_AUTHENTICATION`, and `SMTP_ENABLE_STARTTLS_AUTO` in `.env` or the deployment environment.
+In development, Action Mailer writes messages to `tmp/mails` when external delivery is not configured. Production uses Resend's HTTPS API with the verified `scenefoundry.app` domain; set `MAIL_FROM` and `RESEND_API_KEY` in the deployment environment. SMTP remains available as a fallback through `SMTP_ADDRESS`, `SMTP_PORT`, `SMTP_DOMAIN`, `SMTP_USERNAME`, `SMTP_PASSWORD`, `SMTP_AUTHENTICATION`, and `SMTP_ENABLE_STARTTLS_AUTO`.
 
-An authenticated admin can inspect the exact rendered templates from **Orders** without sending mail. The available previews are new order, password reset, preview ready, and map ready. Production SMTP intentionally remains disabled until valid provider credentials are supplied; no email password is committed to Git.
+An authenticated admin can inspect the exact rendered templates from **Orders** without sending mail. The available previews are new order, password reset, preview ready, and map ready. No mail-provider credential is committed to Git.
 
 ### Payments and private files
 

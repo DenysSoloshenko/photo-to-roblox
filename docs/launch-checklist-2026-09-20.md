@@ -2,7 +2,7 @@
 
 Updated 2026-09-20. Scope: finish a small, manual-first paid MVP; automated AI generation is a separate milestone. The case study and web deployment are demonstration milestones, not proof that paid production is ready.
 
-The September 16 review is historical: its commits reached the remote release branch, and GitHub has recorded a successful Render deployment at `1b2cf42`. The new case release must likewise be verified against its own deployment SHA. Release branch: `deploy/render-free`; app: https://scenefoundry-roblox.onrender.com.
+The September 16 review is historical: its commits reached the remote release branch, and GitHub has recorded a successful Render deployment at `1b2cf42`. The new case release must likewise be verified against its own deployment SHA. Release branch: `deploy/render-free`; app: https://scenefoundry.app.
 
 ## 1. Approve the offer and budget — owner: Denys
 
