@@ -2,6 +2,7 @@ import { useOrderPolling } from "./useOrderPolling";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
+  ApiError,
   acceptAdminOrder,
   approveAdminOrder,
   authorizeOrderPayment,
@@ -159,7 +160,9 @@ export function OrdersPage({ csrfToken }: { csrfToken: string }) {
       if (!response.checkout_url) throw new Error(t("orders.checkoutUnavailable"));
       window.location.assign(response.checkout_url);
     } catch (reason) {
-      setError(errorText(reason, t("errors.unknown")));
+      setError(reason instanceof ApiError && ["stripe_not_configured", "payment_service_unavailable"].includes(reason.payload.error || "")
+        ? t("orders.checkoutUnavailable")
+        : errorText(reason, t("errors.unknown")));
       setBusy(null);
     }
   };

@@ -2,6 +2,7 @@ class GenerateOrderJob < ApplicationJob
   queue_as :premium_generation
 
   discard_on ActiveJob::DeserializationError
+  retry_on Orders::GenerationGate::LimitExceeded, wait: 5.minutes, attempts: 288
 
   def perform(order_id)
     order = Order.find(order_id)
@@ -9,6 +10,9 @@ class GenerateOrderJob < ApplicationJob
     return unless reservation
 
     Orders::PremiumGenerator.new(order).call
+  rescue Orders::GenerationGate::LimitExceeded
+    # No model call happened. Leave the paid order queued for available capacity.
+    raise
   rescue StandardError => error
     Orders::GenerationFailure.new(order_id, error).record
   end

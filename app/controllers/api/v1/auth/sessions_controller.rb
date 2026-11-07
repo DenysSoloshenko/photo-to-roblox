@@ -33,7 +33,9 @@ module Api
 
         def authenticate_from_cookie
           payload = cookies.encrypted[SESSION_COOKIE]
-          user = User.find_by(id: payload&.fetch("user_id", nil))
+          return unless payload.is_a?(Hash) && payload["user_id"].present?
+
+          user = User.find_by(id: payload["user_id"])
           @current_user = user if user && payload["session_version"].to_i == user.session_version
         end
       end

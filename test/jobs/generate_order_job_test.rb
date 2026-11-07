@@ -80,8 +80,9 @@ class GenerateOrderJobTest < ActiveJob::TestCase
 
     GenerateOrderJob.perform_now(waiting.id)
 
-    assert_equal "failed", waiting.reload.status
-    assert_match(/concurrency limit/, waiting.generation_error)
+    assert_equal "building", waiting.reload.status
+    assert_nil waiting.generation_error
+    assert_enqueued_with(job: GenerateOrderJob, args: [waiting.id])
     assert_equal 0, waiting.generation_attempts
   end
 
@@ -94,9 +95,21 @@ class GenerateOrderJobTest < ActiveJob::TestCase
 
     GenerateOrderJob.perform_now(waiting.id)
 
-    assert_equal "failed", waiting.reload.status
-    assert_match(/daily spend limit/, waiting.generation_error)
+    assert_equal "building", waiting.reload.status
+    assert_nil waiting.generation_error
+    assert_enqueued_with(job: GenerateOrderJob, args: [waiting.id])
     assert_equal 0, waiting.generation_attempts
+  end
+
+  test "failed generation with unknown usage still reserves cost for the day" do
+    ENV["ASTRA_ORDER_DAILY_SPEND_LIMIT_USD"] = "5"
+    failed = paid_building_order("Unknown usage")
+    failed.update!(status: "failed", generation_started_at: 1.minute.ago, generation_finished_at: Time.current)
+    waiting = paid_building_order("Waiting for budget")
+    GenerateOrderJob.perform_now(waiting.id)
+    assert_equal "building", waiting.reload.status
+    assert_nil waiting.generation_started_at
+    assert_enqueued_with(job: GenerateOrderJob, args: [waiting.id])
   end
 
   private

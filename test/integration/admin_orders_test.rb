@@ -45,8 +45,8 @@ class AdminOrdersTest < ActionDispatch::IntegrationTest
     )
     original_key = ENV["STRIPE_SECRET_KEY"]
     ENV["STRIPE_SECRET_KEY"] = "sk_test_local"
-    intent = Struct.new(:id, :status, :amount, :currency, :metadata, :receipt_email)
-      .new("pi_authorized", "succeeded", 1_900, "usd", { "order_public_id" => @order.public_id }, @customer.email)
+    intent = Struct.new(:id, :status, :amount, :currency, :metadata, :receipt_email, :amount_received)
+      .new("pi_authorized", "succeeded", 1_900, "usd", { "order_public_id" => @order.public_id }, @customer.email, 1_900)
     assert_no_enqueued_jobs only: GenerateOrderJob do
       Stripe::PaymentIntent.stub(:capture, intent) do
         post "/api/v1/admin/orders/#{@order.public_id}/accept", headers: csrf_headers
@@ -72,6 +72,15 @@ class AdminOrdersTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_equal "completed", response.parsed_body.dig("order", "workflow_state")
     assert response.parsed_body.dig("order", "result_url").present?
+
+    patch "/api/v1/admin/orders/#{@order.public_id}", params: {
+      result_file: fixture_file_upload("result.rbxlx", "application/xml")
+    }, headers: csrf_headers
+    assert_response :success
+    assert_equal "reviewing", @order.reload.status
+    assert_nil @order.approved_at
+    assert_nil response.parsed_body.dig("order", "result_url")
+    refute @order.can_download?
   ensure
     ENV["STRIPE_SECRET_KEY"] = original_key
   end
@@ -112,7 +121,7 @@ class AdminOrdersTest < ActionDispatch::IntegrationTest
 
     get "/api/v1/admin/email_previews/preview_ready"
     assert_response :success
-    assert_includes response.body, "Your free preview is ready"
+    assert_includes response.body, "Your preview is ready"
 
     get "/api/v1/admin/email_previews/map_ready"
     assert_response :success
@@ -124,6 +133,16 @@ class AdminOrdersTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_equal "payment_pending", @order.reload.status
     assert_equal "Private note", @order.admin_notes
+  end
+
+  test "script-bearing maps are rejected before storing the original file" do
+    xml = file_fixture("result.rbxlx").read.sub("</roblox>", '<Item class="ModuleScript"><Properties/></Item></roblox>')
+    upload = Rack::Test::UploadedFile.new(StringIO.new(xml), "application/xml", original_filename: "unsafe.rbxlx")
+    assert_no_difference -> { ActiveStorage::Blob.count } do
+      patch "/api/v1/admin/orders/#{@order.public_id}", params: { result_file: upload }, headers: csrf_headers
+    end
+    assert_response :unprocessable_entity
+    refute @order.reload.result_file.attached?
   end
 
   private

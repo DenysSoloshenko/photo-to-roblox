@@ -77,7 +77,7 @@ module Payments
         if order.stripe_payment_intent_id.present? && order.stripe_payment_intent_id != intent_id
           raise InvalidEvent, "checkout payment intent does not match order"
         end
-        return if order.payment_status.in?(%w[authorized capture_pending paid])
+        return if order.payment_status.in?(%w[authorized capture_pending paid released refund_pending refunded])
 
         order.update!(stripe_payment_intent_id: intent_id, payment_status: "authorization_pending", payment_error: nil)
       end
@@ -93,6 +93,7 @@ module Payments
           payment_status: "unpaid",
           stripe_checkout_session_id: nil,
           stripe_checkout_url: nil,
+          stripe_payment_intent_id: nil,
           checkout_started_at: nil
         )
       end
@@ -101,7 +102,7 @@ module Payments
     def handle_payment_intent
       order = order_from_payment_intent!
       released_status = order.status == "declined" ? "declined" : "cancelled"
-      Payments::PaymentIntentTransition.apply!(order, object, released_status: released_status)
+      Payments::PaymentIntentTransition.apply!(order, object, released_status: released_status, occurred_at: stripe_created_at || Time.current)
     rescue Payments::PaymentIntentTransition::InvalidTransition, Payments::PaymentIntentValidator::InvalidPayment => error
       raise InvalidEvent, error.message
     end
@@ -118,7 +119,18 @@ module Payments
 
       order.with_lock do
         return if order.payment_status == "refunded"
-        raise InvalidEvent, "uncaptured order cannot be refunded" unless order.payment_status.in?(%w[paid refund_pending])
+        # The signed full-refund event is authoritative even when Stripe
+        # delivers it before the successful capture event.
+        unless order.payment_status.in?(%w[paid refund_pending capture_pending])
+          raise InvalidEvent, "uncaptured order cannot be refunded"
+        end
+        if order.payment_status == "capture_pending"
+          unless Payments::StripeValue.fetch(object, :captured) == true &&
+              Payments::StripeValue.fetch(object, :amount).to_i == order.price_cents
+            raise InvalidEvent, "refund does not confirm the expected capture"
+          end
+          order.status = "failed"
+        end
 
         order.update!(payment_status: "refunded", refunded_at: Time.current, payment_error: nil)
       end

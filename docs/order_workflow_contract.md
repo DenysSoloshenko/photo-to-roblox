@@ -9,7 +9,10 @@ This document is the shared contract for the manual-first $19 order workflow. It
 - Every new order is persisted and emailed to all configured `ADMIN_EMAILS` recipients with the customer's complete brief and protected source-photo links.
 - Only an operator can approve the source photos. Approval captures the existing PaymentIntent exactly once and moves the order into manual production.
 - Declining an order cancels the uncaptured PaymentIntent and releases the hold.
-- Customer orders never launch AI generation automatically. The operator creates the map outside the order system and uploads the finished `.rbxlx`.
+- Automation is opt-in. With `ASTRA_ORDER_AUTOMATION_ENABLED=true`, confirmed capture enqueues `GenerateOrderJob`; with it disabled, the operator uploads the finished map manually. The job always requests `astra_max` and never falls back to another model.
+- The delivery target is 24 hours from successful authorization, using the signed Stripe event timestamp. New unpaid orders have no deadline.
+- Order emails are written to a PostgreSQL outbox in the same transaction as the order change, then sent by Solid Queue. Retry reuses the delivery record/message ID.
+- Script-bearing maps, DOCTYPE declarations, invalid geometry and spoofed image MIME types are rejected. Replacing a delivered map returns it to private QA.
 - Uploaded output remains private while an operator reviews it. The customer receives the interactive preview and `.rbxlx` only after final approval.
 - A result download is never exposed unless payment is captured, the order is approved, and a result file exists.
 
@@ -20,7 +23,7 @@ This document is the shared contract for the manual-first $19 order workflow. It
 | `payment_pending` | Order exists but no usable card authorization has been confirmed. | Authorize $19 hold |
 | `submitted` | Stripe confirmed an uncaptured authorization; the order waits for an operator. | Wait or cancel request |
 | `accepted` | Operator accepted and capture has been requested. | Wait |
-| `building` | Payment is captured and the operator is building the map manually. | Wait |
+| `building` | Payment is captured; manual work or enabled Astra generation is in progress. | Wait |
 | `reviewing` | Uploaded SceneIR/`.rbxlx` exists and awaits operator QA. | Wait |
 | `preview_ready` | Optional customer preview stage; output is approved but final release is not marked complete. | Explore preview |
 | `ready` | Approved paid result is available. | Preview and download |
@@ -65,7 +68,7 @@ All customer and operator mutations require the existing session and CSRF token.
 
 - `POST /api/v1/admin/orders/:public_id/accept`
   - Requires `submitted` + `authorized`.
-  - Approves the source photos and captures the PaymentIntent once. Confirmed capture moves the order to manual `building` work; it does not enqueue AI generation.
+  - Approves the source photos and captures the PaymentIntent once. Confirmed capture moves the order to `building`; it queues generation only when explicitly enabled.
   - Returns `{ order }`.
 - `POST /api/v1/admin/orders/:public_id/decline`
   - Requires uncaptured payment. Cancels the PaymentIntent and marks `declined` / `released`.
@@ -98,9 +101,9 @@ In addition to existing order fields:
 - `generation_error` (admin only)
 - booleans `can_authorize`, `can_cancel`, `can_accept`, `can_decline`, `can_approve`, `can_download`
 
-## Experimental generation boundary
+## Generation and delivery boundary
 
-`GenerateOrderJob` is retained for isolated developer experiments, but no customer-order transition enqueues it. If invoked explicitly, it:
+`GenerateOrderJob` runs after confirmed capture when enabled. Recovery also finds paid building orders whose enqueue was interrupted. It:
 
 1. Locks and verifies `paid` + `building` before spending money.
 2. Refuses to run unless `ASTRA_ORDER_AUTOMATION_ENABLED=true`, `ASTRA_QUALITY_ENABLED=true`, and an API key is present.
@@ -108,9 +111,11 @@ In addition to existing order fields:
 4. Runs `Vision::SceneAnalyzer.for_quality("astra_max")`, normalization, validation, compilation, and export using the first source photo and the order brief.
 5. Stores SceneIR, `.rbxlx`, actual metrics/cost, timing, and attempt count.
 6. Ends in `reviewing`; it never publishes directly to the customer.
-7. Ends in `failed` with a private error on configuration/API/build failure and never retries blindly after an expensive attempt.
+7. Ends in `failed` with a private error on configuration/API/build failure and never retries blindly after an expensive attempt. Capacity/budget limits are retried before any model call. Unknown usage still reserves the configured cost estimate for the day.
 
-Experimental environment controls:
+Production runs `bin/jobs` with `config/queue.yml` and `config/recurring.yml`, using the primary PostgreSQL database. SMTP delivery is at-least-once across an ambiguous provider failure; Resend receives a stable idempotency key, subject to its provider retention window. Existing historical deadlines are not backfilled automatically. Partial refunds and provider capture deadlines still require the staging checks in the remediation report.
+
+Environment controls (enablement remains off by default):
 
 - `ASTRA_ORDER_AUTOMATION_ENABLED=false`
 - `ASTRA_ORDER_MAX_CONCURRENT=1`

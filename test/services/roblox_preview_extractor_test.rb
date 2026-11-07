@@ -1,6 +1,26 @@
 require "test_helper"
 
 class RobloxPreviewExtractorTest < ActiveSupport::TestCase
+  test "rejects nonfinite geometry instead of producing a server error" do
+    xml = file_fixture("result.rbxlx").read.sub(/<X>[^<]+<\/X>/, "<X>1e999</X>")
+    assert_raises(ArgumentError) { Roblox::PreviewExtractor.new.extract(xml) }
+  end
+  test "rejects executable instances anywhere in the original download" do
+    %w[Script LocalScript ModuleScript].each do |class_name|
+      xml = file_fixture("result.rbxlx").read.sub("</roblox>", "<Item class=\"#{class_name}\"><Properties/></Item></roblox>")
+      assert_raises(ArgumentError) { Roblox::PreviewExtractor.new.extract(xml) }
+    end
+  end
+
+  test "rejects doctypes and non Roblox roots" do
+    assert_raises(ArgumentError) do
+      Roblox::PreviewExtractor.new.extract('<!DOCTYPE roblox [<!ENTITY secret SYSTEM "file:///etc/passwd">]>' + file_fixture("result.rbxlx").read)
+    end
+    assert_raises(ArgumentError) do
+      Roblox::PreviewExtractor.new.extract(file_fixture("result.rbxlx").read.gsub("roblox", "other"))
+    end
+  end
+
   test "extracts a browser preview from an rbxlx map" do
     scene = Roblox::PreviewExtractor.new.extract(file_fixture("result.rbxlx").read)
 
@@ -35,5 +55,10 @@ class RobloxPreviewExtractorTest < ActiveSupport::TestCase
     assert_equal true, scene.dig("stats", "preview_sampled")
     assert_equal "Part 0", scene.dig("parts", 0, "name")
     assert_equal "Part #{count - 2}", scene.dig("parts", -1, "name")
+
+    # The final part is deliberately outside the sample, but still belongs
+    # to the downloadable file and must be validated.
+    invalid_xml = xml.sub("<X>#{count - 1}</X>", "<X>1e999</X>")
+    assert_raises(ArgumentError) { Roblox::PreviewExtractor.new.extract(invalid_xml) }
   end
 end

@@ -4,7 +4,7 @@ SceneFoundry is a manual-first service for turning photographs of real locations
 
 [**Open SceneFoundry**](https://scenefoundry.app) · [Springer Park live case](https://scenefoundry.app/?case=springer-park)
 
-The customer-facing beta uses a reservation-first offer: creating the request is free, Stripe places a $19 authorization hold, and an operator either approves the photos and captures it or rejects the request and releases the hold. Approved maps are built manually, uploaded by the operator, and remain private until final delivery.
+The customer-facing beta uses a reservation-first offer: creating the request is free, Stripe places a $19 authorization hold, and an operator either approves the photos and captures it or rejects the request and releases the hold. The default workflow is manual. An explicit `ASTRA_ORDER_AUTOMATION_ENABLED=true` setting queues Astra Max generation only after capture; both paths require operator QA before private delivery. The 24-hour target begins at successful card authorization, using the signed Stripe event time.
 
 The separate AI Lab keeps the automated pipeline available for internal experiments:
 
@@ -14,11 +14,13 @@ The production workflow does not require a user to write JSON or custom code for
 
 ## Production readiness review
 
+The [November 7 launch audit](docs/launch-readiness-2026-11-07.md) is the current source for fixes, verification, recovery steps, and pilot costs. Changes are prepared locally and have not been deployed. Authenticated Render diagnostics confirmed that the original free PostgreSQL instance no longer exists; application logs show DNS failures for its hostname. A green `/up` response does not establish database readiness. Use `/ready` after deploying the new migrations.
+
 The current release adds an [open-data neighbourhood case](docs/case-study-springer-park.md) and a refreshed [seven-step launch checklist](docs/launch-checklist-2026-09-20.md). The September 16 review below is historical; its code has since reached the Render release branch.
 
 The September 16 review fixes verified admin access, account recovery, frontend request handling, Vision retries, checkout navigation, stale payment events, and vulnerable Ruby dependencies. It adds CI and defers the 3D bundle until a preview is opened. See [the detailed production checklist](docs/production-readiness-2026-09-16.md) for deployment blockers, acceptance criteria, verification evidence, and commit history.
 
-Current local verification (September 20): **89 Rails tests / 537 assertions**, **15 frontend/API and case-asset tests**, TypeScript and production build passing. The September 16 dependency audits had no known advisory matches; CI repeats the audits on every push. These checks do not replace staging tests of Stripe, S3, or real Roblox Studio output. Production HTTPS and password-reset delivery through Resend are verified on the custom domain. Existing admin accounts need verified Google sign-in or an emailed password reset after the new migration.
+Historical local verification (September 20): **89 Rails tests / 537 assertions**, **15 frontend/API and case-asset tests**, TypeScript and production build passing. The September 16 dependency audits had no known advisory matches; CI repeats the audits on every push. These checks do not replace staging tests of Stripe, S3, or real Roblox Studio output. Production HTTPS and password-reset delivery through Resend are verified on the custom domain. Existing admin accounts need verified Google sign-in or an emailed password reset after the new migration.
 
 ## Visual Gallery
 
@@ -67,7 +69,7 @@ The park is the checked-in development fixture rendered by the running applicati
 - Automatic extraction of safe browser-preview geometry from the operator's `.rbxlx`; no second JSON upload is required.
 - A $19 Stripe Checkout authorization using manual capture: placing a hold does not charge the customer, acceptance captures once, and decline/cancel releases an uncaptured authorization.
 - Persisted Stripe-event deduplication, row-locked transitions, amount/currency/customer validation, and idempotency keys protect against duplicate capture and replayed webhooks.
-- Customer orders never invoke Astra automatically. The operator builds each accepted map manually and uploads the finished `.rbxlx`; the AI Lab remains isolated for admin experiments.
+- With automation disabled, operators build and upload maps manually. When explicitly enabled, confirmed capture queues Astra Max once, with no model fallback; the result stops at private operator QA.
 - Customer progress for every order and payment state; interactive preview and `.rbxlx` download become visible only after approval.
 - An admin email containing the customer's identity, complete brief, rights confirmation, payment state, due date, and protected source-photo links whenever a new order is created.
 - In-app notifications and email when the preview or paid download becomes ready.
@@ -99,7 +101,7 @@ The park is the checked-in development fixture rendered by the running applicati
 | Rails API + PostgreSQL | Authentication, private orders, guarded state transitions, Stripe event ledger, generation metrics, notifications, validation, orchestration, compilation, and export |
 | Active Storage + Action Mailer | Private local order artifacts (S3-ready) and preview/download-ready email delivery |
 | Stripe Checkout + signed webhook | Hosted manual-capture authorization, authoritative capture/release/refund state, and replay-safe reconciliation |
-| Active Job | Transactional background work and an isolated experimental generation runner that is never started by customer orders |
+| Active Job + Solid Queue | Durable PostgreSQL jobs, transactional email outbox, recovery, and opt-in post-capture Astra generation |
 | OpenAI Vision | Creates a strict `SceneSpec 1.1` draft and reviews its visual composition using the request-selected Terra or Astra Max profile |
 | Geometry and budget normalizers | Scale oversized scenes uniformly and reduce only repeated groups when required |
 | `Scene::Validator` | Enforces semantic, geometric, reference, spawn, and budget constraints |
@@ -151,7 +153,7 @@ Open [http://127.0.0.1:5173](http://127.0.0.1:5173). `bin/dev` starts Rails on p
 
 Without an API key, the UI blocks photograph analysis and explains why. The development example remains available only in `development` and `test`; it is never reported as a vision result.
 
-Customer orders do not need an OpenAI key. The key and Astra flags are used only by the admin-only AI Lab. PostgreSQL is required. In development, notification emails are written to `tmp/mails` unless SMTP variables are supplied. Every address in `ADMIN_EMAILS` receives the full new-order notification; an account with one of those addresses gains admin access only after verified Google sign-in or a successful password reset sent to that mailbox. Existing accounts must complete one of these verification flows after upgrading; the migration does not trust previously entered email addresses. First-time Google verification removes any unverified password and revokes old sessions to prevent account pre-registration attacks.
+Manual orders do not need an OpenAI key. Opt-in order automation and the admin-only AI Lab require the key and Astra quality flag. PostgreSQL is required. In development, notification emails are written to `tmp/mails` unless SMTP variables are supplied. Every address in `ADMIN_EMAILS` receives the full new-order notification; an account with one of those addresses gains admin access only after verified Google sign-in or a successful password reset sent to that mailbox. Existing accounts must complete one of these verification flows after upgrading; the migration does not trust previously entered email addresses. First-time Google verification removes any unverified password and revokes old sessions to prevent account pre-registration attacks.
 
 ### Production deployment
 
@@ -166,7 +168,7 @@ Render's free PostgreSQL database expires after 30 days, the web service sleeps
 after inactivity, and its local filesystem is ephemeral. Before accepting real
 orders, move Active Storage to private S3-compatible storage, use a durable
 database plan, configure a mail provider that supports HTTPS delivery, and add
-Stripe production credentials and a signed webhook.
+Stripe production credentials and a signed webhook. The application now refuses new production authorizations and captures unless private S3, real email delivery, Solid Queue and a recent worker heartbeat are present. This does not provision infrastructure or verify a provider backup plan.
 
 ### Google sign-in
 
@@ -196,7 +198,7 @@ The production order path is:
 
 `upload → admin email + Pending review → authorize $19 hold → operator approves photos/captures → In progress → manual build and upload → Completed + customer delivery`
 
-The detailed payment and order states remain persisted for Stripe safety, while the admin UI groups them into four operational states. `ASTRA_ORDER_AUTOMATION_ENABLED` is retained only for explicit developer experiments and is not connected to customer-order transitions. See [`docs/order_workflow_contract.md`](docs/order_workflow_contract.md) for the complete state and endpoint contract.
+The detailed payment and order states remain persisted for Stripe safety, while the admin UI groups them into four operational states. `ASTRA_ORDER_AUTOMATION_ENABLED=true` connects confirmed capture to the Astra Max job; it is disabled by default and never skips human approval. See [`docs/order_workflow_contract.md`](docs/order_workflow_contract.md) for the complete state and endpoint contract.
 
 PostgreSQL stores relational data and the compact preview SceneIR. Active Storage stores source photos, optional preview images, and `.rbxlx` files under private local `storage/` during development. Set `ACTIVE_STORAGE_SERVICE=amazon` plus the AWS/S3 variables in `.env` to move binaries to private S3 later without changing the order model.
 
@@ -290,7 +292,7 @@ Estimated cost is calculated from the response's actual token usage. Pricing ent
 - Source photos, previews, and result files are served only after owner/admin authorization.
 - A customer cannot download the `.rbxlx` until Stripe confirms capture, generation produces a result, and an operator approves it.
 - Stripe webhooks are deduplicated in PostgreSQL and every payment transition validates the order ID, amount, currency, and PaymentIntent identity.
-- Customer-order transitions never start Astra generation. The guarded runner remains test-covered for isolated developer experiments only.
+- Automatic generation requires confirmed capture and explicit enablement. Astra Max failures never silently switch models, and unfinished attempts are not blindly restarted.
 - Google accounts are linked by email only when Google confirms that email is verified.
 - Password-reset tokens are stored as SHA-256 digests, expire after 30 minutes, and invalidate existing sessions when used.
 - AI Lab routes require an authenticated admin in addition to being hidden from non-admin navigation.
@@ -326,11 +328,11 @@ The live verification used a local ignored `OPENAI_API_KEY`; no secret is commit
 ## Current Limitations
 
 - Stripe manual-capture code is complete, but checkout is disabled until test/live Stripe keys and a webhook secret are supplied in the deployment environment. Exercise authorization, capture, release, expiry, and refund webhooks in test mode before accepting real orders.
-- The development queue adapter is in-process. Production should use a durable Active Job backend before moving transactional email or other critical work to background jobs.
+- Production uses PostgreSQL-backed Solid Queue. Apply the migrations and run `bin/jobs` as a separate worker before enabling payments. A transactional email outbox survives enqueue failures; recovery scans run every five minutes. Development remains in-process.
 - Generation failure remains a private operator state; refunds are reconciled from Stripe events but an operator must initiate a refund in Stripe Dashboard in this milestone.
 - PostgreSQL is production-ready for relational data, while local Active Storage is suitable only for a single persistent instance. Set the existing S3 environment variables before horizontally scaling or deploying to ephemeral storage.
 - Google sign-in remains disabled until its client ID, client secret, and matching callback URL are configured. Email/password access continues to work without Google credentials.
-- Real SMTP delivery remains disabled until mail-provider credentials are supplied. Development mail and admin template previews work without them.
+- Mail-provider credentials remain necessary. Order emails use a durable outbox with retryable jobs and stable message IDs. Password-reset email is still synchronous; a provider failure is logged without revealing whether an account exists.
 - A single photograph cannot reveal true depth or hidden geometry. SceneFoundry preserves the recognizable composition and records assumptions, but it does not claim photogrammetric accuracy.
 - This milestone builds geometry from Roblox primitives. A visually unusual object can be preserved as an editable approximate mass, but dedicated assets, `MeshPart`, terrain voxels, and textures will be required for product-grade object fidelity.
 - The second pass reviews structured composition, not a rendered preview. The largest remaining quality improvement is a render-and-compare loop that lets the model correct the actual generated image.

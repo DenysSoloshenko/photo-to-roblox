@@ -10,7 +10,7 @@
   <tr><td style="padding:7px 0;color:#6a7c77">Instructions</td><td style="padding:7px 0"><%= @order.instructions.presence || "Not provided" %></td></tr>
   <tr><td style="padding:7px 0;color:#6a7c77">Photo rights</td><td style="padding:7px 0"><%= @order.rights_confirmed_at.present? ? "Confirmed" : "Not confirmed" %></td></tr>
   <tr><td style="padding:7px 0;color:#6a7c77">Payment</td><td style="padding:7px 0"><%= @order.payment_status.humanize %> · <%= @order.currency %> <%= format("%.2f", @order.price_cents / 100.0) %></td></tr>
-  <tr><td style="padding:7px 0;color:#6a7c77">Due</td><td style="padding:7px 0"><%= @order.delivery_due_at.to_fs(:long) %></td></tr>
+  <tr><td style="padding:7px 0;color:#6a7c77">Due</td><td style="padding:7px 0"><%= @order.delivery_due_at&.to_fs(:long) || "24 hours after card authorization" %></td></tr>
 </table>
 
 <h2 style="margin-top:26px;font-family:Georgia,serif;font-size:21px;font-weight:500">Source photos</h2>

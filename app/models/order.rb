@@ -9,9 +9,9 @@ class Order < ApplicationRecord
     "accepted" => %w[building declined cancelled failed],
     "building" => %w[reviewing failed],
     "reviewing" => %w[preview_ready ready failed],
-    "preview_ready" => %w[ready delivered failed],
-    "ready" => %w[delivered failed],
-    "delivered" => %w[failed],
+    "preview_ready" => %w[reviewing ready delivered failed],
+    "ready" => %w[reviewing delivered failed],
+    "delivered" => %w[reviewing failed],
     "declined" => %w[failed],
     "cancelled" => %w[failed],
     "failed" => %w[payment_pending submitted building]
@@ -20,7 +20,7 @@ class Order < ApplicationRecord
     "unpaid" => %w[authorization_pending authorized released failed],
     "authorization_pending" => %w[unpaid authorized released failed],
     "authorized" => %w[capture_pending released failed],
-    "capture_pending" => %w[paid released failed],
+    "capture_pending" => %w[paid released refunded failed],
     "paid" => %w[refund_pending refunded failed],
     "released" => [],
     "refund_pending" => %w[refunded failed],
@@ -32,12 +32,14 @@ class Order < ApplicationRecord
 
   belongs_to :user
   has_many :notifications, dependent: :destroy
+  has_many :email_deliveries, dependent: :destroy
   has_many_attached :source_photos
   has_one_attached :preview_image
   has_one_attached :result_file
 
   before_validation :assign_public_id, on: :create
   before_validation :set_schedule, on: :create
+  before_validation :start_delivery_clock
   before_validation :set_completed_at
 
   validates :public_id, presence: true, uniqueness: true
@@ -55,16 +57,22 @@ class Order < ApplicationRecord
   validate :preview_required_when_preview_ready
   validate :result_and_payment_required_when_ready
 
-  after_update_commit :notify_preview_ready, if: :became_preview_ready?
-  after_update_commit :notify_ready, if: :became_ready?
-  after_create_commit :notify_admin_of_new_order
+  # Persist notification intent in the same transaction as the order state.
+  after_update :notify_preview_ready, if: :became_preview_ready?
+  after_update :notify_ready, if: :became_ready?
+  after_create :notify_admin_of_new_order
+  after_update_commit :enqueue_generation, if: :became_paid?
 
   def ready_for_download?
     %w[ready delivered].include?(status) && payment_status == "paid" && result_file.attached?
   end
 
   def can_authorize?
-    status == "payment_pending" && payment_status.in?(%w[unpaid authorization_pending])
+    (status == "payment_pending" && payment_status.in?(%w[unpaid authorization_pending])) || retryable_payment_failure?
+  end
+
+  def retryable_payment_failure?
+    status == "failed" && payment_status == "failed" && authorized_at.nil? && capture_requested_at.nil?
   end
 
   def can_cancel?
@@ -72,7 +80,7 @@ class Order < ApplicationRecord
   end
 
   def can_accept?
-    (status == "submitted" && payment_status == "authorized" && !authorization_expired?) ||
+    (status == "submitted" && payment_status == "authorized" && authorization_expires_at.present? && !authorization_expired?) ||
       (status == "accepted" && payment_status == "capture_pending")
   end
 
@@ -131,7 +139,10 @@ class Order < ApplicationRecord
 
   def set_schedule
     self.submitted_at ||= Time.current
-    self.delivery_due_at ||= submitted_at + 24.hours
+  end
+
+  def start_delivery_clock
+    self.delivery_due_at = authorized_at + 24.hours if authorized_at.present? && will_save_change_to_authorized_at?
   end
 
   def set_completed_at
@@ -172,5 +183,17 @@ class Order < ApplicationRecord
 
   def notify_admin_of_new_order
     AdminOrderNotifier.call(self)
+  end
+
+  def became_paid?
+    saved_change_to_payment_status? && payment_status == "paid" && status == "building"
+  end
+
+  def enqueue_generation
+    return unless ENV["ASTRA_ORDER_AUTOMATION_ENABLED"] == "true"
+
+    GenerateOrderJob.perform_later(id)
+  rescue StandardError => error
+    Rails.logger.error({ event: "generation_enqueue_failed", order_id: public_id, error_class: error.class.name }.to_json)
   end
 end

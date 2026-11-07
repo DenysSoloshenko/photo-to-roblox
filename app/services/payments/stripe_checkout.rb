@@ -12,19 +12,24 @@ module Payments
 
     def create
       raise NotConfigured, "Add STRIPE_SECRET_KEY to start secure checkout" if ENV["STRIPE_SECRET_KEY"].blank?
+      Orders::ProductionReadiness.verify!(NotConfigured)
 
       order.with_lock do
         raise InvalidState, "order is not eligible for payment authorization" unless order.can_authorize?
+        if order.retryable_payment_failure?
+          order.update!(status: "payment_pending", payment_status: "authorization_pending")
+        end
         return saved_session if reusable_checkout?
 
         attempt = order.checkout_attempts + 1
-        session = Stripe::Checkout::Session.create(checkout_params, idempotency_options(attempt))
+        session = Stripe::Checkout::Session.create(checkout_params(attempt), idempotency_options(attempt))
         order.update!(
           payment_status: "authorization_pending",
           purchase_requested_at: Time.current,
           checkout_started_at: Time.current,
           stripe_checkout_session_id: session.id,
           stripe_checkout_url: session.url,
+          stripe_payment_intent_id: nil,
           checkout_attempts: attempt
         )
         session
@@ -44,16 +49,17 @@ module Payments
       SavedSession.new(id: order.stripe_checkout_session_id, url: order.stripe_checkout_url)
     end
 
-    def checkout_params
+    def checkout_params(attempt)
       {
         mode: "payment",
         client_reference_id: order.public_id,
         customer_email: order.user.email,
-        metadata: { order_public_id: order.public_id },
+        payment_method_types: ["card"],
+        metadata: { order_public_id: order.public_id, checkout_attempt: attempt.to_s },
         payment_intent_data: {
           capture_method: "manual",
           receipt_email: order.user.email,
-          metadata: { order_public_id: order.public_id }
+          metadata: { order_public_id: order.public_id, checkout_attempt: attempt.to_s }
         },
         line_items: [{
           quantity: 1,

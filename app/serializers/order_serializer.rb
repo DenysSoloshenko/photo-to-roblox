@@ -18,7 +18,7 @@ class OrderSerializer
       price_cents: order.price_cents,
       currency: order.currency,
       submitted_at: order.submitted_at.iso8601,
-      delivery_due_at: order.delivery_due_at.iso8601,
+      delivery_due_at: order.delivery_due_at&.iso8601,
       completed_at: order.completed_at&.iso8601,
       purchase_requested_at: order.purchase_requested_at&.iso8601,
       paid_at: order.paid_at&.iso8601,
@@ -39,7 +39,7 @@ class OrderSerializer
       can_download: order.can_download?,
       rights_confirmed: order.rights_confirmed_at.present?,
       source_photos: order.source_photos.map { |photo| attachment_json(photo) },
-      preview_url: order.preview_image.attached? ? file_url("preview") : nil,
+      preview_url: preview_available? && order.preview_image.attached? ? file_url("preview") : nil,
       preview_scene_ir: preview_available? ? order.preview_scene_ir : nil,
       result_url: order.ready_for_download? ? file_url("result") : nil
     }

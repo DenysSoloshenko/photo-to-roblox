@@ -1,0 +1,208 @@
+# REVIEW TEMPLATE ONLY: paid resources; NOT applied.
+# New names preserve the original service. Start with Stripe TEST keys.
+# Confirm data recovery, private storage, mail, memory and domain cutover.
+---
+services:
+- type: web
+  name: scenefoundry-pilot-web
+  runtime: ruby
+  plan: 0.5c-512mb
+  region: oregon
+  branch: codex/launch-readiness-2026-11-07
+  preDeployCommand: bundle exec rails db:prepare
+  autoDeployTrigger: 'off'
+  buildCommand: bundle install && npm ci --prefix frontend && npm run build --prefix
+    frontend
+  startCommand: bundle exec rails server -b 0.0.0.0 -p $PORT
+  healthCheckPath: "/ready"
+  envVars:
+  - key: RAILS_ENV
+    value: production
+  - key: RUBY_VERSION
+    value: 3.3.4
+  - key: NODE_VERSION
+    value: 22.19.0
+  - key: APP_URL
+    value: https://scenefoundry.app
+  - key: API_URL
+    value: https://scenefoundry.app
+  - key: APP_HOST
+    value: scenefoundry.app
+  - key: ADMIN_EMAILS
+    value: den.solosh73@gmail.com
+  - key: MAIL_FROM
+    value: SceneFoundry <orders@scenefoundry.app>
+  - key: ACTIVE_STORAGE_SERVICE
+    value: amazon
+  - key: AWS_REGION
+    value: auto
+  - key: ASTRA_ORDER_AUTOMATION_ENABLED
+    value: 'false'
+  - key: ASTRA_QUALITY_ENABLED
+    value: 'false'
+  - key: RAILS_MAX_THREADS
+    value: '3'
+  - key: RESEND_API_KEY
+    sync: false
+  - key: S3_BUCKET
+    sync: false
+  - key: S3_ENDPOINT
+    sync: false
+  - key: AWS_ACCESS_KEY_ID
+    sync: false
+  - key: AWS_SECRET_ACCESS_KEY
+    sync: false
+  - key: STRIPE_SECRET_KEY
+    sync: false
+  - key: STRIPE_WEBHOOK_SECRET
+    sync: false
+  - key: GOOGLE_CLIENT_ID
+    sync: false
+  - key: GOOGLE_CLIENT_SECRET
+    sync: false
+  - key: SECRET_KEY_BASE
+    generateValue: true
+  - key: DATABASE_URL
+    fromDatabase:
+      name: scenefoundry-pilot-db
+      property: connectionString
+- type: worker
+  name: scenefoundry-pilot-worker
+  runtime: ruby
+  plan: 0.5c-512mb
+  region: oregon
+  branch: codex/launch-readiness-2026-11-07
+  preDeployCommand: bundle exec rails db:prepare
+  autoDeployTrigger: 'off'
+  buildCommand: bundle install
+  startCommand: bundle exec ruby bin/jobs
+  envVars:
+  - key: RAILS_ENV
+    fromService:
+      type: web
+      name: scenefoundry-pilot-web
+      envVarKey: RAILS_ENV
+  - key: RUBY_VERSION
+    fromService:
+      type: web
+      name: scenefoundry-pilot-web
+      envVarKey: RUBY_VERSION
+  - key: NODE_VERSION
+    fromService:
+      type: web
+      name: scenefoundry-pilot-web
+      envVarKey: NODE_VERSION
+  - key: APP_URL
+    fromService:
+      type: web
+      name: scenefoundry-pilot-web
+      envVarKey: APP_URL
+  - key: API_URL
+    fromService:
+      type: web
+      name: scenefoundry-pilot-web
+      envVarKey: API_URL
+  - key: APP_HOST
+    fromService:
+      type: web
+      name: scenefoundry-pilot-web
+      envVarKey: APP_HOST
+  - key: ADMIN_EMAILS
+    fromService:
+      type: web
+      name: scenefoundry-pilot-web
+      envVarKey: ADMIN_EMAILS
+  - key: MAIL_FROM
+    fromService:
+      type: web
+      name: scenefoundry-pilot-web
+      envVarKey: MAIL_FROM
+  - key: ACTIVE_STORAGE_SERVICE
+    fromService:
+      type: web
+      name: scenefoundry-pilot-web
+      envVarKey: ACTIVE_STORAGE_SERVICE
+  - key: AWS_REGION
+    fromService:
+      type: web
+      name: scenefoundry-pilot-web
+      envVarKey: AWS_REGION
+  - key: ASTRA_ORDER_AUTOMATION_ENABLED
+    fromService:
+      type: web
+      name: scenefoundry-pilot-web
+      envVarKey: ASTRA_ORDER_AUTOMATION_ENABLED
+  - key: ASTRA_QUALITY_ENABLED
+    fromService:
+      type: web
+      name: scenefoundry-pilot-web
+      envVarKey: ASTRA_QUALITY_ENABLED
+  - key: RAILS_MAX_THREADS
+    fromService:
+      type: web
+      name: scenefoundry-pilot-web
+      envVarKey: RAILS_MAX_THREADS
+  - key: RESEND_API_KEY
+    fromService:
+      type: web
+      name: scenefoundry-pilot-web
+      envVarKey: RESEND_API_KEY
+  - key: S3_BUCKET
+    fromService:
+      type: web
+      name: scenefoundry-pilot-web
+      envVarKey: S3_BUCKET
+  - key: S3_ENDPOINT
+    fromService:
+      type: web
+      name: scenefoundry-pilot-web
+      envVarKey: S3_ENDPOINT
+  - key: AWS_ACCESS_KEY_ID
+    fromService:
+      type: web
+      name: scenefoundry-pilot-web
+      envVarKey: AWS_ACCESS_KEY_ID
+  - key: AWS_SECRET_ACCESS_KEY
+    fromService:
+      type: web
+      name: scenefoundry-pilot-web
+      envVarKey: AWS_SECRET_ACCESS_KEY
+  - key: STRIPE_SECRET_KEY
+    fromService:
+      type: web
+      name: scenefoundry-pilot-web
+      envVarKey: STRIPE_SECRET_KEY
+  - key: STRIPE_WEBHOOK_SECRET
+    fromService:
+      type: web
+      name: scenefoundry-pilot-web
+      envVarKey: STRIPE_WEBHOOK_SECRET
+  - key: GOOGLE_CLIENT_ID
+    fromService:
+      type: web
+      name: scenefoundry-pilot-web
+      envVarKey: GOOGLE_CLIENT_ID
+  - key: GOOGLE_CLIENT_SECRET
+    fromService:
+      type: web
+      name: scenefoundry-pilot-web
+      envVarKey: GOOGLE_CLIENT_SECRET
+  - key: SECRET_KEY_BASE
+    fromService:
+      type: web
+      name: scenefoundry-pilot-web
+      envVarKey: SECRET_KEY_BASE
+  - key: DATABASE_URL
+    fromDatabase:
+      name: scenefoundry-pilot-db
+      property: connectionString
+databases:
+- name: scenefoundry-pilot-db
+  plan: 0.1c-256mb
+  diskSizeGB: 1
+  storageAutoscalingEnabled: false
+  region: oregon
+  postgresMajorVersion: '17'
+  databaseName: scenefoundry_pilot
+  user: scenefoundry_pilot
+  ipAllowList: []

@@ -67,7 +67,7 @@ class ApiV1ScenesControllerTest < ActionDispatch::IntegrationTest
     fake_analyzer = Object.new
     spec = @spec
     fake_analyzer.define_singleton_method(:analyze) do |bytes:, mime_type:, filename:, hint:|
-      raise "upload was not forwarded" unless bytes == "new-photo-bytes" && mime_type == "image/jpeg"
+      raise "upload was not forwarded" unless bytes.start_with?("\xFF\xD8".b) && mime_type == "image/jpeg"
       raise "metadata was not forwarded" unless filename == "new-yard.jpg" && hint == "keep the large tree"
 
       {
@@ -75,7 +75,7 @@ class ApiV1ScenesControllerTest < ActionDispatch::IntegrationTest
         metrics: { "vision_model" => "fake-vision", "vision_ms" => 123.4, "api_cost_usd" => 0.0042 }
       }
     end
-    upload = Rack::Test::UploadedFile.new(StringIO.new("new-photo-bytes"), "image/jpeg", original_filename: "new-yard.jpg")
+    upload = Rack::Test::UploadedFile.new(StringIO.new(file_fixture("source.jpg").binread), "image/jpeg", original_filename: "new-yard.jpg")
     requested_quality_modes = []
     analyzer_factory = lambda do |quality_mode|
       requested_quality_modes << quality_mode
@@ -115,7 +115,7 @@ class ApiV1ScenesControllerTest < ActionDispatch::IntegrationTest
     fake_analyzer.define_singleton_method(:analyze) do |**|
       { scene_spec: oversized, metrics: { "vision_model" => "fake-vision", "vision_ms" => 50.0 } }
     end
-    upload = Rack::Test::UploadedFile.new(StringIO.new("new-photo-bytes"), "image/jpeg", original_filename: "large-scene.jpg")
+    upload = Rack::Test::UploadedFile.new(StringIO.new(file_fixture("source.jpg").binread), "image/jpeg", original_filename: "large-scene.jpg")
     requested_quality_modes = []
     analyzer_factory = lambda do |quality_mode|
       requested_quality_modes << quality_mode
@@ -137,7 +137,7 @@ class ApiV1ScenesControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "rejects an invalid quality mode without creating an analyzer" do
-    upload = Rack::Test::UploadedFile.new(StringIO.new("new-photo-bytes"), "image/jpeg", original_filename: "new-yard.jpg")
+    upload = Rack::Test::UploadedFile.new(StringIO.new(file_fixture("source.jpg").binread), "image/jpeg", original_filename: "new-yard.jpg")
     analyzer_calls = 0
     analyzer_factory = lambda do |*|
       analyzer_calls += 1

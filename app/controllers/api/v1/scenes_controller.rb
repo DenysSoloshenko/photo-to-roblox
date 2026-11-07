@@ -49,6 +49,8 @@ module Api
         return render_error("$.photo", "is required", :unprocessable_entity) unless upload.respond_to?(:read)
         return render_error("$.photo", "must be JPEG, PNG, or WebP", :unsupported_media_type) unless ALLOWED_TYPES.include?(upload.content_type)
         return render_error("$.photo", "must be 10 MB or smaller", :payload_too_large) if upload.size > MAX_UPLOAD_BYTES
+        image_errors = Uploads::ImageValidator.errors(upload)
+        return render_error("$.photo", image_errors.join(", "), :unsupported_media_type) if image_errors.any?
         quality_mode = params[:quality_mode].presence || "terra"
         unless Vision::SceneAnalyzer::QUALITY_MODES.include?(quality_mode)
           return render_error("$.quality_mode", "must be one of #{Vision::SceneAnalyzer::QUALITY_MODES.join(', ')}", :unprocessable_entity)

@@ -15,12 +15,20 @@ module Roblox
       started_at = Process.clock_gettime(Process::CLOCK_MONOTONIC)
       document = Nokogiri::XML(xml) { |config| config.nonet }
       raise Nokogiri::XML::SyntaxError, document.errors.first.message if document.errors.any?
+      raise ArgumentError, "Result must have a roblox root element" unless document.root&.name == "roblox"
+      raise ArgumentError, "Roblox maps must not contain a DOCTYPE" if document.internal_subset || document.external_subset
+      if document.at_xpath("//Item[@class='Script' or @class='LocalScript' or @class='ModuleScript']")
+        raise ArgumentError, "Roblox maps must not contain Script, LocalScript, or ModuleScript instances"
+      end
 
       all_nodes = document.xpath(PART_XPATH)
-      nodes = sample_nodes(all_nodes)
-      raise ArgumentError, "The Roblox map does not contain previewable parts" if nodes.empty?
+      raise ArgumentError, "The Roblox map does not contain previewable parts" if all_nodes.empty?
 
-      parts = nodes.each_with_index.map { |item, index| extract_part(item, index) }
+      # Validate the entire download, including geometry omitted from the
+      # browser's sampled preview. Otherwise a malformed unsampled part can
+      # pass QA and still be delivered to the customer.
+      all_parts = all_nodes.each_with_index.map { |item, index| extract_part(item, index) }
+      parts = sample_nodes(all_parts)
       bounds = calculate_bounds(parts)
       camera = extract_camera(document) || default_camera(bounds)
       spawn_part = parts.find { |part| part["class"] == "SpawnLocation" }
@@ -104,7 +112,7 @@ module Roblox
       node = property_node(item, "Color")
       return Scene::MaterialCatalog.fetch(material_for(item)).fetch(:color) unless node
 
-      values = %w[R G B].map { |axis| (node.at_xpath("./#{axis}")&.text.to_f * 255).round.clamp(0, 255) }
+      values = %w[R G B].map { |axis| (finite_number(node.at_xpath("./#{axis}")&.text, 0) * 255).round.clamp(0, 255) }
       format("#%02x%02x%02x", *values)
     end
 
@@ -144,7 +152,7 @@ module Roblox
 
     def number_property(item, name, fallback)
       text = property_text(item, name)
-      text.present? ? text.to_f : fallback
+      finite_number(text, fallback)
     end
 
     def boolean_property(item, name, fallback)
@@ -155,11 +163,20 @@ module Roblox
 
     def vector(node, fallback)
       return fallback unless node
-      %w[X Y Z].map.with_index { |axis, index| node.at_xpath("./#{axis}")&.text&.to_f || fallback[index] }
+      %w[X Y Z].map.with_index { |axis, index| finite_number(node.at_xpath("./#{axis}")&.text, fallback[index]) }
     end
 
     def matrix_from(node)
-      3.times.map { |row| 3.times.map { |column| node.at_xpath("./R#{row}#{column}")&.text&.to_f || identity_matrix[row][column] } }
+      3.times.map { |row| 3.times.map { |column| finite_number(node.at_xpath("./R#{row}#{column}")&.text, identity_matrix[row][column]) } }
+    end
+
+    def finite_number(text, fallback)
+      return fallback if text.blank?
+      value = Float(text, exception: false)
+      unless value&.finite? && value.abs <= 1_000_000
+        raise ArgumentError, "Roblox map contains an invalid or excessive numeric value"
+      end
+      value
     end
 
     def euler_yxz(matrix)

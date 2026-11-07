@@ -12,4 +12,8 @@ amazon:
   secret_access_key: <%= ENV["AWS_SECRET_ACCESS_KEY"] %>
   region: <%= ENV.fetch("AWS_REGION", "us-west-2") %>
   bucket: <%= ENV["S3_BUCKET"] %>
+  <% if ENV["S3_ENDPOINT"].present? %>
+  endpoint: <%= ENV["S3_ENDPOINT"].to_json %>
+  <% end %>
+  force_path_style: <%= ENV.fetch("S3_FORCE_PATH_STYLE", "false") == "true" %>
   public: false

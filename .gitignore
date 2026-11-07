@@ -22,3 +22,6 @@
 
 /.bundle/
 /vendor/bundle/
+
+# Local audit screenshots can contain account/workspace information.
+/docs/evidence/

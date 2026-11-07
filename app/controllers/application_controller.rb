@@ -22,7 +22,7 @@ class ApplicationController < ActionController::API
 
   def authenticate_user!
     payload = cookies.encrypted[SESSION_COOKIE]
-    @current_user = User.find_by(id: payload&.fetch("user_id", nil))
+    @current_user = User.find_by(id: payload["user_id"]) if payload.is_a?(Hash) && payload["user_id"].present?
     valid = @current_user && payload["session_version"].to_i == @current_user.session_version
     return if valid
 

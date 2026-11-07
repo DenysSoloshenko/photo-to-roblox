@@ -28,7 +28,11 @@ module Api
             order.preview_image.attach(params[:preview_image]) if params[:preview_image].present?
             order.result_file.attach(params[:result_file]) if params[:result_file].present?
             order.preview_scene_ir = preview_scene_ir if preview_scene_ir
-            order.status = "reviewing" if preview_scene_ir && order.status == "building"
+            if preview_scene_ir && order.status.in?(%w[building reviewing preview_ready ready delivered])
+              order.status = "reviewing"
+              order.approved_at = nil
+              order.completed_at = nil
+            end
             order.update!(update_params)
           end
           render json: { order: order_json(order.reload) }
@@ -96,12 +100,13 @@ module Api
         def validate_uploads!
           preview = params[:preview_image]
           if preview.present?
-            raise ArgumentError, "Preview must be JPEG, PNG, or WebP" unless IMAGE_TYPES.include?(preview.content_type)
-            raise ArgumentError, "Preview is larger than 10 MB" if preview.size > 10.megabytes
+            errors = Uploads::ImageValidator.errors(preview)
+            raise ArgumentError, errors.join(", ") if errors.any?
           end
 
           result = params[:result_file]
           return unless result.present?
+          raise ArgumentError, "Upload a Roblox map file" unless result.respond_to?(:original_filename) && result.respond_to?(:read)
           raise ArgumentError, "Result must be an .rbxlx file" unless RESULT_EXTENSIONS.include?(File.extname(result.original_filename).downcase)
           raise ArgumentError, "Result is larger than 50 MB" if result.size > 50.megabytes
         end

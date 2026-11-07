@@ -9,6 +9,7 @@ module Payments
 
     def accept!
       require_stripe!
+      Orders::ProductionReadiness.verify!(NotConfigured)
       order.with_lock do
         if order.can_accept?
           order.update!(

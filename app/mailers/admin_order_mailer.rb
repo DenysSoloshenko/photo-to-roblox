@@ -9,6 +9,7 @@ class AdminOrderMailer < ApplicationMailer
       }
     end
 
+    headers["Message-ID"] = "<scenefoundry-delivery-#{params[:delivery_id]}@scenefoundry.app>" if params[:delivery_id]
     mail(
       to: params.fetch(:recipients),
       subject: "New SceneFoundry order: #{@order.title}"

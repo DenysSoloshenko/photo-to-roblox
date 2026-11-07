@@ -7,7 +7,7 @@ services:
     branch: deploy/render-free
     buildCommand: bundle install && npm ci --prefix frontend && npm run build --prefix frontend && bundle exec rails db:prepare
     startCommand: bundle exec rails server -b 0.0.0.0 -p $PORT
-    healthCheckPath: /up
+    healthCheckPath: /ready
     autoDeployTrigger: commit
     envVars:
       - key: DATABASE_URL

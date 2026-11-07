@@ -11,7 +11,17 @@ module Payments
       raise InvalidPayment, "payment intent id is missing" if payment_intent_id.blank?
       require_match!("payment intent", payment_intent_id, order.stripe_payment_intent_id) if order.stripe_payment_intent_id.present?
       require_match!("order", Payments::StripeValue.metadata_value(payment_intent, :order_public_id), order.public_id)
+      attempt = Payments::StripeValue.metadata_value(payment_intent, :checkout_attempt).presence
+      if attempt || order.checkout_attempts > 1
+        require_match!("checkout attempt", attempt.to_s, order.checkout_attempts.to_s)
+      end
       require_match!("amount", Payments::StripeValue.fetch(payment_intent, :amount).to_i, order.price_cents)
+      case Payments::StripeValue.fetch(payment_intent, :status).to_s
+      when "requires_capture"
+        require_match!("capturable amount", Payments::StripeValue.fetch(payment_intent, :amount_capturable).to_i, order.price_cents)
+      when "succeeded"
+        require_match!("received amount", Payments::StripeValue.fetch(payment_intent, :amount_received).to_i, order.price_cents)
+      end
       require_match!("currency", Payments::StripeValue.fetch(payment_intent, :currency).to_s.downcase, order.currency.downcase)
       email = Payments::StripeValue.fetch(payment_intent, :receipt_email).presence
       require_match!("customer email", email.downcase, order.user.email.downcase) if email

@@ -1,8 +1,8 @@
-<%= @stage == "preview" ? "Your free Roblox preview is ready" : "Your Roblox map is ready" %>
+<%= @stage == "preview" ? "Your Roblox preview is ready" : "Your Roblox map is ready" %>
 
 Hi <%= @order.user.display_name %>,
 
-<% if @stage == "preview" %>We finished the first version of <%= @order.title %>. Review the interactive preview for free. If you love it, unlock the editable Roblox file for $19.<% else %>Payment is confirmed. Your editable Roblox map is ready to download.<% end %>
+<% if @stage == "preview" %>We finished the first version of <%= @order.title %>. Review your approved interactive preview. We will notify you when the editable Roblox map is released.<% else %>Payment is confirmed. Your editable Roblox map is ready to download.<% end %>
 
 <%= @order_url %>
 

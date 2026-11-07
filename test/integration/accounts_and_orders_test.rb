@@ -29,6 +29,7 @@ class AccountsAndOrdersTest < ActionDispatch::IntegrationTest
 
     photo = fixture_file_upload("source.jpg", "image/jpeg")
     assert_difference -> { ActionMailer::Base.deliveries.size }, 1 do
+      perform_enqueued_jobs(only: DeliverEmailJob) do
       post "/api/v1/orders",
         params: {
           title: "Family garden",
@@ -40,6 +41,7 @@ class AccountsAndOrdersTest < ActionDispatch::IntegrationTest
           source_photos: [photo]
         },
         headers: csrf_headers
+      end
     end
 
     assert_response :created
@@ -75,6 +77,15 @@ class AccountsAndOrdersTest < ActionDispatch::IntegrationTest
 
     assert_response :unprocessable_entity
     assert_equal "invalid_csrf_token", response.parsed_body.fetch("error")
+  end
+
+  test "rejects a spoofed image content type without creating an order" do
+    register
+    upload = Rack::Test::UploadedFile.new(StringIO.new("<html>not a photo</html>"), "image/jpeg", original_filename: "spoof.jpg")
+    assert_no_difference -> { Order.count } do
+      post "/api/v1/orders", params: { title: "Spoof", rights_confirmed: "true", source_photos: [upload] }, headers: csrf_headers
+    end
+    assert_response :unprocessable_entity
   end
 
   test "creates a manual-capture checkout authorization and reuses it" do

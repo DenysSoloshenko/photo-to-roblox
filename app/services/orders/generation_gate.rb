@@ -38,19 +38,20 @@ module Orders
 
     def verify_limits!
       concurrent_limit = positive_integer("ASTRA_ORDER_MAX_CONCURRENT", 1)
-      active_count = Order.where(status: "building", payment_status: "paid")
+      active = Order.where(status: "building", payment_status: "paid")
         .where.not(generation_started_at: nil)
         .where(generation_finished_at: nil)
         .where.not(id: order.id)
-        .count
+      active_count = active.count
       raise LimitExceeded, "premium generation concurrency limit reached" if active_count >= concurrent_limit
 
       daily_limit = positive_decimal("ASTRA_ORDER_DAILY_SPEND_LIMIT_USD", 30)
       reserved_cost = positive_decimal("ASTRA_ORDER_COST_RESERVATION_USD", 3)
-      spent_today = Order.where(generation_finished_at: Time.current.beginning_of_day..Time.current.end_of_day)
-        .sum("COALESCE((generation_metrics->>'api_cost_usd')::numeric, 0)")
+      spent_today = Order.where(generation_started_at: Time.current.beginning_of_day..Time.current.end_of_day)
+        .sum("COALESCE((generation_metrics->>'api_cost_usd')::numeric, #{Order.connection.quote(reserved_cost)})")
         .to_d
-      projected_spend = spent_today + ((active_count + 1) * reserved_cost)
+      active_from_previous_days = active.where("generation_started_at < ?", Time.current.beginning_of_day).count
+      projected_spend = spent_today + ((active_from_previous_days + 1) * reserved_cost)
       raise LimitExceeded, "premium generation daily spend limit reached" if projected_spend > daily_limit
     end
 

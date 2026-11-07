@@ -57,7 +57,8 @@ module Api
         checkout = ::Payments::StripeCheckout.new(order).create
         render json: { order: order_json(order.reload), checkout_url: checkout.url }
       rescue ::Payments::StripeCheckout::NotConfigured => error
-        render json: { error: "stripe_not_configured", message: error.message }, status: :service_unavailable
+        Rails.logger.warn({ event: "checkout_not_ready", message: error.message }.to_json)
+        render json: { error: "stripe_not_configured", message: "Checkout is temporarily unavailable. Your order is saved. Please try again later." }, status: :service_unavailable
       rescue ::Payments::StripeCheckout::InvalidState => error
         render json: { error: "payment_authorization_not_allowed", message: error.message }, status: :unprocessable_entity
       rescue Stripe::StripeError => error
@@ -95,8 +96,7 @@ module Api
         errors = []
         errors << "Upload between 1 and 3 source photos" unless photos.size.between?(1, 3)
         photos.each do |photo|
-          errors << "#{photo.original_filename} must be JPEG, PNG, or WebP" unless IMAGE_TYPES.include?(photo.content_type)
-          errors << "#{photo.original_filename} is larger than 10 MB" if photo.size > MAX_IMAGE_SIZE
+          errors.concat(Uploads::ImageValidator.errors(photo))
         end
         errors
       end

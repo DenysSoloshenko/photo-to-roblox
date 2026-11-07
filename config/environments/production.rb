@@ -50,6 +50,8 @@ Rails.application.configure do
   # the I18n.default_locale when a translation cannot be found).
   config.i18n.fallbacks = true
   config.active_storage.service = ENV.fetch("ACTIVE_STORAGE_SERVICE", "local").to_sym
+  # Uses the primary PostgreSQL database; run bin/jobs as a separate worker.
+  config.active_job.queue_adapter = :solid_queue
   if ENV["RESEND_API_KEY"].present?
     # Render free services block outbound SMTP ports. Resend uses HTTPS, which
     # also gives us provider-side delivery logs and idempotent sends.
