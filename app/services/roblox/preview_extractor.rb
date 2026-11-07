@@ -13,6 +13,8 @@ module Roblox
 
     def extract(xml, fallback_name: "Roblox map")
       started_at = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      @property_nodes = {}
+      @child_texts = {}
       document = Nokogiri::XML(xml) { |config| config.nonet }
       raise Nokogiri::XML::SyntaxError, document.errors.first.message if document.errors.any?
       raise ArgumentError, "Result must have a roblox root element" unless document.root&.name == "roblox"
@@ -57,6 +59,9 @@ module Roblox
       }
     rescue Nokogiri::XML::SyntaxError => error
       raise ArgumentError, "Result is not a valid .rbxlx XML file: #{error.message.lines.first.to_s.strip}"
+    ensure
+      # Do not retain the source XML tree when an extractor is reused.
+      @property_nodes = @child_texts = nil
     end
 
     private
@@ -112,7 +117,7 @@ module Roblox
       node = property_node(item, "Color")
       return Scene::MaterialCatalog.fetch(material_for(item)).fetch(:color) unless node
 
-      values = %w[R G B].map { |axis| (finite_number(node.at_xpath("./#{axis}")&.text, 0) * 255).round.clamp(0, 255) }
+      values = %w[R G B].map { |axis| (finite_number(child_text(node, axis), 0) * 255).round.clamp(0, 255) }
       format("#%02x%02x%02x", *values)
     end
 
@@ -143,7 +148,21 @@ module Roblox
 
     def property_node(item, name)
       return unless item
-      item.at_xpath("./Properties/*[@name='#{name}']")
+
+      # Each part reads the same Properties node many times. Index it once
+      # instead of compiling and evaluating an XPath for every property.
+      properties = @property_nodes[item] ||= item.xpath("./Properties/*").each_with_object({}) do |child, values|
+        values[child["name"]] ||= child
+      end
+      properties[name]
+    end
+
+    def child_text(node, name)
+      fields = @child_texts[node] ||= node.element_children.each_with_object({}) do |child, values|
+        next if child.namespace
+        values[child.name] ||= child.text
+      end
+      fields[name]
     end
 
     def property_text(item, name)
@@ -163,11 +182,11 @@ module Roblox
 
     def vector(node, fallback)
       return fallback unless node
-      %w[X Y Z].map.with_index { |axis, index| finite_number(node.at_xpath("./#{axis}")&.text, fallback[index]) }
+      %w[X Y Z].map.with_index { |axis, index| finite_number(child_text(node, axis), fallback[index]) }
     end
 
     def matrix_from(node)
-      3.times.map { |row| 3.times.map { |column| finite_number(node.at_xpath("./R#{row}#{column}")&.text, identity_matrix[row][column]) } }
+      3.times.map { |row| 3.times.map { |column| finite_number(child_text(node, "R#{row}#{column}"), identity_matrix[row][column]) } }
     end
 
     def finite_number(text, fallback)
