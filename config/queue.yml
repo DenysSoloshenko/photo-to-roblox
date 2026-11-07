@@ -3,7 +3,7 @@ default: &default
     - polling_interval: 1
       batch_size: 100
   workers:
-    - queues: [mailers, maintenance, default, active_storage_analysis, active_storage_purge]
+    - queues: [mailers, maintenance, default, solid_queue_recurring, active_storage_analysis, active_storage_purge]
       threads: 2
       processes: 1
       polling_interval: 1
