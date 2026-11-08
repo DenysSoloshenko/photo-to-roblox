@@ -6,7 +6,8 @@ permissions:
   contents: read
 jobs:
   test:
-    runs-on: ubuntu-latest
+    # Ruby 3.3.4 has a prebuilt package for 24.04, but not the newer latest image.
+    runs-on: ubuntu-24.04
     services:
       postgres:
         image: postgres:16

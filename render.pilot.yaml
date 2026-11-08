@@ -1,6 +1,8 @@
 # REVIEW TEMPLATE ONLY: paid resources; NOT applied.
 # New names preserve the original service. Start with Stripe TEST keys.
-# Confirm data recovery, private storage, mail, memory and domain cutover.
+# Fresh empty database approved by owner on 2026-11-07; old data not needed.
+# No-spend instruction remains: paid resources are not authorized.
+# Verify private storage, mail, memory and domain cutover before launch.
 ---
 services:
 - type: web
