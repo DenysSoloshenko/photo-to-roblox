@@ -14,7 +14,7 @@ The production workflow does not require a user to write JSON or custom code for
 
 ## Production readiness review
 
-The [November 7 launch audit](docs/launch-readiness-2026-11-07.md) is the current source for fixes, verification, recovery steps, and pilot costs. Changes are prepared locally and have not been deployed. Authenticated Render diagnostics confirmed that the original free PostgreSQL instance no longer exists; application logs show DNS failures for its hostname. A green `/up` response does not establish database readiness. Use `/ready` after deploying the new migrations.
+The [November 7 launch audit](docs/launch-readiness-2026-11-07.md) is the current source for verification, remaining launch work, and pilot costs. After the original free PostgreSQL expired, the owner approved a fresh empty Free database. Release `7e7bc8c` is deployed: `/ready`, email/password registration and login, and unpaid order creation/listing/cancellation passed public-site checks. Render now uses `/ready` for its health check. The Free database expires December 7, 2026. Google OAuth, a separate background worker, durable private file storage and the hosted paid fulfillment flow remain unfinished; no paid infrastructure was enabled.
 
 The current release adds an [open-data neighbourhood case](docs/case-study-springer-park.md) and a refreshed [seven-step launch checklist](docs/launch-checklist-2026-09-20.md). The September 16 review below is historical; its code has since reached the Render release branch.
 
